@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efigalia · Base de Conocimiento</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --surface: #181c27; --surface2: #1e2333; --border: #2a3045;
+    --accent: #f0a500; --accent2: #e06c00; --text: #e8eaf0; --text-muted: #7a8099;
+    --green: #3ecf8e; --red: #e05454;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+  header { border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 52px; background: var(--surface); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: var(--mono); font-weight: 600; font-size: 14px; color: var(--accent); letter-spacing: 0.05em; }
+  .logo span { color: var(--text-muted); font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .sync-status { font-family: var(--mono); font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .sync-dot.ok { background: var(--green); }
+  .sync-dot.err { background: var(--red); }
+  .sync-dot.spin { background: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+  .tab-bar { display: flex; gap: 3px; }
+  .tab { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: all 0.15s; font-family: var(--sans); }
+  .tab.active { background: var(--accent); color: #000; }
+  .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
+  #view-consultar, #view-registrar, #view-listado { display: none; }
+  #view-consultar { display: block; }
+
+  .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+
+  .search-wrap { position: relative; margin-bottom: 20px; }
+  .search-wrap textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 50px 14px 16px; color: var(--text); font-family: var(--sans); font-size: 15px; resize: none; outline: none; min-height: 85px; transition: border-color 0.2s; line-height: 1.5; }
+  .search-wrap textarea:focus { border-color: var(--accent); }
+  .search-wrap textarea::placeholder { color: var(--text-muted); }
+  .btn-search { position: absolute; bottom: 12px; right: 12px; background: var(--accent); border: none; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+  .btn-search:hover { background: var(--accent2); }
+  .btn-search svg { width: 17px; height: 17px; }
+
+  .answer-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; display: none; }
+  .answer-box.visible { display: block; }
+  .answer-header { padding: 10px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+  .answer-body { padding: 18px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; color: var(--text); }
+
+  .incidents-grid { display: flex; flex-direction: column; gap: 10px; }
+  .incident-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+  .incident-card:hover { border-color: var(--accent); background: var(--surface2); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .card-title { font-weight: 600; font-size: 14px; line-height: 1.4; }
+  .card-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .badge { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  .badge-marca { background: #1a2233; color: #7ab4e8; }
+  .badge-modelo { background: #1e2220; color: #7ae8a4; }
+  .badge-error { background: #2b2218; color: var(--accent); }
+  .card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .card-meta { margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--mono); }
+  input[type=text], textarea.field { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  input[type=text]:focus, textarea.field:focus { border-color: var(--accent); }
+  textarea.field { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  .photo-drop { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; color: var(--text-muted); font-size: 13px; }
+  .photo-drop:hover { border-color: var(--accent); color: var(--text); }
+  .photo-drop input { display: none; }
+  .photo-previews { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+  .photo-previews img { width: 66px; height: 66px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+
+  .btn-primary { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s; width: 100%; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .search-bar { margin-bottom: 14px; }
+  .search-bar input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text-muted); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; max-width: 580px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 24px; }
+  .modal-close { float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; padding-right: 24px; line-height: 1.4; }
+  .modal-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .modal-section { margin-bottom: 14px; }
+  .modal-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .modal-value { font-size: 14px; line-height: 1.65; white-space: pre-wrap; }
+  .modal-doc { font-size: 13px; color: var(--accent); font-family: var(--mono); }
+  .modal-photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .modal-photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+  .modal-keywords { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.ok { background: var(--green); color: #000; }
+  .toast.err { background: var(--red); color: #fff; }
+
+  .typing { display: inline-flex; gap: 4px; align-items: center; }
+  .typing span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EFIGALIA <span>· KB</span></div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">–</span>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
+      <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
+      <button class="tab" onclick="switchTab('listado',this)">Listado</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- CONSULTAR -->
+  <div id="view-consultar">
+    <div class="section-title">Describe la incidencia</div>
+    <div class="search-wrap">
+      <textarea id="query-input" placeholder="Ej: Fronius sobretensión, inversor no inyecta...&#10;Ej: Huawei SUN2000 error código 3013...&#10;&#10;Ctrl+Enter para consultar"></textarea>
+      <button class="btn-search" onclick="consultarIA()" title="Consultar">
+        <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+    <div class="answer-box" id="answer-box">
+      <div class="answer-header">
+        <div class="pulse" id="pulse-dot"></div>
+        <span id="answer-label">IA analizando...</span>
+      </div>
+      <div class="answer-body" id="answer-body"></div>
+    </div>
+  </div>
+
+  <!-- REGISTRAR -->
+  <div id="view-registrar">
+    <div class="section-title">Registrar incidencia resuelta</div>
+    <div class="form-group">
+      <label>Descripción del problema *</label>
+      <input type="text" id="f-incidencia" placeholder="Ej: Inversor no sincroniza tras cambio de tarjeta">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Marca equipo *</label>
+        <input type="text" id="f-marca" placeholder="Ej: Huawei, Fronius, Sigen...">
+      </div>
+      <div class="form-group">
+        <label>Modelo equipo</label>
+        <input type="text" id="f-modelo" placeholder="Ej: SUN2000, Logger1000...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Código de error</label>
+        <input type="text" id="f-coderror" placeholder="Ej: 3013  /  - si no hay">
+      </div>
+      <div class="form-group">
+        <label>ID Obra / Cliente</label>
+        <input type="text" id="f-idobra" placeholder="Ej: Cafento">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Verificaciones realizadas</label>
+      <textarea class="field" id="f-verificaciones" placeholder="Qué se comprobó antes de encontrar la solución..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Solución aplicada *</label>
+      <textarea class="field" id="f-solucion" placeholder="Pasos exactos que resolvieron el problema..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Documentación de referencia</label>
+        <input type="text" id="f-doc" placeholder="Nombre del manual o PDF">
+      </div>
+      <div class="form-group">
+        <label>Técnico</label>
+        <input type="text" id="f-tecnico" placeholder="Nombre">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Palabras clave</label>
+      <input type="text" id="f-keywords" placeholder="Ej: contraseña, reset, toroidal, pines...">
+    </div>
+    <div class="form-group">
+      <label>Fotos (opcional)</label>
+      <div class="photo-drop" onclick="document.getElementById('f-fotos').click()">
+        <input type="file" id="f-fotos" accept="image/*" multiple onchange="previewFotos(event)">
+        📷 Toca para adjuntar fotos
+      </div>
+      <div class="photo-previews" id="foto-previews"></div>
+    </div>
+    <button class="btn-primary" id="btn-guardar" onclick="guardarIncidencia()">Guardar y sincronizar</button>
+  </div>
+
+  <!-- LISTADO -->
+  <div id="view-listado">
+    <div class="section-title">Incidencias registradas</div>
+    <div class="search-bar">
+      <input type="text" id="listado-search" placeholder="Filtrar por marca, modelo, palabra clave..." oninput="renderListado()">
+    </div>
+    <div id="listado-container"></div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-inner"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyr_-et1-3m2p41Nq2daeOFbA0MBkzEN4mvmV-b4LiBSW9OU-UamR0s8C-N1Uyh2VLi-Q/exec';
+
+// ── BASE INICIAL ───────────────────────────────────────
+const BASE_INICIAL = [{"id":1000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Acceso a maintain contraseña no conocida","verificaciones":"Probar con las contraseñas [REDACTED-CRED], [REDACTED-CRED], [REDACTED-CRED] y [REDACTED-CRED]","solucion":"Entrar en modo \"administrator\" con la contraseña [REDACTED-CRED], escoger el usuario maintain y darle la contraseña deseada","documentacion":"Manual de usuario Logger1000b","keywords":"maintain, administrator, contraseña, olvidado, acceso, logger","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":2000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Mantenimiento remoto no activado","verificaciones":"Verificar si el equipo tiene internet o si el equipo está conectado a un Router de edp, en cuyo caso no es posible","solucion":"En la configuración avanzada del logger, desde el portal de monitorización, activar el mantenimiento remoto.","documentacion":"FAQ_1015 How to activate remote maintenance.pdf","keywords":"mantenimiento remoto, sungrow, logger1000","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":3000,"idObra":"Portela vella","marca":"Huawei","modelo":"Logger","codError":"-","incidencia":"Recolector de energía defectuoso","verificaciones":"Verificar el estado de conexión del medidor de consumo. Verificar el funcionamiento y la conexión del medidor.","solucion":"Configurar el medidor de consumo como equipo de medición.","documentacion":"-","keywords":"Huawei, logger, colector, defectuoso, medidor","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":4000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Sobretensión","verificaciones":"Verificar si la sobretensión no procede de la red","solucion":"Realizar un ajuste de P(V) mediante acceso por la app Solaredge Go.","documentacion":"01_A_ES Max Grid Voltage 253 Vac con ANEXOS.pdf","keywords":"Solaredge, sobretensión","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":5000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Fallo de aislamiento","verificaciones":"Verificar la resistencia de aislamiento que indica el inversor","solucion":"Realizar mediciones del aislamiento de las series de fotovoltaica.","documentacion":"Comprobación de defecto a tierra Solaredge.pdf","keywords":"Solaredge, defecto, tierra, aislamiento","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":6000,"idObra":"-","marca":"Huawei","modelo":"Luna","codError":"3013","incidencia":"Fallo de comunicación de la batería","verificaciones":"Realizar las verificaciones de la documentación de referencia.","solucion":"Revisar cableado de comunicación, cable par trenzado roto en el conector.","documentacion":"Residential Smart PV Troubleshooting Guide - Battery expansion module communication.pdf","keywords":"comunicación, Huawei, Luna, Sun2000, batería","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":7000,"idObra":"-","marca":"Fronius","modelo":"todos","codError":"-","incidencia":"Sobretensiones en red","verificaciones":"Verificar si la tensión de red con el inversor apagado tiene valores estables. Ver si la impedancia de la acometida es baja","solucion":"Realizar un ajuste P(V)","documentacion":"GVDPR- Reducción de potencia por tensión.pdf","keywords":"Fronius, sobretensión, ajuste, tensión, red","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":8000,"idObra":"-","marca":"Huawei","modelo":"SUN2000","codError":"-","incidencia":"Contraseña de acceso olvidada","verificaciones":"Verificar si no es una contraseña habitual: [REDACTED-CRED], [REDACTED-CRED], etc.","solucion":"Realizar un reseteo del acceso.","documentacion":"Reestablecer contraseña SUN2000_Huawei.png","keywords":"Huawei, SUN2000, contraseña, acceso, reset","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":9000,"idObra":"-","marca":"Janitza","modelo":"Serie UMG","codError":"-","incidencia":"Error de medición de potencia","verificaciones":"Verificar que los toroidales de medición se encuentran bien cerrados","solucion":"Realizar un ajuste de los valores de configuración de los toroidales a través de GRIDVISS, comprobar valores de factores de potencia","documentacion":"Manual gridviss Janitza","keywords":"Janitza, toroidal, medida, potencia, corriente, GRIDVISS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":10000,"idObra":"-","marca":"Meter wifi EDP","modelo":"-","codError":"-","incidencia":"Error de medición de potencia con toroidales","verificaciones":"Verificar que los toroidales miden en la fase correspondiente","solucion":"Verificar factores de potencia: producción debe dar 1, consumo próximos a 1. Ajustar toroidales a la fase que miden de tensión. Verificar el sentido de los toroidales. Verificar que la relación de transformación es la correcta.","documentacion":"-","keywords":"meter, wifi, edp, toroidal, potencia, fase, transformación","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":11000,"idObra":"-","marca":"UWP","modelo":"-","codError":"-","incidencia":"Fallo envío datos UWP a Janitza/ITR/Prisma","verificaciones":"Verificar la conexión entre equipos","solucion":"Al cargar el software, hacerlo desde el propio archivo de configuración. No cargar el archivo al programa.","documentacion":"-","keywords":"UWP, Janitza, ITR, Prisma, envío, datos","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":12000,"idObra":"-","marca":"RUT241","modelo":"-","codError":"-","incidencia":"RUT241 no conecta a internet","verificaciones":"Verificar la tarjeta SIM. Verificar que la antena esté colocada.","solucion":"Para cargar el backup, hacerlo utilizando una tarjeta SIM antigua de EDP. Luego cambiar la tarjeta por una nueva con IP 10.145...","documentacion":"-","keywords":"RUT241, SIM, internet, router, antena, backup","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":13000,"idObra":"Sigen nave","marca":"Sigen","modelo":"EC6.0SP","codError":"-","incidencia":"Medidores SDM CT120 no reconocidos, reconoce equipos de otras plantas","verificaciones":"Reconocimiento desde app Posventa, actualización de planta e inversor, cambio de medidores, comprobación de cableado (consumo pines 13-14, producción pines 16-15), desconexión wifi","solucion":"Conectar con dongle SIM en lugar de wifi.","documentacion":"-","keywords":"Sigen, EC6, SDM, medidor, pines, wifi, dongle, SIM","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":14000,"idObra":"Cafento","marca":"Lacecal","modelo":"ITR 2.0b","codError":"-","incidencia":"Fallo de comunicación, 3 LEDs fijos, no envía datos a la app","verificaciones":"Desconexión y conexión de router, comprobación de cables, caso abierto con Amara","solucion":"Reset de la SD desde el PC según el manual. Reconfigurar ITR. IP: 192.168.1.90. Contraseña: [REDACTED-CRED]. Si no deja modificar valores, usar la contraseña modificada previamente para acceder como instalador.","documentacion":"Reset ITR 2.0B","keywords":"ITR, comunicación, LED, Lacecal, reset, SD","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":15000,"idObra":"Corvaz","marca":"BYD","modelo":"B-PLUS 2.5","codError":"-","incidencia":"Batería no aparece en Cerbo, % batería incorrecto, equipo se apaga","verificaciones":"Cableado, software, parámetros, reinicio","solucion":"Comprobar DIP switches de numeración de batería. La batería 1 tenía 2 switches arriba (= nº 3), duplicando la dirección. Corrección: solo switch 1 arriba. Apareció en el Cerbo al momento.","documentacion":"BYD_Installation_Manual_B-BOX Pro 2.5-10.0 V2.1_ES","keywords":"BYD, Cerbo, batería, DIP switch, dirección, B-PLUS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":16000,"idObra":"Picadizo","marca":"Sigen","modelo":"DTSU666","codError":"-","incidencia":"Medidor DTSU666 no reconocido por el inversor","verificaciones":"Revisión de cableado y parámetros del medidor","solucion":"El DTSU666 no va en los mismos pines que el medidor 630. Va en pines 15 y 16.","documentacion":"-","keywords":"Sigen, DTSU666, medidor, pines, 15, 16, 630","tecnico":"Efigalia","fecha":"2025","fotos":[]}];
+
+// ── STATE ──────────────────────────────────────────────
+let incidents = [];
+let fotosBase64 = [];
+
+function setSyncStatus(state, label) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  document.getElementById('sync-label').textContent = label;
+}
+
+// ── GOOGLE SHEETS API ──────────────────────────────────
+async function sheetsLoad() {
+  setSyncStatus('spin', 'cargando...');
+  try {
+    const res = await fetch(SHEETS_URL, { method: 'GET' });
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (Array.isArray(data) && data.length > 0) {
+      incidents = data;
+    } else {
+      // Primera vez: subir base inicial
+      incidents = [...BASE_INICIAL];
+      await sheetsSave();
+    }
+    localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
+    setSyncStatus('ok', 'sincronizado');
+  } catch (e) {
+    const stored = localStorage.getItem('efigalia_kb_v3');
+    incidents = stored ? JSON.parse(stored) : [...BASE_INICIAL];
+    setSyncStatus('err', 'sin conexión');
+    showToast('⚠ Sin conexión. Mostrando datos locales.', 'err');
+  }
+}
+
+async function sheetsSave() {
+  setSyncStatus('spin', 'guardando...');
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(incidents)
+    });
+    localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
+    setSyncStatus('ok', 'sincronizado');
+    return true;
+  } catch (e) {
+    localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
+    setSyncStatus('err', 'error al guardar');
+    showToast('⚠ Guardado solo en local.', 'err');
+    return false;
+  }
+}
+
+// ── TABS ───────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
+  document.getElementById('view-' + tab).style.display = 'block';
+  if (tab === 'listado') sheetsLoad().then(renderListado);
+}
+
+// ── CONSULTAR IA ───────────────────────────────────────
+async function consultarIA() {
+  const query = document.getElementById('query-input').value.trim();
+  if (!query) return;
+  const box = document.getElementById('answer-box');
+  const body = document.getElementById('answer-body');
+  const label = document.getElementById('answer-label');
+  const pulse = document.getElementById('pulse-dot');
+
+  box.classList.add('visible');
+  label.textContent = 'IA analizando...';
+  pulse.style.display = 'block';
+  body.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+
+  await sheetsLoad();
+
+  const context = incidents.map((inc, i) =>
+    `[${i+1}] Marca: ${inc.marca} | Modelo: ${inc.modelo} | Cód.Error: ${inc.codError}\nIncidencia: ${inc.incidencia}\nVerificaciones: ${inc.verificaciones}\nSolución: ${inc.solucion}\nDoc: ${inc.documentacion}\nKeywords: ${inc.keywords}`
+  ).join('\n\n');
+
+  const systemPrompt = `Eres el asistente técnico interno de Efigalia Energy SL, empresa instaladora de sistemas fotovoltaicos industriales y agrícolas en Galicia (España).
+
+Tu función es ayudar a los técnicos de campo a resolver incidencias, consultando primero la base de conocimiento interna.
+
+BASE DE CONOCIMIENTO INTERNA (${incidents.length} incidencias):
+${context}
+
+INSTRUCCIONES:
+1. Busca si hay incidencias similares (misma marca, modelo, síntoma o keywords).
+2. Si encuentras coincidencias, indícalas claramente y adapta la solución al caso actual.
+3. Si hay documentación de referencia relevante, menciónala.
+4. Si no hay coincidencias, responde con tu conocimiento técnico fotovoltaico.
+5. Estructura: diagnóstico probable → verificaciones → solución paso a paso.
+6. Sé directo y práctico. Responde siempre en español. Máximo 350 palabras.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: query }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.map(b => b.text || '').join('') || 'Sin respuesta.';
+    label.textContent = 'Respuesta IA';
+    pulse.style.display = 'none';
+    body.textContent = text;
+  } catch (err) {
+    label.textContent = 'Error';
+    pulse.style.display = 'none';
+    body.textContent = 'Error al conectar con la IA.';
+  }
+}
+
+document.getElementById('query-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) consultarIA();
+});
+
+// ── REGISTRAR ─────────────────────────────────────────
+function previewFotos(event) {
+  const files = Array.from(event.target.files);
+  const container = document.getElementById('foto-previews');
+  fotosBase64 = [];
+  container.innerHTML = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      fotosBase64.push(e.target.result);
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      container.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function guardarIncidencia() {
+  const incidencia = document.getElementById('f-incidencia').value.trim();
+  const marca = document.getElementById('f-marca').value.trim();
+  const solucion = document.getElementById('f-solucion').value.trim();
+  if (!incidencia || !marca || !solucion) {
+    showToast('⚠ Rellena: descripción, marca y solución', 'err');
+    return;
+  }
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  await sheetsLoad();
+
+  const inc = {
+    id: Date.now(),
+    idObra: document.getElementById('f-idobra').value.trim() || '-',
+    marca, modelo: document.getElementById('f-modelo').value.trim() || '-',
+    codError: document.getElementById('f-coderror').value.trim() || '-',
+    incidencia, verificaciones: document.getElementById('f-verificaciones').value.trim(),
+    solucion, documentacion: document.getElementById('f-doc').value.trim() || '-',
+    keywords: document.getElementById('f-keywords').value.trim(),
+    tecnico: document.getElementById('f-tecnico').value.trim() || 'Anónimo',
+    fecha: new Date().toLocaleDateString('es-ES'),
+    fotos: [...fotosBase64]
+  };
+
+  incidents.unshift(inc);
+  await sheetsSave();
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar y sincronizar';
+
+  ['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('foto-previews').innerHTML = '';
+  fotosBase64 = [];
+  showToast('✓ Incidencia guardada', 'ok');
+}
+
+// ── LISTADO ────────────────────────────────────────────
+function renderListado() {
+  const container = document.getElementById('listado-container');
+  const q = (document.getElementById('listado-search')?.value || '').toLowerCase();
+  let list = q
+    ? incidents.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError].some(f=>(f||'').toLowerCase().includes(q)))
+    : incidents;
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay incidencias.'}</div>`;
+    return;
+  }
+  container.innerHTML = '<div class="incidents-grid">' + list.map(inc => `
+    <div class="incident-card" onclick="openModal(${inc.id})">
+      <div class="card-top">
+        <div class="card-title">${inc.incidencia}</div>
+        <div class="card-badges">
+          <span class="badge badge-marca">${inc.marca}</span>
+          ${inc.modelo&&inc.modelo!=='-'?`<span class="badge badge-modelo">${inc.modelo}</span>`:''}
+          ${inc.codError&&inc.codError.trim()!=='-'?`<span class="badge badge-error">E:${inc.codError.trim()}</span>`:''}
+        </div>
+      </div>
+      <div class="card-desc">${(inc.solucion||'').substring(0,110)}${(inc.solucion||'').length>110?'…':''}</div>
+      <div class="card-meta">${inc.idObra!=='-'?inc.idObra+' · ':''}${inc.fecha} · ${inc.tecnico}</div>
+    </div>`).join('') + '</div>';
+}
+
+// ── MODAL ──────────────────────────────────────────────
+function openModal(id) {
+  const inc = incidents.find(i => i.id === id);
+  if (!inc) return;
+  const photos = inc.fotos?.length ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')">`).join('')}</div></div>` : '';
+  const doc = inc.documentacion&&inc.documentacion!=='-' ? `<div class="modal-section"><div class="modal-label">Documentación</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
+  const kw = inc.keywords ? `<div class="modal-section"><div class="modal-label">Palabras clave</div><div class="modal-keywords">${inc.keywords}</div></div>` : '';
+  document.getElementById('modal-inner').innerHTML = `
+    <div class="modal-title">${inc.incidencia}</div>
+    <div class="modal-badges">
+      <span class="badge badge-marca">${inc.marca}</span>
+      ${inc.modelo&&inc.modelo!=='-'?`<span class="badge badge-modelo">${inc.modelo}</span>`:''}
+      ${inc.codError&&inc.codError.trim()!=='-'?`<span class="badge badge-error">Error: ${inc.codError.trim()}</span>`:''}
+    </div>
+    ${inc.verificaciones?`<div class="modal-section"><div class="modal-label">Verificaciones</div><div class="modal-value">${inc.verificaciones}</div></div>`:''}
+    <div class="modal-section"><div class="modal-label">Solución</div><div class="modal-value">${inc.solucion}</div></div>
+    ${doc}${photos}${kw}
+    <div class="modal-section"><div class="modal-label">Obra · Técnico · Fecha</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${inc.idObra} · ${inc.tecnico} · ${inc.fecha}</div></div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModalOutside(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── INIT ───────────────────────────────────────────────
+sheetsLoad();
+</script>
+</body>
+</html>

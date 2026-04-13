@@ -97,7 +97,7 @@
   .modal-value { font-size: 14px; line-height: 1.65; white-space: pre-wrap; }
   .modal-doc { font-size: 13px; color: var(--accent); font-family: var(--mono); }
   .modal-photos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-  .modal-photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+  .modal-photos img { width: 76px; height: 76px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); }
   .modal-keywords { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
 
   .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
@@ -236,14 +236,14 @@ const WORKER = 'https://efigalia-kb.efigalia-solar.workers.dev';
 const BASE_INICIAL = [{"id":1000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Acceso a maintain contraseña no conocida","verificaciones":"Probar con las contraseñas [REDACTED-CRED], [REDACTED-CRED], [REDACTED-CRED] y [REDACTED-CRED]","solucion":"Entrar en modo \"administrator\" con la contraseña [REDACTED-CRED], escoger el usuario maintain y darle la contraseña deseada","documentacion":"Manual de usuario Logger1000b","keywords":"maintain, administrator, contraseña, olvidado, acceso, logger","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":2000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Mantenimiento remoto no activado","verificaciones":"Verificar si el equipo tiene internet o si el equipo está conectado a un Router de edp, en cuyo caso no es posible","solucion":"En la configuración avanzada del logger, desde el portal de monitorización, activar el mantenimiento remoto.","documentacion":"FAQ_1015 How to activate remote maintenance.pdf","keywords":"mantenimiento remoto, sungrow, logger1000","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":3000,"idObra":"Portela vella","marca":"Huawei","modelo":"Logger","codError":"-","incidencia":"Recolector de energía defectuoso","verificaciones":"Verificar el estado de conexión del medidor de consumo. Verificar el funcionamiento y la conexión del medidor.","solucion":"Configurar el medidor de consumo como equipo de medición.","documentacion":"-","keywords":"Huawei, logger, colector, defectuoso, medidor","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":4000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Sobretensión","verificaciones":"Verificar si la sobretensión no procede de la red","solucion":"Realizar un ajuste de P(V) mediante acceso por la app Solaredge Go.","documentacion":"01_A_ES Max Grid Voltage 253 Vac con ANEXOS.pdf","keywords":"Solaredge, sobretensión","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":5000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Fallo de aislamiento","verificaciones":"Verificar la resistencia de aislamiento que indica el inversor","solucion":"Realizar mediciones del aislamiento de las series de fotovoltaica.","documentacion":"Comprobación de defecto a tierra Solaredge.pdf","keywords":"Solaredge, defecto, tierra, aislamiento","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":6000,"idObra":"-","marca":"Huawei","modelo":"Luna","codError":"3013","incidencia":"Fallo de comunicación de la batería","verificaciones":"Realizar las verificaciones de la documentación de referencia.","solucion":"Revisar cableado de comunicación, cable par trenzado roto en el conector.","documentacion":"Residential Smart PV Troubleshooting Guide - Battery expansion module communication.pdf","keywords":"comunicación, Huawei, Luna, Sun2000, batería","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":7000,"idObra":"-","marca":"Fronius","modelo":"todos","codError":"-","incidencia":"Sobretensiones en red","verificaciones":"Verificar si la tensión de red con el inversor apagado tiene valores estables. Ver si la impedancia de la acometida es baja","solucion":"Realizar un ajuste P(V)","documentacion":"GVDPR- Reducción de potencia por tensión.pdf","keywords":"Fronius, sobretensión, ajuste, tensión, red","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":8000,"idObra":"-","marca":"Huawei","modelo":"SUN2000","codError":"-","incidencia":"Contraseña de acceso olvidada","verificaciones":"Verificar si no es una contraseña habitual: [REDACTED-CRED], [REDACTED-CRED], etc.","solucion":"Realizar un reseteo del acceso.","documentacion":"Reestablecer contraseña SUN2000_Huawei.png","keywords":"Huawei, SUN2000, contraseña, acceso, reset","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":9000,"idObra":"-","marca":"Janitza","modelo":"Serie UMG","codError":"-","incidencia":"Error de medición de potencia","verificaciones":"Verificar que los toroidales de medición se encuentran bien cerrados","solucion":"Realizar un ajuste de los valores de configuración de los toroidales a través de GRIDVISS, comprobar valores de factores de potencia","documentacion":"Manual gridviss Janitza","keywords":"Janitza, toroidal, medida, potencia, corriente, GRIDVISS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":10000,"idObra":"-","marca":"Meter wifi EDP","modelo":"-","codError":"-","incidencia":"Error de medición de potencia con toroidales","verificaciones":"Verificar que los toroidales miden en la fase correspondiente","solucion":"Verificar factores de potencia: producción debe dar 1, consumo próximos a 1. Ajustar toroidales a la fase que miden de tensión. Verificar el sentido de los toroidales. Verificar que la relación de transformación es la correcta.","documentacion":"-","keywords":"meter, wifi, edp, toroidal, potencia, fase, transformación","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":11000,"idObra":"-","marca":"UWP","modelo":"-","codError":"-","incidencia":"Fallo envío datos UWP a Janitza/ITR/Prisma","verificaciones":"Verificar la conexión entre equipos","solucion":"Al cargar el software, hacerlo desde el propio archivo de configuración. No cargar el archivo al programa.","documentacion":"-","keywords":"UWP, Janitza, ITR, Prisma, envío, datos","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":12000,"idObra":"-","marca":"RUT241","modelo":"-","codError":"-","incidencia":"RUT241 no conecta a internet","verificaciones":"Verificar la tarjeta SIM. Verificar que la antena esté colocada.","solucion":"Para cargar el backup, hacerlo utilizando una tarjeta SIM antigua de EDP. Luego cambiar la tarjeta por una nueva con IP 10.145...","documentacion":"-","keywords":"RUT241, SIM, internet, router, antena, backup","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":13000,"idObra":"Sigen nave","marca":"Sigen","modelo":"EC6.0SP","codError":"-","incidencia":"Medidores SDM CT120 no reconocidos, reconoce equipos de otras plantas","verificaciones":"Reconocimiento desde app Posventa, actualización de planta e inversor, cambio de medidores, comprobación de cableado (consumo pines 13-14, producción pines 16-15), desconexión wifi","solucion":"Conectar con dongle SIM en lugar de wifi.","documentacion":"-","keywords":"Sigen, EC6, SDM, medidor, pines, wifi, dongle, SIM","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":14000,"idObra":"Cafento","marca":"Lacecal","modelo":"ITR 2.0b","codError":"-","incidencia":"Fallo de comunicación, 3 LEDs fijos, no envía datos a la app","verificaciones":"Desconexión y conexión de router, comprobación de cables, caso abierto con Amara","solucion":"Reset de la SD desde el PC según el manual. Reconfigurar ITR. IP: 192.168.1.90. Contraseña: [REDACTED-CRED]. Si no deja modificar valores, usar la contraseña modificada previamente para acceder como instalador.","documentacion":"Reset ITR 2.0B","keywords":"ITR, comunicación, LED, Lacecal, reset, SD","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":15000,"idObra":"Corvaz","marca":"BYD","modelo":"B-PLUS 2.5","codError":"-","incidencia":"Batería no aparece en Cerbo, % batería incorrecto, equipo se apaga","verificaciones":"Cableado, software, parámetros, reinicio","solucion":"Comprobar DIP switches de numeración de batería. La batería 1 tenía 2 switches arriba (= nº 3), duplicando la dirección. Corrección: solo switch 1 arriba. Apareció en el Cerbo al momento.","documentacion":"BYD_Installation_Manual_B-BOX Pro 2.5-10.0 V2.1_ES","keywords":"BYD, Cerbo, batería, DIP switch, dirección, B-PLUS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":16000,"idObra":"Picadizo","marca":"Sigen","modelo":"DTSU666","codError":"-","incidencia":"Medidor DTSU666 no reconocido por el inversor","verificaciones":"Revisión de cableado y parámetros del medidor","solucion":"El DTSU666 no va en los mismos pines que el medidor 630. Va en pines 15 y 16.","documentacion":"-","keywords":"Sigen, DTSU666, medidor, pines, 15, 16, 630","tecnico":"Efigalia","fecha":"2025","fotos":[]}];
 
 let incidents = [];
-let fotosBase64 = [];
+let fotoFiles = [];
 
 function setSyncStatus(state, label) {
   document.getElementById('sync-dot').className = 'sync-dot ' + state;
   document.getElementById('sync-label').textContent = label;
 }
 
-// ── DATA via Worker ────────────────────────────────────
+// ── DATA ───────────────────────────────────────────────
 async function sheetsLoad() {
   setSyncStatus('spin', 'cargando...');
   try {
@@ -285,6 +285,18 @@ async function sheetsSave() {
   }
 }
 
+// ── SUBIR FOTO A R2 ────────────────────────────────────
+async function subirFoto(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(WORKER + '/foto', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  return data.url;
+}
+
 // ── TABS ───────────────────────────────────────────────
 function switchTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -294,7 +306,7 @@ function switchTab(tab, el) {
   if (tab === 'listado') sheetsLoad().then(renderListado);
 }
 
-// ── CONSULTAR IA via Worker ────────────────────────────
+// ── CONSULTAR IA ───────────────────────────────────────
 async function consultarIA() {
   const query = document.getElementById('query-input').value.trim();
   if (!query) return;
@@ -356,24 +368,20 @@ document.getElementById('query-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) consultarIA();
 });
 
-// ── REGISTRAR ─────────────────────────────────────────
+// ── FOTOS PREVIEW ──────────────────────────────────────
 function previewFotos(event) {
-  const files = Array.from(event.target.files);
+  fotoFiles = Array.from(event.target.files);
   const container = document.getElementById('foto-previews');
-  fotosBase64 = [];
   container.innerHTML = '';
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      fotosBase64.push(e.target.result);
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      container.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+  fotoFiles.forEach(file => {
+    const url = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = url;
+    container.appendChild(img);
   });
 }
 
+// ── GUARDAR INCIDENCIA ─────────────────────────────────
 async function guardarIncidencia() {
   const incidencia = document.getElementById('f-incidencia').value.trim();
   const marca = document.getElementById('f-marca').value.trim();
@@ -384,8 +392,19 @@ async function guardarIncidencia() {
   }
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
-  btn.textContent = 'Guardando...';
 
+  // Subir fotos a R2
+  let fotosUrls = [];
+  if (fotoFiles.length > 0) {
+    btn.textContent = 'Subiendo fotos...';
+    try {
+      fotosUrls = await Promise.all(fotoFiles.map(f => subirFoto(f)));
+    } catch(e) {
+      showToast('⚠ Error al subir fotos', 'err');
+    }
+  }
+
+  btn.textContent = 'Guardando...';
   await sheetsLoad();
 
   const inc = {
@@ -398,7 +417,7 @@ async function guardarIncidencia() {
     keywords: document.getElementById('f-keywords').value.trim(),
     tecnico: document.getElementById('f-tecnico').value.trim() || 'Anónimo',
     fecha: new Date().toLocaleDateString('es-ES'),
-    fotos: [...fotosBase64]
+    fotos: fotosUrls
   };
 
   incidents.unshift(inc);
@@ -409,7 +428,7 @@ async function guardarIncidencia() {
 
   ['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('foto-previews').innerHTML = '';
-  fotosBase64 = [];
+  fotoFiles = [];
   showToast('✓ Incidencia guardada', 'ok');
 }
 
@@ -435,7 +454,7 @@ function renderListado() {
         </div>
       </div>
       <div class="card-desc">${(inc.solucion||'').substring(0,110)}${(inc.solucion||'').length>110?'…':''}</div>
-      <div class="card-meta">${inc.idObra!=='-'?inc.idObra+' · ':''}${inc.fecha} · ${inc.tecnico}</div>
+      <div class="card-meta">${inc.idObra!=='-'?inc.idObra+' · ':''}${inc.fecha} · ${inc.tecnico}${inc.fotos?.length?' · 📷 '+inc.fotos.length:''}</div>
     </div>`).join('') + '</div>';
 }
 
@@ -443,7 +462,9 @@ function renderListado() {
 function openModal(id) {
   const inc = incidents.find(i => i.id === id);
   if (!inc) return;
-  const photos = inc.fotos?.length ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')">`).join('')}</div></div>` : '';
+  const photos = inc.fotos?.length
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    : '';
   const doc = inc.documentacion&&inc.documentacion!=='-' ? `<div class="modal-section"><div class="modal-label">Documentación</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
   const kw = inc.keywords ? `<div class="modal-section"><div class="modal-label">Palabras clave</div><div class="modal-keywords">${inc.keywords}</div></div>` : '';
   document.getElementById('modal-inner').innerHTML = `

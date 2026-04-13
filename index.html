@@ -134,7 +134,6 @@
 </header>
 
 <main>
-  <!-- CONSULTAR -->
   <div id="view-consultar">
     <div class="section-title">Describe la incidencia</div>
     <div class="search-wrap">
@@ -154,7 +153,6 @@
     </div>
   </div>
 
-  <!-- REGISTRAR -->
   <div id="view-registrar">
     <div class="section-title">Registrar incidencia resuelta</div>
     <div class="form-group">
@@ -214,7 +212,6 @@
     <button class="btn-primary" id="btn-guardar" onclick="guardarIncidencia()">Guardar y sincronizar</button>
   </div>
 
-  <!-- LISTADO -->
   <div id="view-listado">
     <div class="section-title">Incidencias registradas</div>
     <div class="search-bar">
@@ -234,13 +231,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIG ─────────────────────────────────────────────
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyr_-et1-3m2p41Nq2daeOFbA0MBkzEN4mvmV-b4LiBSW9OU-UamR0s8C-N1Uyh2VLi-Q/exec';
 
-// ── BASE INICIAL ───────────────────────────────────────
 const BASE_INICIAL = [{"id":1000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Acceso a maintain contraseña no conocida","verificaciones":"Probar con las contraseñas [REDACTED-CRED], [REDACTED-CRED], [REDACTED-CRED] y [REDACTED-CRED]","solucion":"Entrar en modo \"administrator\" con la contraseña [REDACTED-CRED], escoger el usuario maintain y darle la contraseña deseada","documentacion":"Manual de usuario Logger1000b","keywords":"maintain, administrator, contraseña, olvidado, acceso, logger","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":2000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Mantenimiento remoto no activado","verificaciones":"Verificar si el equipo tiene internet o si el equipo está conectado a un Router de edp, en cuyo caso no es posible","solucion":"En la configuración avanzada del logger, desde el portal de monitorización, activar el mantenimiento remoto.","documentacion":"FAQ_1015 How to activate remote maintenance.pdf","keywords":"mantenimiento remoto, sungrow, logger1000","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":3000,"idObra":"Portela vella","marca":"Huawei","modelo":"Logger","codError":"-","incidencia":"Recolector de energía defectuoso","verificaciones":"Verificar el estado de conexión del medidor de consumo. Verificar el funcionamiento y la conexión del medidor.","solucion":"Configurar el medidor de consumo como equipo de medición.","documentacion":"-","keywords":"Huawei, logger, colector, defectuoso, medidor","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":4000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Sobretensión","verificaciones":"Verificar si la sobretensión no procede de la red","solucion":"Realizar un ajuste de P(V) mediante acceso por la app Solaredge Go.","documentacion":"01_A_ES Max Grid Voltage 253 Vac con ANEXOS.pdf","keywords":"Solaredge, sobretensión","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":5000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Fallo de aislamiento","verificaciones":"Verificar la resistencia de aislamiento que indica el inversor","solucion":"Realizar mediciones del aislamiento de las series de fotovoltaica.","documentacion":"Comprobación de defecto a tierra Solaredge.pdf","keywords":"Solaredge, defecto, tierra, aislamiento","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":6000,"idObra":"-","marca":"Huawei","modelo":"Luna","codError":"3013","incidencia":"Fallo de comunicación de la batería","verificaciones":"Realizar las verificaciones de la documentación de referencia.","solucion":"Revisar cableado de comunicación, cable par trenzado roto en el conector.","documentacion":"Residential Smart PV Troubleshooting Guide - Battery expansion module communication.pdf","keywords":"comunicación, Huawei, Luna, Sun2000, batería","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":7000,"idObra":"-","marca":"Fronius","modelo":"todos","codError":"-","incidencia":"Sobretensiones en red","verificaciones":"Verificar si la tensión de red con el inversor apagado tiene valores estables. Ver si la impedancia de la acometida es baja","solucion":"Realizar un ajuste P(V)","documentacion":"GVDPR- Reducción de potencia por tensión.pdf","keywords":"Fronius, sobretensión, ajuste, tensión, red","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":8000,"idObra":"-","marca":"Huawei","modelo":"SUN2000","codError":"-","incidencia":"Contraseña de acceso olvidada","verificaciones":"Verificar si no es una contraseña habitual: [REDACTED-CRED], [REDACTED-CRED], etc.","solucion":"Realizar un reseteo del acceso.","documentacion":"Reestablecer contraseña SUN2000_Huawei.png","keywords":"Huawei, SUN2000, contraseña, acceso, reset","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":9000,"idObra":"-","marca":"Janitza","modelo":"Serie UMG","codError":"-","incidencia":"Error de medición de potencia","verificaciones":"Verificar que los toroidales de medición se encuentran bien cerrados","solucion":"Realizar un ajuste de los valores de configuración de los toroidales a través de GRIDVISS, comprobar valores de factores de potencia","documentacion":"Manual gridviss Janitza","keywords":"Janitza, toroidal, medida, potencia, corriente, GRIDVISS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":10000,"idObra":"-","marca":"Meter wifi EDP","modelo":"-","codError":"-","incidencia":"Error de medición de potencia con toroidales","verificaciones":"Verificar que los toroidales miden en la fase correspondiente","solucion":"Verificar factores de potencia: producción debe dar 1, consumo próximos a 1. Ajustar toroidales a la fase que miden de tensión. Verificar el sentido de los toroidales. Verificar que la relación de transformación es la correcta.","documentacion":"-","keywords":"meter, wifi, edp, toroidal, potencia, fase, transformación","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":11000,"idObra":"-","marca":"UWP","modelo":"-","codError":"-","incidencia":"Fallo envío datos UWP a Janitza/ITR/Prisma","verificaciones":"Verificar la conexión entre equipos","solucion":"Al cargar el software, hacerlo desde el propio archivo de configuración. No cargar el archivo al programa.","documentacion":"-","keywords":"UWP, Janitza, ITR, Prisma, envío, datos","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":12000,"idObra":"-","marca":"RUT241","modelo":"-","codError":"-","incidencia":"RUT241 no conecta a internet","verificaciones":"Verificar la tarjeta SIM. Verificar que la antena esté colocada.","solucion":"Para cargar el backup, hacerlo utilizando una tarjeta SIM antigua de EDP. Luego cambiar la tarjeta por una nueva con IP 10.145...","documentacion":"-","keywords":"RUT241, SIM, internet, router, antena, backup","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":13000,"idObra":"Sigen nave","marca":"Sigen","modelo":"EC6.0SP","codError":"-","incidencia":"Medidores SDM CT120 no reconocidos, reconoce equipos de otras plantas","verificaciones":"Reconocimiento desde app Posventa, actualización de planta e inversor, cambio de medidores, comprobación de cableado (consumo pines 13-14, producción pines 16-15), desconexión wifi","solucion":"Conectar con dongle SIM en lugar de wifi.","documentacion":"-","keywords":"Sigen, EC6, SDM, medidor, pines, wifi, dongle, SIM","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":14000,"idObra":"Cafento","marca":"Lacecal","modelo":"ITR 2.0b","codError":"-","incidencia":"Fallo de comunicación, 3 LEDs fijos, no envía datos a la app","verificaciones":"Desconexión y conexión de router, comprobación de cables, caso abierto con Amara","solucion":"Reset de la SD desde el PC según el manual. Reconfigurar ITR. IP: 192.168.1.90. Contraseña: [REDACTED-CRED]. Si no deja modificar valores, usar la contraseña modificada previamente para acceder como instalador.","documentacion":"Reset ITR 2.0B","keywords":"ITR, comunicación, LED, Lacecal, reset, SD","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":15000,"idObra":"Corvaz","marca":"BYD","modelo":"B-PLUS 2.5","codError":"-","incidencia":"Batería no aparece en Cerbo, % batería incorrecto, equipo se apaga","verificaciones":"Cableado, software, parámetros, reinicio","solucion":"Comprobar DIP switches de numeración de batería. La batería 1 tenía 2 switches arriba (= nº 3), duplicando la dirección. Corrección: solo switch 1 arriba. Apareció en el Cerbo al momento.","documentacion":"BYD_Installation_Manual_B-BOX Pro 2.5-10.0 V2.1_ES","keywords":"BYD, Cerbo, batería, DIP switch, dirección, B-PLUS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":16000,"idObra":"Picadizo","marca":"Sigen","modelo":"DTSU666","codError":"-","incidencia":"Medidor DTSU666 no reconocido por el inversor","verificaciones":"Revisión de cableado y parámetros del medidor","solucion":"El DTSU666 no va en los mismos pines que el medidor 630. Va en pines 15 y 16.","documentacion":"-","keywords":"Sigen, DTSU666, medidor, pines, 15, 16, 630","tecnico":"Efigalia","fecha":"2025","fotos":[]}];
 
-// ── STATE ──────────────────────────────────────────────
 let incidents = [];
 let fotosBase64 = [];
 
@@ -249,30 +243,69 @@ function setSyncStatus(state, label) {
   document.getElementById('sync-label').textContent = label;
 }
 
-// ── GOOGLE SHEETS API ──────────────────────────────────
-async function sheetsLoad() {
-  setSyncStatus('spin', 'cargando...');
-  try {
-    const res = await fetch(SHEETS_URL, { method: 'GET' });
-    const text = await res.text();
-    const data = JSON.parse(text);
-    if (Array.isArray(data) && data.length > 0) {
-      incidents = data;
-    } else {
-      // Primera vez: subir base inicial
-      incidents = [...BASE_INICIAL];
-      await sheetsSave();
+// ── JSONP LOAD ─────────────────────────────────────────
+function sheetsLoad() {
+  return new Promise((resolve) => {
+    setSyncStatus('spin', 'cargando...');
+    const cbName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    let done = false;
+
+    const timeout = setTimeout(() => {
+      if (done) return;
+      done = true;
+      cleanup();
+      useFallback();
+      resolve();
+    }, 8000);
+
+    window[cbName] = function(data) {
+      if (done) return;
+      done = true;
+      clearTimeout(timeout);
+      cleanup();
+      try {
+        if (Array.isArray(data) && data.length > 0) {
+          incidents = data;
+          localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
+          setSyncStatus('ok', 'sincronizado');
+        } else {
+          incidents = [...BASE_INICIAL];
+          setSyncStatus('ok', 'base inicial');
+          sheetsSave();
+        }
+      } catch(e) {
+        useFallback();
+      }
+      resolve();
+    };
+
+    function cleanup() {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
     }
-    localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
-    setSyncStatus('ok', 'sincronizado');
-  } catch (e) {
-    const stored = localStorage.getItem('efigalia_kb_v3');
-    incidents = stored ? JSON.parse(stored) : [...BASE_INICIAL];
-    setSyncStatus('err', 'sin conexión');
-    showToast('⚠ Sin conexión. Mostrando datos locales.', 'err');
-  }
+
+    function useFallback() {
+      const stored = localStorage.getItem('efigalia_kb_v3');
+      incidents = stored ? JSON.parse(stored) : [...BASE_INICIAL];
+      setSyncStatus('err', 'sin conexión');
+      showToast('⚠ Sin conexión. Datos locales.', 'err');
+    }
+
+    script.src = SHEETS_URL + '?callback=' + cbName + '&t=' + Date.now();
+    script.onerror = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timeout);
+      cleanup();
+      useFallback();
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
 }
 
+// ── POST SAVE (no-cors, fire and forget) ───────────────
 async function sheetsSave() {
   setSyncStatus('spin', 'guardando...');
   try {
@@ -285,7 +318,7 @@ async function sheetsSave() {
     localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
     setSyncStatus('ok', 'sincronizado');
     return true;
-  } catch (e) {
+  } catch(e) {
     localStorage.setItem('efigalia_kb_v3', JSON.stringify(incidents));
     setSyncStatus('err', 'error al guardar');
     showToast('⚠ Guardado solo en local.', 'err');
@@ -478,7 +511,6 @@ function showToast(msg, type='ok') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── INIT ───────────────────────────────────────────────
 sheetsLoad();
 </script>
 </body>

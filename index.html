@@ -274,11 +274,17 @@ async function sheetsSave() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(incidents)
     });
-    localStorage.setItem('efigalia_kb_v4', JSON.stringify(incidents));
+    try {
+      const light = incidents.map(i => ({...i, fotos: i.fotos?.map ? i.fotos.map(f => typeof f === 'string' && f.startsWith('data:') ? '' : f) : []}));
+      localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
+    } catch(e) { localStorage.removeItem('efigalia_kb_v4'); }
     setSyncStatus('ok', 'sincronizado');
     return true;
   } catch(e) {
-    localStorage.setItem('efigalia_kb_v4', JSON.stringify(incidents));
+    try {
+      const light = incidents.map(i => ({...i, fotos: []}));
+      localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
+    } catch(e2) { localStorage.removeItem('efigalia_kb_v4'); }
     setSyncStatus('err', 'error al guardar');
     showToast('⚠ Guardado solo en local.', 'err');
     return false;
@@ -491,6 +497,8 @@ function showToast(msg, type='ok') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// Limpiar cache local para evitar quota exceeded
+try { localStorage.removeItem('efigalia_kb_v4'); } catch(e) {}
 sheetsLoad();
 </script>
 </body>

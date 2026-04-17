@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-cable-dc, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -179,6 +179,11 @@
         <div class="home-icon">🛡</div>
         <div class="home-title">Calibre de protecciones</div>
         <div class="home-desc">Magnetotérmico y diferencial para la salida AC del inversor.</div>
+      </div>
+      <div class="home-card" onclick="enterCableDC()">
+        <div class="home-icon">☀</div>
+        <div class="home-title">Cálculo sección cable DC</div>
+        <div class="home-desc">Dimensiona el cable de string (panel–inversor) por intensidad y caída de tensión (1,5 %).</div>
       </div>
     </div>
   </div>
@@ -356,6 +361,47 @@
     <button class="btn-primary" onclick="calcularProtecciones()">Calcular protecciones</button>
     <div class="calc-result" id="prot-result" style="display:none"></div>
   </div>
+
+  <div id="view-cable-dc">
+    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <div class="section-title">Sección de cable DC (cdt máx. 1,5%)</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Marca inversor *</label>
+        <select id="dc-marca" onchange="updateModelosDC()">
+          <option value="">— Seleccionar —</option>
+          <option value="Huawei">Huawei</option>
+          <option value="Sigenergy">Sigenergy</option>
+          <option value="SolarEdge">SolarEdge</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Modelo *</label>
+        <select id="dc-modelo" onchange="updateInfoInvDC()">
+          <option value="">— Seleccionar marca —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Panel solar *</label>
+      <select id="dc-panel">
+        <option value="Longi LR5-72HBD 535W">Longi LR5-72HBD 535W (bifacial)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nº paneles en serie *</label>
+        <input type="number" id="dc-nserie" min="1" step="1" placeholder="Ej: 18">
+      </div>
+      <div class="form-group">
+        <label>Longitud cable (m) *</label>
+        <input type="number" id="dc-long" step="0.5" min="1" placeholder="Ej: 20">
+      </div>
+    </div>
+    <div id="dc-inv-info" style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin:-8px 0 14px;min-height:16px"></div>
+    <button class="btn-primary" onclick="calcularSeccionDC()">Calcular sección DC</button>
+    <div class="calc-result" id="dc-result" style="display:none"></div>
+  </div>
 </main>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
@@ -464,6 +510,11 @@ function enterProtecciones() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-protecciones').style.display = 'block';
+}
+function enterCableDC() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-cable-dc').style.display = 'block';
 }
 function switchTab(tab, el) {
   document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
@@ -909,6 +960,163 @@ function calcularProtecciones() {
     </div>
     <div class="calc-note">
       Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ 1,25 · Imax del inversor. Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2): 40 A cuando el magnetotérmico es ≤ 40 A, 63 A cuando está entre 40 y 63 A, y relé diferencial con toroidal para calibres superiores. Sensibilidad 30 mA en residencial y 300 mA en comercial/industrial. Verifica siempre con proyecto.
+    </div>`;
+}
+
+// ── CÁLCULO DE SECCIÓN DC (string panel–inversor) ──────
+// Paneles solares (ampliable). STC: Voc, Isc, Vmp, Imp. coef_voc en %/°C.
+const PANELES = {
+  'Longi LR5-72HBD 535W': { pot:535, voc:49.45, isc:13.74, vmp:41.15, imp:13.0, coef_voc:-0.265 }
+};
+
+// Rango MPPT / límites DC del inversor (orientativo, para verificar compatibilidad).
+// Solo marcas string (Huawei, Sigenergy). SolarEdge opera con optimizadores.
+const MPPT_INV = {
+  Huawei: {
+    'SUN2000-2KTL-L1':    { vmin:90,  vmax:560, vdcmax:600,  istr:11 },
+    'SUN2000-3KTL-L1':    { vmin:90,  vmax:560, vdcmax:600,  istr:11 },
+    'SUN2000-3.68KTL-L1': { vmin:90,  vmax:560, vdcmax:600,  istr:13.5 },
+    'SUN2000-4KTL-L1':    { vmin:90,  vmax:560, vdcmax:600,  istr:13.5 },
+    'SUN2000-4.6KTL-L1':  { vmin:90,  vmax:560, vdcmax:600,  istr:13.5 },
+    'SUN2000-5KTL-L1':    { vmin:90,  vmax:560, vdcmax:600,  istr:13.5 },
+    'SUN2000-6KTL-L1':    { vmin:90,  vmax:560, vdcmax:600,  istr:13.5 },
+    'SUN2000-3KTL-M1':    { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-4KTL-M1':    { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-5KTL-M1':    { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-6KTL-M1':    { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-8KTL-M1':    { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-10KTL-M1':   { vmin:140, vmax:980, vdcmax:1100, istr:13.5 },
+    'SUN2000-12KTL-M1':   { vmin:160, vmax:950, vdcmax:1100, istr:22 },
+    'SUN2000-15KTL-M1':   { vmin:160, vmax:950, vdcmax:1100, istr:22 },
+    'SUN2000-17KTL-M1':   { vmin:160, vmax:950, vdcmax:1100, istr:22 },
+    'SUN2000-20KTL-M1':   { vmin:160, vmax:950, vdcmax:1100, istr:22 },
+    'SUN2000-25KTL-M5':   { vmin:200, vmax:1000,vdcmax:1100, istr:26 },
+    'SUN2000-30KTL-M3':   { vmin:200, vmax:1000,vdcmax:1100, istr:26 },
+    'SUN2000-36KTL-M3':   { vmin:200, vmax:1000,vdcmax:1100, istr:26 },
+    'SUN2000-40KTL-M3':   { vmin:200, vmax:1000,vdcmax:1100, istr:26 },
+    'SUN2000-50KTL-M3':   { vmin:200, vmax:1000,vdcmax:1100, istr:26 },
+    'SUN2000-100KTL-M1':  { vmin:200, vmax:1000,vdcmax:1100, istr:26 }
+  },
+  Sigenergy: {
+    'SigenStor EC 5.0 TP':  { vmin:150, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 6.0 TP':  { vmin:150, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 8.0 TP':  { vmin:150, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 10.0 TP': { vmin:150, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 12.0 TP': { vmin:150, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 15.0 TP': { vmin:200, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 17.0 TP': { vmin:200, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 20.0 TP': { vmin:200, vmax:850, vdcmax:1000, istr:16 },
+    'SigenStor EC 25.0 TP': { vmin:200, vmax:850, vdcmax:1000, istr:16 }
+  }
+};
+
+// Intensidades admisibles cable solar H1Z2Z2-K 1500 V DC (UNE-EN 50618), 60 °C amb.
+const SECCIONES_DC = [2.5, 4, 6, 10, 16, 25, 35, 50];
+const IADM_DC     = [41,  55, 70, 98, 132, 176, 218, 264];
+const T_MIN = -10;  // °C para cálculo Voc a temperatura mínima
+
+function updateModelosDC() {
+  const marca = document.getElementById('dc-marca').value;
+  const sel = document.getElementById('dc-modelo');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  if (!marca) { sel.innerHTML = '<option value="">— Seleccionar marca —</option>'; document.getElementById('dc-inv-info').textContent=''; return; }
+  Object.keys(INVERSORES[marca]).forEach(m => {
+    sel.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+  document.getElementById('dc-inv-info').textContent = '';
+}
+
+function updateInfoInvDC() {
+  const marca = document.getElementById('dc-marca').value;
+  const modelo = document.getElementById('dc-modelo').value;
+  const info = document.getElementById('dc-inv-info');
+  if (!marca || !modelo) { info.textContent = ''; return; }
+  if (marca === 'SolarEdge') {
+    info.textContent = 'SolarEdge trabaja con optimizadores de potencia. El string DC entre inversor y optimizadores opera a tensión fija (≈380 V mono / 750 V tri). Este cálculo aplica al cable panel–optimizador.';
+    return;
+  }
+  const mppt = MPPT_INV[marca]?.[modelo];
+  if (mppt) info.textContent = `MPPT ${mppt.vmin}-${mppt.vmax} V · V_dc_max ${mppt.vdcmax} V · I_max string ${mppt.istr} A`;
+  else info.textContent = '';
+}
+
+function calcularSeccionDC() {
+  const marca = document.getElementById('dc-marca').value;
+  const modelo = document.getElementById('dc-modelo').value;
+  const panelKey = document.getElementById('dc-panel').value;
+  const n = parseInt(document.getElementById('dc-nserie').value);
+  const L = parseFloat(document.getElementById('dc-long').value);
+  const box = document.getElementById('dc-result');
+
+  if (!marca || !modelo || !panelKey || !n || n < 1 || !L || L <= 0) {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--red);font-size:13px">Completa marca, modelo, panel, nº paneles y longitud.</div>';
+    return;
+  }
+  const p = PANELES[panelKey];
+  const Vmp_str = n * p.vmp;
+  const Voc_str = n * p.voc;
+  const Voc_str_Tmin = Voc_str * (1 + (p.coef_voc/100) * (T_MIN - 25));
+  const I_design = p.isc * 1.25;
+  const dV = 0.015 * Vmp_str;
+
+  // Sección por cdt (DC, ida+vuelta: 2·L, corriente Impp operativa)
+  const S_cdt_raw = (2 * L * p.imp) / (GAMMA_CU * dV);
+  const S_cdt = SECCIONES_DC.find(s => s >= S_cdt_raw) || '>50';
+
+  // Sección por intensidad admisible
+  let S_I = null;
+  for (let i = 0; i < SECCIONES_DC.length; i++) {
+    if (IADM_DC[i] >= I_design) { S_I = SECCIONES_DC[i]; break; }
+  }
+  if (S_I === null) S_I = '>50';
+
+  let S_rec;
+  if (S_cdt === '>50' || S_I === '>50') S_rec = '>50';
+  else S_rec = Math.max(S_cdt, S_I);
+
+  const cdtReal = typeof S_rec === 'number'
+    ? (2 * L * p.imp) / (GAMMA_CU * S_rec)
+    : null;
+  const cdtPct = cdtReal !== null ? (cdtReal / Vmp_str * 100).toFixed(2) : '—';
+
+  // Compatibilidad MPPT
+  let compat = '';
+  if (marca === 'SolarEdge') {
+    compat = '<div class="calc-row"><span class="k">Compatibilidad</span><span class="v" style="color:var(--text-muted)">SolarEdge: verifica optimizador</span></div>';
+  } else {
+    const mppt = MPPT_INV[marca]?.[modelo];
+    if (mppt) {
+      const okVmax = Voc_str_Tmin <= mppt.vdcmax;
+      const okVmppt = Vmp_str >= mppt.vmin && Vmp_str <= mppt.vmax;
+      const okI = p.isc <= mppt.istr;
+      const mk = (ok) => ok ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>';
+      compat = `
+        <div class="calc-row"><span class="k">Voc string a ${T_MIN} °C ≤ V_dc_max</span><span class="v">${Voc_str_Tmin.toFixed(0)} / ${mppt.vdcmax} V ${mk(okVmax)}</span></div>
+        <div class="calc-row"><span class="k">Vmpp string dentro de MPPT</span><span class="v">${Vmp_str.toFixed(0)} en [${mppt.vmin}–${mppt.vmax}] V ${mk(okVmppt)}</span></div>
+        <div class="calc-row"><span class="k">Isc ≤ I_max string</span><span class="v">${p.isc} / ${mppt.istr} A ${mk(okI)}</span></div>
+      `;
+    }
+  }
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="calc-row"><span class="k">Inversor</span><span class="v">${modelo}</span></div>
+    <div class="calc-row"><span class="k">Panel</span><span class="v">${panelKey}</span></div>
+    <div class="calc-row"><span class="k">Paneles en serie</span><span class="v">${n}</span></div>
+    <div class="calc-row"><span class="k">Vmpp string · Voc string</span><span class="v">${Vmp_str.toFixed(1)} V · ${Voc_str.toFixed(1)} V</span></div>
+    <div class="calc-row"><span class="k">Isc · Impp</span><span class="v">${p.isc} A · ${p.imp} A</span></div>
+    <div class="calc-row"><span class="k">Corriente diseño (1,25·Isc)</span><span class="v">${I_design.toFixed(2)} A</span></div>
+    <div class="calc-row"><span class="k">cdt máx. admisible</span><span class="v">1,5 % = ${dV.toFixed(2)} V</span></div>
+    <div class="calc-row"><span class="k">Sección mín. por intensidad</span><span class="v">${S_I} mm²</span></div>
+    <div class="calc-row"><span class="k">Sección mín. por cdt (calc.)</span><span class="v">${S_cdt_raw.toFixed(2)} mm² → ${S_cdt} mm²</span></div>
+    ${compat}
+    <div class="calc-final">
+      <div><div class="sub">Sección recomendada</div><div class="big">${S_rec} mm² Cu</div></div>
+      <div style="text-align:right"><div class="sub">cdt real</div><div class="big">${cdtPct} %</div></div>
+    </div>
+    <div class="calc-note">
+      Cable solar H1Z2Z2-K 1500 V (UNE-EN 50618), Cu (γ=56), cdt máx. 1,5 % sobre Vmpp del string. Corriente de diseño 1,25·Isc (ITC-BT-40). Voc corregido a ${T_MIN} °C con el coeficiente térmico del panel. Verifica siempre con proyecto y con la ficha técnica del inversor.
     </div>`;
 }
 

@@ -8,7 +8,7 @@
 <style>
   :root {
     --bg: #0f1117; --surface: #181c27; --surface2: #1e2333; --border: #2a3045;
-    --accent: #f0a500; --accent2: #e06c00; --text: #e8eaf0; --text-muted: #7a8099;
+    --accent: #2171c7; --accent2: #155994; --text: #e8eaf0; --text-muted: #7a8099;
     --green: #3ecf8e; --red: #e05454;
     --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
   }
@@ -28,11 +28,11 @@
 
   .tab-bar { display: flex; gap: 3px; }
   .tab { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: all 0.15s; font-family: var(--sans); }
-  .tab.active { background: var(--accent); color: #000; }
+  .tab.active { background: var(--accent); color: #fff; }
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -77,7 +77,7 @@
   .photo-previews { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
   .photo-previews img { width: 66px; height: 66px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
 
-  .btn-primary { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s; width: 100%; }
+  .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s; width: 100%; }
   .btn-primary:hover { background: var(--accent2); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -105,7 +105,7 @@
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.ok { background: var(--green); color: #000; }
+  .toast.ok { background: var(--green); color: #0f1117; }
   .toast.err { background: var(--red); color: #fff; }
 
   .typing { display: inline-flex; gap: 4px; align-items: center; }
@@ -124,13 +124,13 @@
   .calc-row:last-of-type { border-bottom: none; }
   .calc-row .k { color: var(--text-muted); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
   .calc-row .v { font-weight: 600; font-family: var(--mono); }
-  .calc-final { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #000; padding: 14px 16px; border-radius: 8px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+  .calc-final { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #fff; padding: 14px 16px; border-radius: 8px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
   .calc-final .big { font-size: 22px; font-family: var(--mono); }
   .calc-final .sub { font-size: 11px; font-weight: 600; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.06em; }
   .calc-note { margin-top: 14px; padding: 10px 12px; background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 12px; color: var(--text-muted); line-height: 1.55; }
 
   .home-intro { font-size: 15px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.55; }
-  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
   .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px 22px; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; }
   .home-card:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-2px); }
   .home-icon { font-size: 34px; margin-bottom: 12px; line-height: 1; }
@@ -146,7 +146,7 @@
 <body>
 
 <header>
-  <div class="logo" onclick="goHome()" title="Inicio">EFIGALIA <span>· KB</span></div>
+  <div class="logo" onclick="goHome()" title="Inicio">EFIGALIA</div>
   <div class="header-right">
     <div class="sync-status">
       <div class="sync-dot" id="sync-dot"></div>
@@ -174,6 +174,11 @@
         <div class="home-icon">⚡</div>
         <div class="home-title">Cálculo sección cable AC</div>
         <div class="home-desc">Dimensiona el cable de salida del inversor por intensidad y caída de tensión (1,5 %).</div>
+      </div>
+      <div class="home-card" onclick="enterProtecciones()">
+        <div class="home-icon">🛡</div>
+        <div class="home-title">Calibre de protecciones</div>
+        <div class="home-desc">Magnetotérmico y diferencial para la salida AC del inversor.</div>
       </div>
     </div>
   </div>
@@ -310,6 +315,40 @@
     <button class="btn-primary" onclick="calcularSeccion()">Calcular sección</button>
     <div class="calc-result" id="cable-result" style="display:none"></div>
   </div>
+
+  <div id="view-protecciones">
+    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <div class="section-title">Calibre de protecciones AC</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Marca *</label>
+        <select id="p-marca" onchange="updateModelosP()">
+          <option value="">— Seleccionar —</option>
+          <option value="Huawei">Huawei</option>
+          <option value="Sigenergy">Sigenergy</option>
+          <option value="SolarEdge">SolarEdge</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Modelo *</label>
+        <select id="p-modelo" onchange="updateImaxP()">
+          <option value="">— Seleccionar marca —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo</label>
+        <input type="text" id="p-tipo" readonly placeholder="—">
+      </div>
+      <div class="form-group">
+        <label>Imax AC (A) *</label>
+        <input type="number" id="p-imax" step="0.1" placeholder="auto">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="calcularProtecciones()">Calcular protecciones</button>
+    <div class="calc-result" id="prot-result" style="display:none"></div>
+  </div>
 </main>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
@@ -413,6 +452,11 @@ function enterCable() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-cable').style.display = 'block';
+}
+function enterProtecciones() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-protecciones').style.display = 'block';
 }
 function switchTab(tab, el) {
   document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
@@ -775,6 +819,76 @@ function calcularSeccion() {
     </div>
     <div class="calc-note">
       Criterio: el mayor de los dos valores. Cálculo orientativo para cableado AC de inversor a CGP/cuadro, con cos φ=1, conductor Cu (γ=56) a 20 °C, ${inst==='B'?'unipolares bajo tubo en pared (método B, ITC-BT-19 Tabla 1)':'bajo tubo enterrado (método D, ITC-BT-19 Tabla 1)'}. Factor 1,25 sobre Imax del inversor (REBT). Verifica siempre con proyecto.
+    </div>`;
+}
+
+// ── CALIBRE DE PROTECCIONES ────────────────────────────
+// Calibres comerciales estándar (modular hasta 125 A, luego MCCB).
+const MCB_SIZES = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160];
+const RCD_SIZES = [25, 40, 63, 80, 100, 125, 160];
+
+function updateModelosP() {
+  const marca = document.getElementById('p-marca').value;
+  const sel = document.getElementById('p-modelo');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  if (!marca) { sel.innerHTML = '<option value="">— Seleccionar marca —</option>'; document.getElementById('p-tipo').value=''; document.getElementById('p-imax').value=''; return; }
+  Object.keys(INVERSORES[marca]).forEach(m => {
+    sel.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+  document.getElementById('p-tipo').value = '';
+  document.getElementById('p-imax').value = '';
+}
+
+function updateImaxP() {
+  const marca = document.getElementById('p-marca').value;
+  const modelo = document.getElementById('p-modelo').value;
+  if (!marca || !modelo) return;
+  const inv = INVERSORES[marca][modelo];
+  document.getElementById('p-tipo').value = inv.tipo === 'mono' ? 'Monofásico 230V' : 'Trifásico 400V';
+  document.getElementById('p-imax').value = inv.imax;
+}
+
+function calcularProtecciones() {
+  const marca = document.getElementById('p-marca').value;
+  const modelo = document.getElementById('p-modelo').value;
+  const imax = parseFloat(document.getElementById('p-imax').value);
+  const box = document.getElementById('prot-result');
+
+  if (!marca || !modelo || !imax) {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--red);font-size:13px">Completa marca, modelo e Imax.</div>';
+    return;
+  }
+  const inv = INVERSORES[marca][modelo];
+  const tri = inv.tipo === 'tri';
+  const V = tri ? 400 : 230;
+  const I_design = imax * 1.25;
+
+  const mcb = MCB_SIZES.find(s => s >= I_design) || '>160';
+  const rcd = typeof mcb === 'number' ? (RCD_SIZES.find(s => s >= mcb) || '>160') : '>160';
+  const polos_mcb = tri ? '4P' : '2P (1P+N)';
+  const polos_rcd = tri ? '4P' : '2P';
+  const sensibilidad = (typeof mcb === 'number' && mcb > 40) ? '300 mA (selectividad) / 30 mA aguas abajo' : '30 mA';
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="calc-row"><span class="k">Inversor</span><span class="v">${modelo}</span></div>
+    <div class="calc-row"><span class="k">Tipo / Tensión</span><span class="v">${tri?'Trifásico':'Monofásico'} · ${V} V</span></div>
+    <div class="calc-row"><span class="k">Imax AC</span><span class="v">${imax} A</span></div>
+    <div class="calc-row"><span class="k">Corriente diseño (1,25·Imax)</span><span class="v">${I_design.toFixed(1)} A</span></div>
+    <div class="calc-final" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Magnetotérmico</div><div class="big">${mcb} A · ${polos_mcb}</div></div>
+        <div style="text-align:right"><div class="sub">Curva</div><div class="big">C</div></div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Diferencial</div><div class="big">${rcd} A · ${polos_rcd}</div></div>
+        <div style="text-align:right"><div class="sub">Tipo · Sensibilidad</div><div class="big">A · ${sensibilidad}</div></div>
+      </div>
+    </div>
+    <div class="calc-note">
+      Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ 1,25 · Imax del inversor. Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2), calibre igual o superior al del magnetotérmico. Sensibilidad 30 mA para protección de personas (≤ 40 A); por encima suele usarse 300 mA aguas arriba por selectividad, manteniendo 30 mA aguas abajo. Verifica siempre con proyecto.
     </div>`;
 }
 

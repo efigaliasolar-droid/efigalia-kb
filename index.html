@@ -629,7 +629,8 @@ async function consultarIA() {
   const context = incidents.map((inc, i) => {
     const tipo = inc.tipo || 'incidencia';
     if (tipo === 'documento') {
-      return `DOCUMENTO [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nArchivo: ${inc.archivoNombre || '-'}\nDescripción: ${inc.documentacion||'-'}\nKeywords: ${inc.keywords}${inc.archivoUrl?`\nEnlace: ${inc.archivoUrl}`:''}`;
+      const cont = inc.contenidoExtraido ? `\nContenido extraído del PDF:\n${inc.contenidoExtraido}` : '';
+      return `DOCUMENTO [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nArchivo: ${inc.archivoNombre || '-'}\nDescripción: ${inc.documentacion||'-'}\nKeywords: ${inc.keywords}${inc.archivoUrl?`\nEnlace: ${inc.archivoUrl}`:''}${cont}`;
     }
     if (tipo === 'nota') {
       return `NOTA [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nContenido: ${inc.solucion}\nKeywords: ${inc.keywords}`;
@@ -645,9 +646,9 @@ BASE DE CONOCIMIENTO INTERNA (${incidents.length} registros, divididos en INCIDE
 ${context}
 
 IMPORTANTE sobre los DOCUMENTOS:
-- Solo ves su metadato (título, marca, modelo, descripción y nombre del archivo). NO tienes acceso al contenido interno del PDF/imagen.
-- Si detectas un documento relevante, menciónalo con su título y recuérdale al usuario que puede abrirlo desde la pestaña "Documentos" de la app.
-- Si hay enlace en el contexto, indícalo como "(disponible en Documentos)".
+- Para los PDF subidos se incluye "Contenido extraído del PDF" con el texto de las primeras páginas (hasta 12 000 caracteres, 25 páginas máximo). Úsalo como fuente primaria cuando responda a la consulta.
+- Si el documento es una imagen o no tiene contenido extraído, solo ves su metadato (título, marca, modelo, descripción, nombre de archivo, keywords). En ese caso menciónalo y remite al técnico a la pestaña "Documentos" para abrirlo.
+- Cita siempre el título del documento cuando uses su contenido.
 
 INSTRUCCIONES:
 1. Busca primero en los registros internos (misma marca, modelo, síntoma, procedimiento, keywords).
@@ -701,6 +702,41 @@ function previewArchivo(event) {
   archivoFile = event.target.files[0] || null;
   const lbl = document.getElementById('archivo-label');
   lbl.textContent = archivoFile ? `📄 ${archivoFile.name}` : '📄 Toca para seleccionar archivo';
+}
+
+// ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js CDN) ───
+let pdfjsPromise = null;
+function loadPdfjs() {
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs';
+    s.type = 'module';
+    s.onload = async () => {
+      const mod = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs');
+      mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs';
+      resolve(mod);
+    };
+    s.onerror = () => reject(new Error('No se pudo cargar pdf.js'));
+    document.head.appendChild(s);
+  });
+  return pdfjsPromise;
+}
+
+async function extractPdfText(file) {
+  if (!file || file.type !== 'application/pdf') return '';
+  const pdfjs = await loadPdfjs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: buf }).promise;
+  const maxPages = Math.min(pdf.numPages, 25);      // tope 25 páginas
+  let text = '';
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n\n';
+    if (text.length > 12000) break;                 // tope 12k caracteres
+  }
+  return text.substring(0, 12000).replace(/\s+/g, ' ').trim();
 }
 
 // ── CAMBIO DE TIPO EN REGISTRAR ────────────────────────
@@ -786,8 +822,17 @@ async function guardarIncidencia() {
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
 
-  let archivoUrl = '', archivoNombre = '';
+  let archivoUrl = '', archivoNombre = '', contenidoExtraido = '';
   if (tipo === 'documento' && archivoFile) {
+    // Extraer texto si es PDF (mejora la búsqueda de la IA)
+    if (archivoFile.type === 'application/pdf') {
+      btn.textContent = 'Leyendo PDF...';
+      try {
+        contenidoExtraido = await extractPdfText(archivoFile);
+      } catch(e) {
+        console.warn('No se pudo extraer texto del PDF:', e);
+      }
+    }
     btn.textContent = 'Subiendo archivo...';
     try {
       const r = await subirArchivo(archivoFile);
@@ -830,7 +875,8 @@ async function guardarIncidencia() {
     fecha: new Date().toLocaleDateString('es-ES'),
     fotos: fotosUrls,
     archivoUrl,
-    archivoNombre
+    archivoNombre,
+    contenidoExtraido
   };
 
   incidents.unshift(reg);

@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -154,6 +154,7 @@
     </div>
     <div class="tab-bar" id="tab-bar-incidencias" style="display:none">
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
+      <button class="tab" onclick="switchTab('documentos',this)">Documentos</button>
       <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
       <button class="tab" onclick="switchTab('listado',this)">Listado</button>
     </div>
@@ -167,8 +168,8 @@
     <div class="home-grid">
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon">🛠</div>
-        <div class="home-title">Resolución de Incidencias</div>
-        <div class="home-desc">Consulta la base de conocimiento, pregunta a la IA o registra soluciones nuevas.</div>
+        <div class="home-title">Consultas técnicas</div>
+        <div class="home-desc">Pregunta a la IA, consulta manuales y documentos, registra incidencias y notas.</div>
       </div>
       <div class="home-card" onclick="enterCable()">
         <div class="home-icon">⚡</div>
@@ -213,22 +214,30 @@
   </div>
 
   <div id="view-registrar">
-    <div class="section-title">Registrar incidencia resuelta</div>
+    <div class="section-title">Registrar</div>
     <div class="form-group">
-      <label>Descripción del problema *</label>
+      <label>Tipo de registro *</label>
+      <select id="f-tipo" onchange="onTipoChange()">
+        <option value="incidencia">Incidencia resuelta</option>
+        <option value="nota">Nota técnica / chuleta</option>
+        <option value="documento">Documento / manual</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label id="lbl-incidencia">Descripción del problema *</label>
       <input type="text" id="f-incidencia" placeholder="Ej: Inversor no sincroniza tras cambio de tarjeta">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Marca equipo *</label>
-        <input type="text" id="f-marca" placeholder="Ej: Huawei, Fronius, Sigen...">
+        <label>Marca *</label>
+        <input type="text" id="f-marca" placeholder="Ej: Huawei, Sigen, Victron...">
       </div>
       <div class="form-group">
-        <label>Modelo equipo</label>
+        <label>Modelo</label>
         <input type="text" id="f-modelo" placeholder="Ej: SUN2000, Logger1000...">
       </div>
     </div>
-    <div class="form-row">
+    <div class="form-row" id="row-coderror-obra">
       <div class="form-group">
         <label>Código de error</label>
         <input type="text" id="f-coderror" placeholder="Ej: 3013  /  - si no hay">
@@ -238,17 +247,17 @@
         <input type="text" id="f-idobra" placeholder="Ej: Cafento">
       </div>
     </div>
-    <div class="form-group">
+    <div class="form-group" id="grp-verificaciones">
       <label>Verificaciones realizadas</label>
       <textarea class="field" id="f-verificaciones" placeholder="Qué se comprobó antes de encontrar la solución..."></textarea>
     </div>
-    <div class="form-group">
-      <label>Solución aplicada *</label>
+    <div class="form-group" id="grp-solucion">
+      <label id="lbl-solucion">Solución aplicada *</label>
       <textarea class="field" id="f-solucion" placeholder="Pasos exactos que resolvieron el problema..."></textarea>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Documentación de referencia</label>
+        <label id="lbl-doc">Documentación de referencia</label>
         <input type="text" id="f-doc" placeholder="Nombre del manual o PDF">
       </div>
       <div class="form-group">
@@ -260,7 +269,14 @@
       <label>Palabras clave</label>
       <input type="text" id="f-keywords" placeholder="Ej: contraseña, reset, toroidal, pines...">
     </div>
-    <div class="form-group">
+    <div class="form-group" id="grp-archivo" style="display:none">
+      <label>Archivo (PDF, imagen…) *</label>
+      <div class="photo-drop" onclick="document.getElementById('f-archivo').click()">
+        <input type="file" id="f-archivo" accept=".pdf,image/*" onchange="previewArchivo(event)">
+        <span id="archivo-label">📄 Toca para seleccionar archivo</span>
+      </div>
+    </div>
+    <div class="form-group" id="grp-fotos">
       <label>Fotos (opcional)</label>
       <div class="photo-drop" onclick="document.getElementById('f-fotos').click()">
         <input type="file" id="f-fotos" accept="image/*" multiple onchange="previewFotos(event)">
@@ -272,11 +288,37 @@
   </div>
 
   <div id="view-listado">
-    <div class="section-title">Incidencias registradas</div>
-    <div class="search-bar">
-      <input type="text" id="listado-search" placeholder="Filtrar por marca, modelo, palabra clave..." oninput="renderListado()">
+    <div class="section-title">Listado</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin:0">
+        <label>Filtrar por tipo</label>
+        <select id="listado-tipo" onchange="renderListado()">
+          <option value="">Todos</option>
+          <option value="incidencia">Incidencias</option>
+          <option value="nota">Notas técnicas</option>
+          <option value="documento">Documentos</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Buscar</label>
+        <input type="text" id="listado-search" placeholder="Marca, modelo, palabra clave..." oninput="renderListado()">
+      </div>
     </div>
     <div id="listado-container"></div>
+  </div>
+
+  <div id="view-documentos">
+    <div class="section-title">Documentos y manuales</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin:0">
+        <label>Filtrar marca</label>
+        <input type="text" id="doc-search" placeholder="Huawei, Sigen, Victron, BYD, Longi..." oninput="renderDocumentos()">
+      </div>
+    </div>
+    <div id="doc-container"></div>
+    <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.5">
+      Para añadir un documento nuevo (manual, guía, ficha técnica, chuleta de pineado...) ve a la pestaña <b>Registrar</b>, elige tipo <b>Documento</b> y sube el archivo (PDF o imagen).
+    </div>
   </div>
 
   <div id="view-cable">
@@ -558,6 +600,7 @@ function switchTab(tab, el) {
   hideAllViews();
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
+  if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
@@ -580,20 +623,20 @@ async function consultarIA() {
     `[${i+1}] Marca: ${inc.marca} | Modelo: ${inc.modelo} | Cód.Error: ${inc.codError}\nIncidencia: ${inc.incidencia}\nVerificaciones: ${inc.verificaciones}\nSolución: ${inc.solucion}\nDoc: ${inc.documentacion}\nKeywords: ${inc.keywords}`
   ).join('\n\n');
 
-  const systemPrompt = `Eres el asistente técnico interno de Efigalia Energy SL, empresa instaladora de sistemas fotovoltaicos industriales y agrícolas en Galicia (España).
+  const systemPrompt = `Eres el asistente técnico interno de Efigalia Energy SL, empresa instaladora de sistemas fotovoltaicos industriales, residenciales, aisladas y agrícolas en Galicia (España).
 
-Tu función es ayudar a los técnicos de campo a resolver incidencias, consultando primero la base de conocimiento interna.
+Tu función es ayudar a los técnicos de campo en cualquier duda técnica: resolver incidencias, recordar procedimientos, consultar configuraciones, dimensionado, conexionado de equipos, interpretar manuales o responder cualquier pregunta del trabajo diario.
 
-BASE DE CONOCIMIENTO INTERNA (${incidents.length} incidencias):
+BASE DE CONOCIMIENTO INTERNA (${incidents.length} registros entre incidencias resueltas, notas técnicas y documentos):
 ${context}
 
 INSTRUCCIONES:
-1. Busca si hay incidencias similares (misma marca, modelo, síntoma o keywords).
-2. Si encuentras coincidencias, indícalas claramente y adapta la solución al caso actual.
-3. Si hay documentación de referencia relevante, menciónala.
-4. Si no hay coincidencias, responde con tu conocimiento técnico fotovoltaico.
-5. Estructura: diagnóstico probable → verificaciones → solución paso a paso.
-6. Sé directo y práctico. Responde siempre en español. Máximo 350 palabras.`;
+1. Primero busca si hay registros relevantes (misma marca, modelo, síntoma, procedimiento o keywords).
+2. Si encuentras coincidencias, indícalas claramente y adapta la respuesta al caso actual.
+3. Si hay documentación de referencia, menciónala.
+4. Si no hay coincidencias internas, responde con tu conocimiento técnico fotovoltaico/eléctrico general.
+5. Para incidencias: diagnóstico probable → verificaciones → solución paso a paso. Para consultas generales: respuesta directa y práctica.
+6. Sé directo, responde siempre en español y en un máximo de 350 palabras.`;
 
   try {
     const response = await fetch(WORKER + '/ai', {
@@ -622,7 +665,7 @@ document.getElementById('query-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) consultarIA();
 });
 
-// ── FOTOS PREVIEW ──────────────────────────────────────
+// ── FOTOS / ARCHIVO PREVIEW ────────────────────────────
 function previewFotos(event) {
   fotoFiles = Array.from(event.target.files);
   const container = document.getElementById('foto-previews');
@@ -634,22 +677,113 @@ function previewFotos(event) {
     container.appendChild(img);
   });
 }
+let archivoFile = null;
+function previewArchivo(event) {
+  archivoFile = event.target.files[0] || null;
+  const lbl = document.getElementById('archivo-label');
+  lbl.textContent = archivoFile ? `📄 ${archivoFile.name}` : '📄 Toca para seleccionar archivo';
+}
 
-// ── GUARDAR INCIDENCIA ─────────────────────────────────
+// ── CAMBIO DE TIPO EN REGISTRAR ────────────────────────
+function onTipoChange() {
+  const tipo = document.getElementById('f-tipo').value;
+  const show = (id, yes) => document.getElementById(id).style.display = yes ? '' : 'none';
+  const lblInc = document.getElementById('lbl-incidencia');
+  const lblSol = document.getElementById('lbl-solucion');
+  const lblDoc = document.getElementById('lbl-doc');
+  const btn = document.getElementById('btn-guardar');
+  const inpIncidencia = document.getElementById('f-incidencia');
+  const inpSolucion = document.getElementById('f-solucion');
+
+  if (tipo === 'nota') {
+    lblInc.textContent = 'Título de la nota *';
+    inpIncidencia.placeholder = 'Ej: Pineado medidor Sigen DTSU666';
+    lblSol.textContent = 'Contenido de la nota *';
+    inpSolucion.placeholder = 'Ej: Pines 15 y 16 para medida de consumo, pines 13-14 no se usan...';
+    show('row-coderror-obra', false);
+    show('grp-verificaciones', false);
+    show('grp-solucion', true);
+    show('grp-archivo', false);
+    show('grp-fotos', true);
+    btn.textContent = 'Guardar nota';
+  } else if (tipo === 'documento') {
+    lblInc.textContent = 'Título del documento *';
+    inpIncidencia.placeholder = 'Ej: Manual Huawei SUN2000 L1 v3.2';
+    lblDoc.textContent = 'Descripción (opcional)';
+    show('row-coderror-obra', false);
+    show('grp-verificaciones', false);
+    show('grp-solucion', false);
+    show('grp-archivo', true);
+    show('grp-fotos', false);
+    btn.textContent = 'Subir documento';
+  } else {
+    lblInc.textContent = 'Descripción del problema *';
+    inpIncidencia.placeholder = 'Ej: Inversor no sincroniza tras cambio de tarjeta';
+    lblSol.textContent = 'Solución aplicada *';
+    inpSolucion.placeholder = 'Pasos exactos que resolvieron el problema...';
+    lblDoc.textContent = 'Documentación de referencia';
+    show('row-coderror-obra', true);
+    show('grp-verificaciones', true);
+    show('grp-solucion', true);
+    show('grp-archivo', false);
+    show('grp-fotos', true);
+    btn.textContent = 'Guardar y sincronizar';
+  }
+}
+
+// ── GUARDAR REGISTRO (incidencia / nota / documento) ───
+async function subirArchivo(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(WORKER + '/foto', { method: 'POST', body: formData });
+  const data = await res.json();
+  return { url: data.url, nombre: file.name };
+}
+
 async function guardarIncidencia() {
-  const incidencia = document.getElementById('f-incidencia').value.trim();
+  const tipo = document.getElementById('f-tipo').value;
+  const titulo = document.getElementById('f-incidencia').value.trim();
   const marca = document.getElementById('f-marca').value.trim();
   const solucion = document.getElementById('f-solucion').value.trim();
-  if (!incidencia || !marca || !solucion) {
-    showToast('⚠ Rellena: descripción, marca y solución', 'err');
-    return;
+
+  // Validación por tipo
+  if (tipo === 'documento') {
+    if (!titulo || !marca || !archivoFile) {
+      showToast('⚠ Rellena título, marca y selecciona archivo', 'err');
+      return;
+    }
+  } else if (tipo === 'nota') {
+    if (!titulo || !marca || !solucion) {
+      showToast('⚠ Rellena título, marca y contenido', 'err');
+      return;
+    }
+  } else {
+    if (!titulo || !marca || !solucion) {
+      showToast('⚠ Rellena descripción, marca y solución', 'err');
+      return;
+    }
   }
+
   const btn = document.getElementById('btn-guardar');
   btn.disabled = true;
 
-  // Subir fotos a R2
+  let archivoUrl = '', archivoNombre = '';
+  if (tipo === 'documento' && archivoFile) {
+    btn.textContent = 'Subiendo archivo...';
+    try {
+      const r = await subirArchivo(archivoFile);
+      archivoUrl = r.url;
+      archivoNombre = r.nombre;
+    } catch(e) {
+      showToast('⚠ Error al subir archivo', 'err');
+      btn.disabled = false;
+      btn.textContent = 'Subir documento';
+      return;
+    }
+  }
+
   let fotosUrls = [];
-  if (fotoFiles.length > 0) {
+  if (tipo !== 'documento' && fotoFiles.length > 0) {
     btn.textContent = 'Subiendo fotos...';
     try {
       fotosUrls = await Promise.all(fotoFiles.map(f => subirFoto(f)));
@@ -661,54 +795,94 @@ async function guardarIncidencia() {
   btn.textContent = 'Guardando...';
   await sheetsLoad();
 
-  const inc = {
+  const reg = {
     id: Date.now(),
+    tipo,
     idObra: document.getElementById('f-idobra').value.trim() || '-',
-    marca, modelo: document.getElementById('f-modelo').value.trim() || '-',
+    marca,
+    modelo: document.getElementById('f-modelo').value.trim() || '-',
     codError: document.getElementById('f-coderror').value.trim() || '-',
-    incidencia, verificaciones: document.getElementById('f-verificaciones').value.trim(),
-    solucion, documentacion: document.getElementById('f-doc').value.trim() || '-',
+    incidencia: titulo,
+    verificaciones: document.getElementById('f-verificaciones').value.trim(),
+    solucion,
+    documentacion: document.getElementById('f-doc').value.trim() || '-',
     keywords: document.getElementById('f-keywords').value.trim(),
     tecnico: document.getElementById('f-tecnico').value.trim() || 'Anónimo',
     fecha: new Date().toLocaleDateString('es-ES'),
-    fotos: fotosUrls
+    fotos: fotosUrls,
+    archivoUrl,
+    archivoNombre
   };
 
-  incidents.unshift(inc);
+  incidents.unshift(reg);
   await sheetsSave();
 
   btn.disabled = false;
-  btn.textContent = 'Guardar y sincronizar';
-
   ['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('foto-previews').innerHTML = '';
   fotoFiles = [];
-  showToast('✓ Incidencia guardada', 'ok');
+  archivoFile = null;
+  const fArch = document.getElementById('f-archivo'); if (fArch) fArch.value = '';
+  const lblArch = document.getElementById('archivo-label'); if (lblArch) lblArch.textContent = '📄 Toca para seleccionar archivo';
+  onTipoChange();  // restablecer etiquetas/visibilidades según tipo seleccionado
+  showToast(tipo === 'documento' ? '✓ Documento subido' : (tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada'), 'ok');
 }
 
 // ── LISTADO ────────────────────────────────────────────
 function renderListado() {
   const container = document.getElementById('listado-container');
   const q = (document.getElementById('listado-search')?.value || '').toLowerCase();
-  let list = q
-    ? incidents.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError].some(f=>(f||'').toLowerCase().includes(q)))
-    : incidents;
+  const tipoFiltro = document.getElementById('listado-tipo')?.value || '';
+  let list = incidents;
+  if (tipoFiltro) list = list.filter(inc => (inc.tipo || 'incidencia') === tipoFiltro);
+  if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay incidencias.'}</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q||tipoFiltro?'Sin resultados.':'No hay registros.'}</div>`;
     return;
   }
-  container.innerHTML = '<div class="incidents-grid">' + list.map(inc => `
+  container.innerHTML = '<div class="incidents-grid">' + list.map(inc => {
+    const tipo = inc.tipo || 'incidencia';
+    const icono = tipo === 'documento' ? '📄' : (tipo === 'nota' ? '📝' : '🛠');
+    const desc = tipo === 'documento'
+      ? (inc.solucion || inc.archivoNombre || '').substring(0,110)
+      : (inc.solucion || '').substring(0,110);
+    return `
     <div class="incident-card" onclick="openModal(${inc.id})">
       <div class="card-top">
-        <div class="card-title">${inc.incidencia}</div>
+        <div class="card-title">${icono} ${inc.incidencia}</div>
         <div class="card-badges">
           <span class="badge badge-marca">${inc.marca}</span>
           ${inc.modelo&&inc.modelo!=='-'?`<span class="badge badge-modelo">${inc.modelo}</span>`:''}
           ${inc.codError&&inc.codError.trim()!=='-'?`<span class="badge badge-error">E:${inc.codError.trim()}</span>`:''}
         </div>
       </div>
-      <div class="card-desc">${(inc.solucion||'').substring(0,110)}${(inc.solucion||'').length>110?'…':''}</div>
-      <div class="card-meta">${inc.idObra!=='-'?inc.idObra+' · ':''}${inc.fecha} · ${inc.tecnico}${inc.fotos?.length?' · 📷 '+inc.fotos.length:''}</div>
+      <div class="card-desc">${desc}${desc.length>=110?'…':''}</div>
+      <div class="card-meta">${inc.idObra&&inc.idObra!=='-'?inc.idObra+' · ':''}${inc.fecha} · ${inc.tecnico}${inc.fotos?.length?' · 📷 '+inc.fotos.length:''}${inc.archivoUrl?' · 📎 archivo':''}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ── DOCUMENTOS ─────────────────────────────────────────
+function renderDocumentos() {
+  const container = document.getElementById('doc-container');
+  const q = (document.getElementById('doc-search')?.value || '').toLowerCase();
+  let list = incidents.filter(inc => inc.tipo === 'documento');
+  if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay documentos. Añade uno desde Registrar.'}</div>`;
+    return;
+  }
+  container.innerHTML = '<div class="incidents-grid">' + list.map(inc => `
+    <div class="incident-card" onclick="openModal(${inc.id})">
+      <div class="card-top">
+        <div class="card-title">📄 ${inc.incidencia}</div>
+        <div class="card-badges">
+          <span class="badge badge-marca">${inc.marca}</span>
+          ${inc.modelo&&inc.modelo!=='-'?`<span class="badge badge-modelo">${inc.modelo}</span>`:''}
+        </div>
+      </div>
+      <div class="card-desc">${inc.solucion || inc.archivoNombre || ''}</div>
+      <div class="card-meta">${inc.fecha} · ${inc.tecnico}${inc.archivoUrl?' · 📎 '+inc.archivoNombre:''}</div>
     </div>`).join('') + '</div>';
 }
 
@@ -716,22 +890,31 @@ function renderListado() {
 function openModal(id) {
   const inc = incidents.find(i => i.id === id);
   if (!inc) return;
+  const tipo = inc.tipo || 'incidencia';
   const photos = inc.fotos?.length
     ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
     : '';
-  const doc = inc.documentacion&&inc.documentacion!=='-' ? `<div class="modal-section"><div class="modal-label">Documentación</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
+  const archivo = inc.archivoUrl
+    ? `<div class="modal-section"><div class="modal-label">Archivo</div><a class="modal-doc" href="${inc.archivoUrl}" target="_blank" rel="noopener">📎 ${inc.archivoNombre || 'Descargar archivo'}</a></div>`
+    : '';
+  const doc = inc.documentacion && inc.documentacion !== '-' ? `<div class="modal-section"><div class="modal-label">${tipo==='documento'?'Descripción':'Documentación'}</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
   const kw = inc.keywords ? `<div class="modal-section"><div class="modal-label">Palabras clave</div><div class="modal-keywords">${inc.keywords}</div></div>` : '';
+  const tipoLabel = tipo === 'documento' ? 'Documento' : (tipo === 'nota' ? 'Nota técnica' : 'Incidencia');
+  const icono = tipo === 'documento' ? '📄' : (tipo === 'nota' ? '📝' : '🛠');
+  const bodyLabel = tipo === 'documento' ? '' : (tipo === 'nota' ? 'Contenido' : 'Solución');
+
   document.getElementById('modal-inner').innerHTML = `
-    <div class="modal-title">${inc.incidencia}</div>
+    <div class="modal-title">${icono} ${inc.incidencia}</div>
     <div class="modal-badges">
       <span class="badge badge-marca">${inc.marca}</span>
       ${inc.modelo&&inc.modelo!=='-'?`<span class="badge badge-modelo">${inc.modelo}</span>`:''}
       ${inc.codError&&inc.codError.trim()!=='-'?`<span class="badge badge-error">Error: ${inc.codError.trim()}</span>`:''}
+      <span class="badge" style="background:#1e2b22;color:#7ae8a4">${tipoLabel}</span>
     </div>
     ${inc.verificaciones?`<div class="modal-section"><div class="modal-label">Verificaciones</div><div class="modal-value">${inc.verificaciones}</div></div>`:''}
-    <div class="modal-section"><div class="modal-label">Solución</div><div class="modal-value">${inc.solucion}</div></div>
-    ${doc}${photos}${kw}
-    <div class="modal-section"><div class="modal-label">Obra · Técnico · Fecha</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${inc.idObra} · ${inc.tecnico} · ${inc.fecha}</div></div>`;
+    ${bodyLabel && inc.solucion ? `<div class="modal-section"><div class="modal-label">${bodyLabel}</div><div class="modal-value">${inc.solucion}</div></div>` : ''}
+    ${archivo}${doc}${photos}${kw}
+    <div class="modal-section"><div class="modal-label">Obra · Técnico · Fecha</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${inc.idObra||'-'} · ${inc.tecnico} · ${inc.fecha}</div></div>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
 function closeModalOutside(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }

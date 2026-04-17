@@ -272,19 +272,12 @@
         <input type="number" id="c-long" step="0.5" min="1" placeholder="Ej: 15">
       </div>
       <div class="form-group">
-        <label>Material</label>
-        <select id="c-material">
-          <option value="cu">Cobre (Cu)</option>
-          <option value="al">Aluminio (Al)</option>
+        <label>Instalación</label>
+        <select id="c-inst">
+          <option value="B">Unipolares bajo tubo (pared)</option>
+          <option value="D">Bajo tubo enterrado</option>
         </select>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Instalación</label>
-      <select id="c-inst">
-        <option value="B">Unipolares bajo tubo (pared)</option>
-        <option value="D">Bajo tubo enterrado</option>
-      </select>
     </div>
     <button class="btn-primary" onclick="calcularSeccion()">Calcular sección</button>
     <div class="calc-result" id="cable-result" style="display:none"></div>
@@ -645,19 +638,15 @@ const INVERSORES = {
 const SECCIONES = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400];
 const IADM = {
   B: {
-    cu: { mono:[17.5,24,32,41,57,76,101,125,151,192,232,269,309,353,415,488,563],
-          tri :[15.5,21,28,36,50,68,89,110,134,171,207,239,275,314,369,434,501] },
-    al: { mono:[13.5,18.5,25,32,44,59,78,97,118,150,181,210,241,275,324,380,439],
-          tri :[12,16,22,28,39,53,70,86,104,133,161,186,214,245,288,339,391] }
+    mono:[17.5,24,32,41,57,76,101,125,151,192,232,269,309,353,415,488,563],
+    tri :[15.5,21,28,36,50,68,89,110,134,171,207,239,275,314,369,434,501]
   },
   D: {
-    cu: { mono:[22,29,38,47,63,81,104,125,148,183,216,246,278,312,361,418,478],
-          tri :[18,24,31,39,52,67,86,103,122,151,179,203,230,258,297,344,394] },
-    al: { mono:[17,22,29,36,48,62,80,96,113,140,166,189,213,240,277,321,367],
-          tri :[14,18,24,30,40,51,66,79,94,116,138,156,176,198,228,264,302] }
+    mono:[22,29,38,47,63,81,104,125,148,183,216,246,278,312,361,418,478],
+    tri :[18,24,31,39,52,67,86,103,122,151,179,203,230,258,297,344,394]
   }
 };
-const GAMMA = { cu: 56, al: 35 };  // m/(Ω·mm²) a 20°C
+const GAMMA_CU = 56;  // m/(Ω·mm²) a 20°C
 
 function updateModelos() {
   const marca = document.getElementById('c-marca').value;
@@ -685,7 +674,6 @@ function calcularSeccion() {
   const modelo = document.getElementById('c-modelo').value;
   const imax = parseFloat(document.getElementById('c-imax').value);
   const L = parseFloat(document.getElementById('c-long').value);
-  const mat = document.getElementById('c-material').value;
   const inst = document.getElementById('c-inst').value;
   const box = document.getElementById('cable-result');
 
@@ -699,16 +687,15 @@ function calcularSeccion() {
   const V = tri ? 400 : 230;
   const dV = 0.015 * V;
   const I_design = imax * 1.25;           // REBT: 1,25 · Imax generador
-  const gamma = GAMMA[mat];
 
   // Sección por caída de tensión
   const S_cdt_raw = tri
-    ? (Math.sqrt(3) * L * imax) / (gamma * dV)
-    : (2 * L * imax) / (gamma * dV);
+    ? (Math.sqrt(3) * L * imax) / (GAMMA_CU * dV)
+    : (2 * L * imax) / (GAMMA_CU * dV);
   const S_cdt = SECCIONES.find(s => s >= S_cdt_raw) || '>400';
 
   // Sección por intensidad admisible (con 1,25·Imax)
-  const tabla = IADM[inst][mat][tri ? 'tri' : 'mono'];
+  const tabla = IADM[inst][tri ? 'tri' : 'mono'];
   let S_I = null;
   for (let i = 0; i < SECCIONES.length; i++) {
     if (tabla[i] >= I_design) { S_I = SECCIONES[i]; break; }
@@ -722,7 +709,7 @@ function calcularSeccion() {
 
   // cdt real con la sección recomendada
   const cdtReal = typeof S_rec === 'number'
-    ? (tri ? (Math.sqrt(3)*L*imax)/(gamma*S_rec) : (2*L*imax)/(gamma*S_rec))
+    ? (tri ? (Math.sqrt(3)*L*imax)/(GAMMA_CU*S_rec) : (2*L*imax)/(GAMMA_CU*S_rec))
     : null;
   const cdtPct = cdtReal !== null ? (cdtReal / V * 100).toFixed(2) : '—';
 
@@ -736,11 +723,11 @@ function calcularSeccion() {
     <div class="calc-row"><span class="k">Sección mín. por intensidad</span><span class="v">${S_I} mm²</span></div>
     <div class="calc-row"><span class="k">Sección mín. por cdt (calc.)</span><span class="v">${S_cdt_raw.toFixed(2)} mm² → ${S_cdt} mm²</span></div>
     <div class="calc-final">
-      <div><div class="sub">Sección recomendada</div><div class="big">${S_rec} mm² ${mat==='cu'?'Cu':'Al'}</div></div>
+      <div><div class="sub">Sección recomendada</div><div class="big">${S_rec} mm² Cu</div></div>
       <div style="text-align:right"><div class="sub">cdt real</div><div class="big">${cdtPct} %</div></div>
     </div>
     <div class="calc-note">
-      Criterio: el mayor de los dos valores. Cálculo orientativo para cableado AC de inversor a CGP/cuadro, con cos φ=1, conductor ${mat==='cu'?'Cu (γ=56)':'Al (γ=35)'} a 20 °C, ${inst==='B'?'unipolares bajo tubo en pared (método B, ITC-BT-19 Tabla 1)':'bajo tubo enterrado (método D, ITC-BT-19 Tabla 1)'}. Factor 1,25 sobre Imax del inversor (REBT). Verifica siempre con proyecto.
+      Criterio: el mayor de los dos valores. Cálculo orientativo para cableado AC de inversor a CGP/cuadro, con cos φ=1, conductor Cu (γ=56) a 20 °C, ${inst==='B'?'unipolares bajo tubo en pared (método B, ITC-BT-19 Tabla 1)':'bajo tubo enterrado (método D, ITC-BT-19 Tabla 1)'}. Factor 1,25 sobre Imax del inversor (REBT). Verifica siempre con proyecto.
     </div>`;
 }
 

@@ -202,9 +202,9 @@
   </div>
 
   <div id="view-consultar">
-    <div class="section-title">Describe la incidencia</div>
+    <div class="section-title">Haz tu consulta</div>
     <div class="search-wrap">
-      <textarea id="query-input" placeholder="Ej: Fronius sobretensión, inversor no inyecta...&#10;Ej: Huawei SUN2000 error código 3013...&#10;&#10;Ctrl+Enter para consultar"></textarea>
+      <textarea id="query-input" placeholder="Ej: ¿Cómo conecto Victron Quattro con Pylontech US3000?&#10;Ej: Huawei SUN2000 error 3013&#10;Ej: Sigen · configuración de inyección cero&#10;&#10;Ctrl+Enter para consultar"></textarea>
       <button class="btn-search" onclick="consultarIA()" title="Consultar">
         <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/>
@@ -626,24 +626,36 @@ async function consultarIA() {
 
   await sheetsLoad();
 
-  const context = incidents.map((inc, i) =>
-    `[${i+1}] Marca: ${inc.marca} | Modelo: ${inc.modelo} | Cód.Error: ${inc.codError}\nIncidencia: ${inc.incidencia}\nVerificaciones: ${inc.verificaciones}\nSolución: ${inc.solucion}\nDoc: ${inc.documentacion}\nKeywords: ${inc.keywords}`
-  ).join('\n\n');
+  const context = incidents.map((inc, i) => {
+    const tipo = inc.tipo || 'incidencia';
+    if (tipo === 'documento') {
+      return `DOCUMENTO [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nArchivo: ${inc.archivoNombre || '-'}\nDescripción: ${inc.documentacion||'-'}\nKeywords: ${inc.keywords}${inc.archivoUrl?`\nEnlace: ${inc.archivoUrl}`:''}`;
+    }
+    if (tipo === 'nota') {
+      return `NOTA [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nContenido: ${inc.solucion}\nKeywords: ${inc.keywords}`;
+    }
+    return `INCIDENCIA [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo} | Cód.Error:${inc.codError}\nSíntoma: ${inc.incidencia}\nVerificaciones: ${inc.verificaciones}\nSolución: ${inc.solucion}\nDoc: ${inc.documentacion}\nKeywords: ${inc.keywords}`;
+  }).join('\n\n');
 
-  const systemPrompt = `Eres el asistente técnico interno de Efigalia Energy SL, empresa instaladora de sistemas fotovoltaicos industriales, residenciales, aisladas y agrícolas en Galicia (España).
+  const systemPrompt = `Eres el asistente técnico interno de Efigalia Energy SL, empresa instaladora de sistemas fotovoltaicos (residenciales, industriales, agrícolas y aisladas) en Galicia, España.
 
-Tu función es ayudar a los técnicos de campo en cualquier duda técnica: resolver incidencias, recordar procedimientos, consultar configuraciones, dimensionado, conexionado de equipos, interpretar manuales o responder cualquier pregunta del trabajo diario.
+Ayudas a técnicos en campo con cualquier duda: incidencias, procedimientos, configuraciones, dimensionado, conexionado, consulta de manuales y referencias, y cualquier pregunta del trabajo diario.
 
-BASE DE CONOCIMIENTO INTERNA (${incidents.length} registros entre incidencias resueltas, notas técnicas y documentos):
+BASE DE CONOCIMIENTO INTERNA (${incidents.length} registros, divididos en INCIDENCIA / NOTA / DOCUMENTO):
 ${context}
 
+IMPORTANTE sobre los DOCUMENTOS:
+- Solo ves su metadato (título, marca, modelo, descripción y nombre del archivo). NO tienes acceso al contenido interno del PDF/imagen.
+- Si detectas un documento relevante, menciónalo con su título y recuérdale al usuario que puede abrirlo desde la pestaña "Documentos" de la app.
+- Si hay enlace en el contexto, indícalo como "(disponible en Documentos)".
+
 INSTRUCCIONES:
-1. Primero busca si hay registros relevantes (misma marca, modelo, síntoma, procedimiento o keywords).
-2. Si encuentras coincidencias, indícalas claramente y adapta la respuesta al caso actual.
-3. Si hay documentación de referencia, menciónala.
-4. Si no hay coincidencias internas, responde con tu conocimiento técnico fotovoltaico/eléctrico general.
+1. Busca primero en los registros internos (misma marca, modelo, síntoma, procedimiento, keywords).
+2. Si encuentras coincidencias claras, úsalas y adáptalas al caso del usuario.
+3. Si hay documentos relacionados, cítalos para que el técnico los abra.
+4. Si no hay nada interno relevante, responde con tu conocimiento técnico fotovoltaico y eléctrico general, basado en datasheets habituales de Huawei, Sigen, SolarEdge, Victron, BYD, Pylontech, Fronius, Sungrow, Longi, etc.
 5. Para incidencias: diagnóstico probable → verificaciones → solución paso a paso. Para consultas generales: respuesta directa y práctica.
-6. Sé directo, responde siempre en español y en un máximo de 350 palabras.`;
+6. Responde siempre en español, de forma directa y concreta. Máximo 350 palabras.`;
 
   try {
     const response = await fetch(WORKER + '/ai', {

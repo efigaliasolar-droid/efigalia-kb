@@ -32,8 +32,8 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-cable { display: none; }
-  #view-consultar { display: block; }
+  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-home { display: none; }
+  #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
 
@@ -129,28 +129,55 @@
   .calc-final .sub { font-size: 11px; font-weight: 600; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.06em; }
   .calc-note { margin-top: 14px; padding: 10px 12px; background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 12px; color: var(--text-muted); line-height: 1.55; }
 
-  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+  .home-intro { font-size: 15px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.55; }
+  .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px 22px; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; }
+  .home-card:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-2px); }
+  .home-icon { font-size: 34px; margin-bottom: 12px; line-height: 1; }
+  .home-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; color: var(--text); }
+  .home-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+  .logo { cursor: pointer; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 14px; padding: 4px 0; border: none; background: none; }
+  .back-link:hover { color: var(--accent); }
+
+  @media (max-width: 500px) { .form-row, .home-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">EFIGALIA <span>· KB</span></div>
+  <div class="logo" onclick="goHome()" title="Inicio">EFIGALIA <span>· KB</span></div>
   <div class="header-right">
     <div class="sync-status">
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-label">–</span>
     </div>
-    <div class="tab-bar">
+    <div class="tab-bar" id="tab-bar-incidencias" style="display:none">
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
       <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
       <button class="tab" onclick="switchTab('listado',this)">Listado</button>
-      <button class="tab" onclick="switchTab('cable',this)">Cable</button>
     </div>
   </div>
 </header>
 
 <main>
+  <div id="view-home">
+    <div class="section-title">¿Qué quieres hacer?</div>
+    <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
+    <div class="home-grid">
+      <div class="home-card" onclick="enterIncidencias()">
+        <div class="home-icon">🛠</div>
+        <div class="home-title">Resolución de Incidencias</div>
+        <div class="home-desc">Consulta la base de conocimiento, pregunta a la IA o registra soluciones nuevas.</div>
+      </div>
+      <div class="home-card" onclick="enterCable()">
+        <div class="home-icon">⚡</div>
+        <div class="home-title">Cálculo sección cable AC</div>
+        <div class="home-desc">Dimensiona el cable de salida del inversor por intensidad y caída de tensión (1,5 %).</div>
+      </div>
+    </div>
+  </div>
+
   <div id="view-consultar">
     <div class="section-title">Describe la incidencia</div>
     <div class="search-wrap">
@@ -238,6 +265,7 @@
   </div>
 
   <div id="view-cable">
+    <button class="back-link" onclick="goHome()">← Inicio</button>
     <div class="section-title">Sección de cable AC (cdt máx. 1,5%)</div>
     <div class="form-row">
       <div class="form-group">
@@ -366,11 +394,30 @@ async function subirFoto(file) {
   return data.url;
 }
 
-// ── TABS ───────────────────────────────────────────────
-function switchTab(tab, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+// ── NAVEGACIÓN ─────────────────────────────────────────
+function hideAllViews() {
   document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
+}
+function goHome() {
+  hideAllViews();
+  document.getElementById('view-home').style.display = 'block';
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+}
+function enterIncidencias() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'flex';
+  const firstTab = document.querySelector('#tab-bar-incidencias .tab');
+  switchTab('consultar', firstTab);
+}
+function enterCable() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-cable').style.display = 'block';
+}
+function switchTab(tab, el) {
+  document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  hideAllViews();
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
 }

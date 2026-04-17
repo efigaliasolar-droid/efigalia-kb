@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-cable { display: none; }
   #view-consultar { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -113,6 +113,22 @@
   .typing span:nth-child(2) { animation-delay: 0.2s; }
   .typing span:nth-child(3) { animation-delay: 0.4s; }
   @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+  select, input[type=number] { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  select:focus, input[type=number]:focus { border-color: var(--accent); }
+  select { cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a8099' d='M6 9L1 4h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  input[type=number]:read-only { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; }
+
+  .calc-result { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-top: 18px; }
+  .calc-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14px; gap: 10px; }
+  .calc-row:last-of-type { border-bottom: none; }
+  .calc-row .k { color: var(--text-muted); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .calc-row .v { font-weight: 600; font-family: var(--mono); }
+  .calc-final { background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #000; padding: 14px 16px; border-radius: 8px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; }
+  .calc-final .big { font-size: 22px; font-family: var(--mono); }
+  .calc-final .sub { font-size: 11px; font-weight: 600; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.06em; }
+  .calc-note { margin-top: 14px; padding: 10px 12px; background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 4px; font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
   @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -129,6 +145,7 @@
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
       <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
       <button class="tab" onclick="switchTab('listado',this)">Listado</button>
+      <button class="tab" onclick="switchTab('cable',this)">Cable</button>
     </div>
   </div>
 </header>
@@ -218,6 +235,59 @@
       <input type="text" id="listado-search" placeholder="Filtrar por marca, modelo, palabra clave..." oninput="renderListado()">
     </div>
     <div id="listado-container"></div>
+  </div>
+
+  <div id="view-cable">
+    <div class="section-title">Sección de cable AC (cdt máx. 1,5%)</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Marca *</label>
+        <select id="c-marca" onchange="updateModelos()">
+          <option value="">— Seleccionar —</option>
+          <option value="Huawei">Huawei</option>
+          <option value="Sigenergy">Sigenergy</option>
+          <option value="SolarEdge">SolarEdge</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Modelo *</label>
+        <select id="c-modelo" onchange="updateImax()">
+          <option value="">— Seleccionar marca —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tipo</label>
+        <input type="text" id="c-tipo" readonly placeholder="—">
+      </div>
+      <div class="form-group">
+        <label>Imax AC (A) *</label>
+        <input type="number" id="c-imax" step="0.1" placeholder="auto">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Longitud cable (m) *</label>
+        <input type="number" id="c-long" step="0.5" min="1" placeholder="Ej: 15">
+      </div>
+      <div class="form-group">
+        <label>Material</label>
+        <select id="c-material">
+          <option value="cu">Cobre (Cu)</option>
+          <option value="al">Aluminio (Al)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Instalación</label>
+      <select id="c-inst">
+        <option value="B">Unipolares bajo tubo (pared)</option>
+        <option value="D">Bajo tubo enterrado</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="calcularSeccion()">Calcular sección</button>
+    <div class="calc-result" id="cable-result" style="display:none"></div>
   </div>
 </main>
 
@@ -495,6 +565,183 @@ function showToast(msg, type='ok') {
   t.className = 'toast ' + type;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── CALCULADORA DE SECCIÓN ─────────────────────────────
+// Imax AC según datasheets (Europa, 230V mono / 400V tri). cos φ = 1.
+const INVERSORES = {
+  Huawei: {
+    'SUN2000-2KTL-L1':     { tipo:'mono', imax:10 },
+    'SUN2000-3KTL-L1':     { tipo:'mono', imax:16 },
+    'SUN2000-3.68KTL-L1':  { tipo:'mono', imax:16 },
+    'SUN2000-4KTL-L1':     { tipo:'mono', imax:20 },
+    'SUN2000-4.6KTL-L1':   { tipo:'mono', imax:22.8 },
+    'SUN2000-5KTL-L1':     { tipo:'mono', imax:25 },
+    'SUN2000-6KTL-L1':     { tipo:'mono', imax:27 },
+    'SUN2000-3KTL-M1':     { tipo:'tri',  imax:4.8 },
+    'SUN2000-4KTL-M1':     { tipo:'tri',  imax:6.5 },
+    'SUN2000-5KTL-M1':     { tipo:'tri',  imax:8 },
+    'SUN2000-6KTL-M1':     { tipo:'tri',  imax:9.5 },
+    'SUN2000-8KTL-M1':     { tipo:'tri',  imax:13 },
+    'SUN2000-10KTL-M1':    { tipo:'tri',  imax:16 },
+    'SUN2000-12KTL-M1':    { tipo:'tri',  imax:19 },
+    'SUN2000-15KTL-M1':    { tipo:'tri',  imax:23.5 },
+    'SUN2000-17KTL-M1':    { tipo:'tri',  imax:26.5 },
+    'SUN2000-20KTL-M1':    { tipo:'tri',  imax:31 },
+    'SUN2000-25KTL-M5':    { tipo:'tri',  imax:38 },
+    'SUN2000-30KTL-M3':    { tipo:'tri',  imax:45 },
+    'SUN2000-36KTL-M3':    { tipo:'tri',  imax:54 },
+    'SUN2000-40KTL-M3':    { tipo:'tri',  imax:60 },
+    'SUN2000-50KTL-M3':    { tipo:'tri',  imax:76 },
+    'SUN2000-100KTL-M1':   { tipo:'tri',  imax:152 }
+  },
+  Sigenergy: {
+    'SigenStor EC 3.0 SP':  { tipo:'mono', imax:16 },
+    'SigenStor EC 4.0 SP':  { tipo:'mono', imax:20 },
+    'SigenStor EC 5.0 SP':  { tipo:'mono', imax:25 },
+    'SigenStor EC 6.0 SP':  { tipo:'mono', imax:28.6 },
+    'SigenStor EC 8.0 SP':  { tipo:'mono', imax:36.4 },
+    'SigenStor EC 5.0 TP':  { tipo:'tri',  imax:8 },
+    'SigenStor EC 6.0 TP':  { tipo:'tri',  imax:9.5 },
+    'SigenStor EC 8.0 TP':  { tipo:'tri',  imax:12.5 },
+    'SigenStor EC 10.0 TP': { tipo:'tri',  imax:15.5 },
+    'SigenStor EC 12.0 TP': { tipo:'tri',  imax:18.5 },
+    'SigenStor EC 15.0 TP': { tipo:'tri',  imax:23 },
+    'SigenStor EC 17.0 TP': { tipo:'tri',  imax:26 },
+    'SigenStor EC 20.0 TP': { tipo:'tri',  imax:30.5 },
+    'SigenStor EC 25.0 TP': { tipo:'tri',  imax:38 }
+  },
+  SolarEdge: {
+    'SE2200H':     { tipo:'mono', imax:11 },
+    'SE3000H':     { tipo:'mono', imax:13 },
+    'SE3500H':     { tipo:'mono', imax:17 },
+    'SE4000H':     { tipo:'mono', imax:18 },
+    'SE5000H':     { tipo:'mono', imax:22 },
+    'SE6000H':     { tipo:'mono', imax:27 },
+    'SE3K':        { tipo:'tri',  imax:4.5 },
+    'SE4K':        { tipo:'tri',  imax:6 },
+    'SE5K':        { tipo:'tri',  imax:7.5 },
+    'SE7K':        { tipo:'tri',  imax:11.5 },
+    'SE8K':        { tipo:'tri',  imax:13 },
+    'SE10K':       { tipo:'tri',  imax:16 },
+    'SE12.5K':     { tipo:'tri',  imax:20 },
+    'SE15K':       { tipo:'tri',  imax:23.5 },
+    'SE16K':       { tipo:'tri',  imax:25.5 },
+    'SE17K':       { tipo:'tri',  imax:27 },
+    'SE25K':       { tipo:'tri',  imax:38.5 },
+    'SE27.6K':     { tipo:'tri',  imax:42 },
+    'SE33.3K':     { tipo:'tri',  imax:50 },
+    'SE40K':       { tipo:'tri',  imax:61 },
+    'SE50K':       { tipo:'tri',  imax:76 },
+    'SE55K':       { tipo:'tri',  imax:85 },
+    'SE66.6K':     { tipo:'tri',  imax:101.5 },
+    'SE82.8K':     { tipo:'tri',  imax:126 },
+    'SE90K':       { tipo:'tri',  imax:136 },
+    'SE100K':      { tipo:'tri',  imax:152 }
+  }
+};
+
+// ITC-BT-19 Tabla 1 — Cu XLPE 40°C. Método B (bajo tubo) y D (enterrado bajo tubo).
+const SECCIONES = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400];
+const IADM = {
+  B: {
+    cu: { mono:[17.5,24,32,41,57,76,101,125,151,192,232,269,309,353,415,488,563],
+          tri :[15.5,21,28,36,50,68,89,110,134,171,207,239,275,314,369,434,501] },
+    al: { mono:[13.5,18.5,25,32,44,59,78,97,118,150,181,210,241,275,324,380,439],
+          tri :[12,16,22,28,39,53,70,86,104,133,161,186,214,245,288,339,391] }
+  },
+  D: {
+    cu: { mono:[22,29,38,47,63,81,104,125,148,183,216,246,278,312,361,418,478],
+          tri :[18,24,31,39,52,67,86,103,122,151,179,203,230,258,297,344,394] },
+    al: { mono:[17,22,29,36,48,62,80,96,113,140,166,189,213,240,277,321,367],
+          tri :[14,18,24,30,40,51,66,79,94,116,138,156,176,198,228,264,302] }
+  }
+};
+const GAMMA = { cu: 56, al: 35 };  // m/(Ω·mm²) a 20°C
+
+function updateModelos() {
+  const marca = document.getElementById('c-marca').value;
+  const sel = document.getElementById('c-modelo');
+  sel.innerHTML = '<option value="">— Seleccionar —</option>';
+  if (!marca) { sel.innerHTML = '<option value="">— Seleccionar marca —</option>'; document.getElementById('c-tipo').value=''; document.getElementById('c-imax').value=''; return; }
+  Object.keys(INVERSORES[marca]).forEach(m => {
+    sel.innerHTML += `<option value="${m}">${m}</option>`;
+  });
+  document.getElementById('c-tipo').value = '';
+  document.getElementById('c-imax').value = '';
+}
+
+function updateImax() {
+  const marca = document.getElementById('c-marca').value;
+  const modelo = document.getElementById('c-modelo').value;
+  if (!marca || !modelo) return;
+  const inv = INVERSORES[marca][modelo];
+  document.getElementById('c-tipo').value = inv.tipo === 'mono' ? 'Monofásico 230V' : 'Trifásico 400V';
+  document.getElementById('c-imax').value = inv.imax;
+}
+
+function calcularSeccion() {
+  const marca = document.getElementById('c-marca').value;
+  const modelo = document.getElementById('c-modelo').value;
+  const imax = parseFloat(document.getElementById('c-imax').value);
+  const L = parseFloat(document.getElementById('c-long').value);
+  const mat = document.getElementById('c-material').value;
+  const inst = document.getElementById('c-inst').value;
+  const box = document.getElementById('cable-result');
+
+  if (!marca || !modelo || !imax || !L || L <= 0) {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--red);font-size:13px">Completa marca, modelo, Imax y longitud.</div>';
+    return;
+  }
+  const inv = INVERSORES[marca][modelo];
+  const tri = inv.tipo === 'tri';
+  const V = tri ? 400 : 230;
+  const dV = 0.015 * V;
+  const I_design = imax * 1.25;           // REBT: 1,25 · Imax generador
+  const gamma = GAMMA[mat];
+
+  // Sección por caída de tensión
+  const S_cdt_raw = tri
+    ? (Math.sqrt(3) * L * imax) / (gamma * dV)
+    : (2 * L * imax) / (gamma * dV);
+  const S_cdt = SECCIONES.find(s => s >= S_cdt_raw) || '>400';
+
+  // Sección por intensidad admisible (con 1,25·Imax)
+  const tabla = IADM[inst][mat][tri ? 'tri' : 'mono'];
+  let S_I = null;
+  for (let i = 0; i < SECCIONES.length; i++) {
+    if (tabla[i] >= I_design) { S_I = SECCIONES[i]; break; }
+  }
+  if (S_I === null) S_I = '>400';
+
+  // Sección recomendada = mayor de las dos
+  let S_rec;
+  if (S_cdt === '>400' || S_I === '>400') S_rec = '>400';
+  else S_rec = Math.max(S_cdt, S_I);
+
+  // cdt real con la sección recomendada
+  const cdtReal = typeof S_rec === 'number'
+    ? (tri ? (Math.sqrt(3)*L*imax)/(gamma*S_rec) : (2*L*imax)/(gamma*S_rec))
+    : null;
+  const cdtPct = cdtReal !== null ? (cdtReal / V * 100).toFixed(2) : '—';
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="calc-row"><span class="k">Inversor</span><span class="v">${modelo}</span></div>
+    <div class="calc-row"><span class="k">Tipo / Tensión</span><span class="v">${tri?'Trifásico':'Monofásico'} · ${V} V</span></div>
+    <div class="calc-row"><span class="k">Imax AC</span><span class="v">${imax} A</span></div>
+    <div class="calc-row"><span class="k">Corriente diseño (1,25·Imax)</span><span class="v">${I_design.toFixed(1)} A</span></div>
+    <div class="calc-row"><span class="k">cdt máx. admisible</span><span class="v">1,5 % = ${dV.toFixed(2)} V</span></div>
+    <div class="calc-row"><span class="k">Sección mín. por intensidad</span><span class="v">${S_I} mm²</span></div>
+    <div class="calc-row"><span class="k">Sección mín. por cdt (calc.)</span><span class="v">${S_cdt_raw.toFixed(2)} mm² → ${S_cdt} mm²</span></div>
+    <div class="calc-final">
+      <div><div class="sub">Sección recomendada</div><div class="big">${S_rec} mm² ${mat==='cu'?'Cu':'Al'}</div></div>
+      <div style="text-align:right"><div class="sub">cdt real</div><div class="big">${cdtPct} %</div></div>
+    </div>
+    <div class="calc-note">
+      Criterio: el mayor de los dos valores. Cálculo orientativo para cableado AC de inversor a CGP/cuadro, con cos φ=1, conductor ${mat==='cu'?'Cu (γ=56)':'Al (γ=35)'} a 20 °C, ${inst==='B'?'unipolares bajo tubo en pared (método B, ITC-BT-19 Tabla 1)':'bajo tubo enterrado (método D, ITC-BT-19 Tabla 1)'}. Factor 1,25 sobre Imax del inversor (REBT). Verifica siempre con proyecto.
+    </div>`;
 }
 
 // Limpiar cache local para evitar quota exceeded

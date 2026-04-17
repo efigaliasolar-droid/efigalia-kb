@@ -1011,8 +1011,9 @@ const MPPT_INV = {
 };
 
 // Intensidades admisibles cable solar H1Z2Z2-K 1500 V DC (UNE-EN 50618), 60 °C amb.
-const SECCIONES_DC = [2.5, 4, 6, 10, 16, 25, 35, 50];
-const IADM_DC     = [41,  55, 70, 98, 132, 176, 218, 264];
+// Secciones usadas en taller: 4, 6 y 10 mm².
+const SECCIONES_DC = [4, 6, 10];
+const IADM_DC     = [55, 70, 98];
 const T_MIN = -10;  // °C para cálculo Voc a temperatura mínima
 
 function updateModelosDC() {
@@ -1032,7 +1033,8 @@ function updateInfoInvDC() {
   const info = document.getElementById('dc-inv-info');
   if (!marca || !modelo) { info.textContent = ''; return; }
   if (marca === 'SolarEdge') {
-    info.textContent = 'SolarEdge trabaja con optimizadores de potencia. El string DC entre inversor y optimizadores opera a tensión fija (≈380 V mono / 750 V tri). Este cálculo aplica al cable panel–optimizador.';
+    const tri = INVERSORES[marca][modelo].tipo === 'tri';
+    info.textContent = `SolarEdge con optimizadores: string DC regulado a ${tri?'750':'380'} V fijo, independientemente del nº de paneles.`;
     return;
   }
   const mppt = MPPT_INV[marca]?.[modelo];
@@ -1054,69 +1056,96 @@ function calcularSeccionDC() {
     return;
   }
   const p = PANELES[panelKey];
-  const Vmp_str = n * p.vmp;
-  const Voc_str = n * p.voc;
-  const Voc_str_Tmin = Voc_str * (1 + (p.coef_voc/100) * (T_MIN - 25));
-  const I_design = p.isc * 1.25;
-  const dV = 0.015 * Vmp_str;
+  const inv = INVERSORES[marca][modelo];
+  const tri = inv.tipo === 'tri';
+  const esSE = marca === 'SolarEdge';
 
-  // Sección por cdt (DC, ida+vuelta: 2·L, corriente Impp operativa)
-  const S_cdt_raw = (2 * L * p.imp) / (GAMMA_CU * dV);
-  const S_cdt = SECCIONES_DC.find(s => s >= S_cdt_raw) || '>50';
+  // Datos eléctricos del string
+  let V_str, Vref_label, I_op, I_design, extraRows;
+  if (esSE) {
+    // Tensión de string regulada por el inversor SolarEdge (independiente de nº paneles)
+    V_str = tri ? 750 : 380;
+    const P_total = n * p.pot;
+    I_op = P_total / V_str;
+    I_design = I_op * 1.25;
+    Vref_label = `${V_str} V (fija)`;
+    extraRows = `
+      <div class="calc-row"><span class="k">Potencia total string</span><span class="v">${P_total} W</span></div>
+      <div class="calc-row"><span class="k">Tensión string (SolarEdge)</span><span class="v">${V_str} V · regulada</span></div>
+      <div class="calc-row"><span class="k">Corriente operativa (P/V)</span><span class="v">${I_op.toFixed(2)} A</span></div>
+    `;
+  } else {
+    V_str = n * p.vmp;
+    const Voc_str = n * p.voc;
+    const Voc_Tmin = Voc_str * (1 + (p.coef_voc/100) * (T_MIN - 25));
+    I_op = p.imp;
+    I_design = p.isc * 1.25;
+    Vref_label = `${V_str.toFixed(0)} V`;
+    // Comprobación de compatibilidad MPPT
+    const mppt = MPPT_INV[marca]?.[modelo];
+    let compat = '';
+    if (mppt) {
+      const okVmax = Voc_Tmin <= mppt.vdcmax;
+      const okVmppt = V_str >= mppt.vmin && V_str <= mppt.vmax;
+      const okI = p.isc <= mppt.istr;
+      const mk = (ok) => ok ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>';
+      compat = `
+        <div class="calc-row"><span class="k">Voc string a ${T_MIN} °C ≤ V_dc_max</span><span class="v">${Voc_Tmin.toFixed(0)} / ${mppt.vdcmax} V ${mk(okVmax)}</span></div>
+        <div class="calc-row"><span class="k">Vmpp dentro de MPPT</span><span class="v">${V_str.toFixed(0)} en [${mppt.vmin}–${mppt.vmax}] V ${mk(okVmppt)}</span></div>
+        <div class="calc-row"><span class="k">Isc ≤ I_max string</span><span class="v">${p.isc} / ${mppt.istr} A ${mk(okI)}</span></div>
+      `;
+    }
+    extraRows = `
+      <div class="calc-row"><span class="k">Vmpp string · Voc string</span><span class="v">${V_str.toFixed(1)} V · ${Voc_str.toFixed(1)} V</span></div>
+      <div class="calc-row"><span class="k">Isc · Impp</span><span class="v">${p.isc} A · ${p.imp} A</span></div>
+      ${compat}
+    `;
+  }
 
-  // Sección por intensidad admisible
+  const dV = 0.015 * V_str;
+  const S_cdt_raw = (2 * L * I_op) / (GAMMA_CU * dV);
+
+  // Sección comercial por cdt e intensidad (solo 4, 6, 10 mm²)
+  const S_cdt = SECCIONES_DC.find(s => s >= S_cdt_raw) || null;
   let S_I = null;
   for (let i = 0; i < SECCIONES_DC.length; i++) {
     if (IADM_DC[i] >= I_design) { S_I = SECCIONES_DC[i]; break; }
   }
-  if (S_I === null) S_I = '>50';
 
-  let S_rec;
-  if (S_cdt === '>50' || S_I === '>50') S_rec = '>50';
-  else S_rec = Math.max(S_cdt, S_I);
-
-  const cdtReal = typeof S_rec === 'number'
-    ? (2 * L * p.imp) / (GAMMA_CU * S_rec)
-    : null;
-  const cdtPct = cdtReal !== null ? (cdtReal / Vmp_str * 100).toFixed(2) : '—';
-
-  // Compatibilidad MPPT
-  let compat = '';
-  if (marca === 'SolarEdge') {
-    compat = '<div class="calc-row"><span class="k">Compatibilidad</span><span class="v" style="color:var(--text-muted)">SolarEdge: verifica optimizador</span></div>';
-  } else {
-    const mppt = MPPT_INV[marca]?.[modelo];
-    if (mppt) {
-      const okVmax = Voc_str_Tmin <= mppt.vdcmax;
-      const okVmppt = Vmp_str >= mppt.vmin && Vmp_str <= mppt.vmax;
-      const okI = p.isc <= mppt.istr;
-      const mk = (ok) => ok ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>';
-      compat = `
-        <div class="calc-row"><span class="k">Voc string a ${T_MIN} °C ≤ V_dc_max</span><span class="v">${Voc_str_Tmin.toFixed(0)} / ${mppt.vdcmax} V ${mk(okVmax)}</span></div>
-        <div class="calc-row"><span class="k">Vmpp string dentro de MPPT</span><span class="v">${Vmp_str.toFixed(0)} en [${mppt.vmin}–${mppt.vmax}] V ${mk(okVmppt)}</span></div>
-        <div class="calc-row"><span class="k">Isc ≤ I_max string</span><span class="v">${p.isc} / ${mppt.istr} A ${mk(okI)}</span></div>
-      `;
-    }
-  }
-
-  box.style.display = 'block';
-  box.innerHTML = `
+  const header = `
     <div class="calc-row"><span class="k">Inversor</span><span class="v">${modelo}</span></div>
     <div class="calc-row"><span class="k">Panel</span><span class="v">${panelKey}</span></div>
     <div class="calc-row"><span class="k">Paneles en serie</span><span class="v">${n}</span></div>
-    <div class="calc-row"><span class="k">Vmpp string · Voc string</span><span class="v">${Vmp_str.toFixed(1)} V · ${Voc_str.toFixed(1)} V</span></div>
-    <div class="calc-row"><span class="k">Isc · Impp</span><span class="v">${p.isc} A · ${p.imp} A</span></div>
-    <div class="calc-row"><span class="k">Corriente diseño (1,25·Isc)</span><span class="v">${I_design.toFixed(2)} A</span></div>
-    <div class="calc-row"><span class="k">cdt máx. admisible</span><span class="v">1,5 % = ${dV.toFixed(2)} V</span></div>
+    ${extraRows}
+    <div class="calc-row"><span class="k">Corriente diseño (1,25·I)</span><span class="v">${I_design.toFixed(2)} A</span></div>
+    <div class="calc-row"><span class="k">cdt máx. admisible</span><span class="v">1,5 % de ${Vref_label} = ${dV.toFixed(2)} V</span></div>
+    <div class="calc-row"><span class="k">Sección por cdt (calculada)</span><span class="v">${S_cdt_raw.toFixed(2)} mm²</span></div>
+  `;
+
+  // Caso de error: la sección necesaria supera 10 mm²
+  if (S_cdt === null || S_I === null) {
+    box.style.display = 'block';
+    box.innerHTML = header + `
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(224,84,84,0.15);border-left:3px solid var(--red);border-radius:4px;color:var(--red);font-weight:600;font-size:13px;line-height:1.5">
+        ⚠ No se puede cablear con 4, 6 o 10 mm². Sección requerida > 10 mm² ${S_I===null?'(por intensidad)':''}${(S_I===null&&S_cdt===null)?' y ':''}${S_cdt===null?'(por cdt)':''}. Reduce la longitud, divide el string o replantea el diseño.
+      </div>`;
+    return;
+  }
+
+  const S_rec = Math.max(S_cdt, S_I);
+  const cdtReal = (2 * L * I_op) / (GAMMA_CU * S_rec);
+  const cdtPct = (cdtReal / V_str * 100).toFixed(2);
+
+  box.style.display = 'block';
+  box.innerHTML = header + `
     <div class="calc-row"><span class="k">Sección mín. por intensidad</span><span class="v">${S_I} mm²</span></div>
-    <div class="calc-row"><span class="k">Sección mín. por cdt (calc.)</span><span class="v">${S_cdt_raw.toFixed(2)} mm² → ${S_cdt} mm²</span></div>
-    ${compat}
+    <div class="calc-row"><span class="k">Sección mín. por cdt</span><span class="v">${S_cdt} mm²</span></div>
     <div class="calc-final">
       <div><div class="sub">Sección recomendada</div><div class="big">${S_rec} mm² Cu</div></div>
       <div style="text-align:right"><div class="sub">cdt real</div><div class="big">${cdtPct} %</div></div>
     </div>
     <div class="calc-note">
-      Cable solar H1Z2Z2-K 1500 V (UNE-EN 50618), Cu (γ=56), cdt máx. 1,5 % sobre Vmpp del string. Corriente de diseño 1,25·Isc (ITC-BT-40). Voc corregido a ${T_MIN} °C con el coeficiente térmico del panel. Verifica siempre con proyecto y con la ficha técnica del inversor.
+      Cable solar H1Z2Z2-K 1500 V (UNE-EN 50618), Cu (γ=56), cdt máx. 1,5 % sobre la tensión de string. Corriente de diseño 1,25·I. ${esSE?`SolarEdge: tensión de string regulada a ${V_str} V independientemente del nº de paneles, corriente = P_string/V_string.`:`Voc corregido a ${T_MIN} °C con el coeficiente térmico del panel.`} Secciones comerciales disponibles en taller: 4, 6 y 10 mm². Verifica siempre con proyecto.
     </div>`;
 }
 

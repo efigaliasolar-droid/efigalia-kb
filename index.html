@@ -346,6 +346,13 @@
         <input type="number" id="p-imax" step="0.1" placeholder="auto">
       </div>
     </div>
+    <div class="form-group">
+      <label>Tipo de instalación</label>
+      <select id="p-uso">
+        <option value="res">Residencial (30 mA)</option>
+        <option value="com">Comercial / Industrial (300 mA)</option>
+      </select>
+    </div>
     <button class="btn-primary" onclick="calcularProtecciones()">Calcular protecciones</button>
     <div class="calc-result" id="prot-result" style="display:none"></div>
   </div>
@@ -823,9 +830,8 @@ function calcularSeccion() {
 }
 
 // ── CALIBRE DE PROTECCIONES ────────────────────────────
-// Calibres comerciales estándar (modular hasta 125 A, luego MCCB).
+// Calibres comerciales estándar del magnetotérmico modular.
 const MCB_SIZES = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160];
-const RCD_SIZES = [25, 40, 63, 80, 100, 125, 160];
 
 function updateModelosP() {
   const marca = document.getElementById('p-marca').value;
@@ -852,6 +858,7 @@ function calcularProtecciones() {
   const marca = document.getElementById('p-marca').value;
   const modelo = document.getElementById('p-modelo').value;
   const imax = parseFloat(document.getElementById('p-imax').value);
+  const uso = document.getElementById('p-uso').value;
   const box = document.getElementById('prot-result');
 
   if (!marca || !modelo || !imax) {
@@ -864,11 +871,23 @@ function calcularProtecciones() {
   const V = tri ? 400 : 230;
   const I_design = imax * 1.25;
 
-  const mcb = MCB_SIZES.find(s => s >= I_design) || '>160';
-  const rcd = typeof mcb === 'number' ? (RCD_SIZES.find(s => s >= mcb) || '>160') : '>160';
+  const mcb = MCB_SIZES.find(s => s >= I_design) || null;
+
+  // Calibre del diferencial por tramos:
+  //   MCB ≤ 40 A → 40 A
+  //   40 < MCB ≤ 63 A → 63 A
+  //   MCB > 63 A → relé diferencial + toroidal
+  let rcd, rcdNote = '';
+  if (mcb === null) { rcd = 'Relé diferencial + toroidal'; rcdNote = 'por encima de calibre modular'; }
+  else if (mcb <= 40) rcd = '40 A';
+  else if (mcb <= 63) rcd = '63 A';
+  else { rcd = 'Relé diferencial + toroidal'; rcdNote = 'calibre > 63 A'; }
+
+  const mcbLabel = mcb === null ? '> 160 A' : `${mcb} A`;
   const polos_mcb = tri ? '4P' : '2P (1P+N)';
   const polos_rcd = tri ? '4P' : '2P';
-  const sensibilidad = (typeof mcb === 'number' && mcb > 40) ? '300 mA (selectividad) / 30 mA aguas abajo' : '30 mA';
+  const sensibilidad = uso === 'com' ? '300 mA' : '30 mA';
+  const usoTxt = uso === 'com' ? 'Comercial / Industrial' : 'Residencial';
 
   box.style.display = 'block';
   box.innerHTML = `
@@ -876,19 +895,20 @@ function calcularProtecciones() {
     <div class="calc-row"><span class="k">Tipo / Tensión</span><span class="v">${tri?'Trifásico':'Monofásico'} · ${V} V</span></div>
     <div class="calc-row"><span class="k">Imax AC</span><span class="v">${imax} A</span></div>
     <div class="calc-row"><span class="k">Corriente diseño (1,25·Imax)</span><span class="v">${I_design.toFixed(1)} A</span></div>
+    <div class="calc-row"><span class="k">Uso</span><span class="v">${usoTxt}</span></div>
     <div class="calc-final" style="flex-direction:column;align-items:stretch;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><div class="sub">Magnetotérmico</div><div class="big">${mcb} A · ${polos_mcb}</div></div>
+        <div><div class="sub">Magnetotérmico</div><div class="big">${mcbLabel} · ${polos_mcb}</div></div>
         <div style="text-align:right"><div class="sub">Curva</div><div class="big">C</div></div>
       </div>
       <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><div class="sub">Diferencial</div><div class="big">${rcd} A · ${polos_rcd}</div></div>
+        <div><div class="sub">Diferencial</div><div class="big">${rcd}${typeof mcb === 'number' && mcb <= 63 ? ' · ' + polos_rcd : ''}</div>${rcdNote?`<div class="sub">${rcdNote}</div>`:''}</div>
         <div style="text-align:right"><div class="sub">Tipo · Sensibilidad</div><div class="big">A · ${sensibilidad}</div></div>
       </div>
     </div>
     <div class="calc-note">
-      Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ 1,25 · Imax del inversor. Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2), calibre igual o superior al del magnetotérmico. Sensibilidad 30 mA para protección de personas (≤ 40 A); por encima suele usarse 300 mA aguas arriba por selectividad, manteniendo 30 mA aguas abajo. Verifica siempre con proyecto.
+      Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ 1,25 · Imax del inversor. Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2): 40 A cuando el magnetotérmico es ≤ 40 A, 63 A cuando está entre 40 y 63 A, y relé diferencial con toroidal para calibres superiores. Sensibilidad 30 mA en residencial y 300 mA en comercial/industrial. Verifica siempre con proyecto.
     </div>`;
 }
 

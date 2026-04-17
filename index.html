@@ -141,6 +141,13 @@
   .back-link:hover { color: var(--accent); }
 
   @media (max-width: 500px) { .form-row, .home-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) {
+    header { flex-wrap: wrap; height: auto; padding: 6px 14px 8px; }
+    .header-right { flex-wrap: wrap; gap: 8px; }
+    .tab-bar { width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .tab { padding: 5px 10px; font-size: 12px; }
+    .sync-status { font-size: 10px; }
+  }
 </style>
 </head>
 <body>

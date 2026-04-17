@@ -1186,12 +1186,10 @@ function calcularSeccionDC() {
 }
 
 // ── INSTALACIÓN AISLADA VICTRON + BYD ──────────────────
-// Secciones cable DC (batería–inversor) y fusible DC según manual Victron
-// MultiPlus-II para longitud ≤5 m (ida+vuelta). I_cont_max ≈ P_cont / V_bat.
-// iac_mono = corriente máx. salida AC a 230 V monofásica (bypass/inversor).
+// Topología: 3 tramos conectados a embarrado DC 48 V
+// (Inversor ↔ Embarrado · Batería ↔ Embarrado · Regulador ↔ Embarrado)
+// Datos según manual Victron / BYD para longitudes ≤ 5 m.
 const VICTRON_INV = {
-  'MultiPlus-II 24/3000/70':   { vbat:24, pcont:2400, idc:120, cable_dc:95,    fusible_dc:200, iac:13,   tipo:'mono' },
-  'MultiPlus-II 24/5000/120':  { vbat:24, pcont:4000, idc:200, cable_dc:'2×70 o 185', fusible_dc:400, iac:21.7, tipo:'mono' },
   'MultiPlus-II 48/3000/35':   { vbat:48, pcont:2400, idc:60,  cable_dc:35,    fusible_dc:125, iac:13,   tipo:'mono' },
   'MultiPlus-II 48/5000/70':   { vbat:48, pcont:4000, idc:100, cable_dc:50,    fusible_dc:200, iac:21.7, tipo:'mono' },
   'MultiPlus-II 48/8000/110':  { vbat:48, pcont:6500, idc:140, cable_dc:95,    fusible_dc:300, iac:35,   tipo:'mono' },
@@ -1203,7 +1201,7 @@ const VICTRON_INV = {
   'Quattro 48/15000/200':      { vbat:48, pcont:12000,idc:250, cable_dc:'2×70 o 150', fusible_dc:500, iac:52,   tipo:'mono' }
 };
 
-// SmartSolar MPPT: cable salida (regulador–batería) y fusible DC recomendado.
+// SmartSolar MPPT — cable y fusible del tramo regulador ↔ embarrado.
 const VICTRON_MPPT = {
   'SmartSolar MPPT 75/15':   { vmax:75,  imax:15,  cable:4,  fusible:25 },
   'SmartSolar MPPT 100/20':  { vmax:100, imax:20,  cable:6,  fusible:30 },
@@ -1220,8 +1218,7 @@ const VICTRON_MPPT = {
   'SmartSolar MPPT 250/100': { vmax:250, imax:100, cable:35, fusible:125 }
 };
 
-// Baterías BYD — capacidad y corriente continua de descarga según ficha BYD.
-// fus_rec = fusible/disyuntor DC aguas arriba recomendado en manual BYD.
+// Baterías BYD 48 V — corriente continua de descarga y fusible recomendado por BYD.
 const BYD_BAT = {
   'Battery-Box Premium LVS 4.0':  { v:48, cap:4.0,  imax:100, fus_rec:125, modulos:1 },
   'Battery-Box Premium LVS 8.0':  { v:48, cap:8.0,  imax:200, fus_rec:250, modulos:2 },
@@ -1229,14 +1226,21 @@ const BYD_BAT = {
   'Battery-Box Premium LVS 16.0': { v:48, cap:16.0, imax:250, fus_rec:300, modulos:4 },
   'Battery-Box Premium LVS 20.0': { v:48, cap:20.0, imax:250, fus_rec:300, modulos:5 },
   'Battery-Box Premium LVS 24.0': { v:48, cap:24.0, imax:250, fus_rec:300, modulos:6 },
-  'Battery-Box Premium LVL 15.4': { v:48, cap:15.4, imax:300, fus_rec:'Clase T 300 A', modulos:1 },
-  'B-Box Pro 2.5':  { v:48, cap:2.5,  imax:50,  fus_rec:63,  modulos:1 },
-  'B-Box Pro 5.0':  { v:48, cap:5.0,  imax:100, fus_rec:125, modulos:2 },
-  'B-Box Pro 7.5':  { v:48, cap:7.5,  imax:150, fus_rec:200, modulos:3 },
-  'B-Box Pro 10.0': { v:48, cap:10.0, imax:200, fus_rec:250, modulos:4 },
-  'B-Box Pro 12.5': { v:48, cap:12.5, imax:250, fus_rec:300, modulos:5 },
-  'B-Box Pro 13.8': { v:48, cap:13.8, imax:250, fus_rec:300, modulos:6 }
+  'Battery-Box Premium LVL 15.4': { v:48, cap:15.4, imax:300, fus_rec:'Clase T 300 A', modulos:1 }
 };
+
+// Sección cable para tramo batería ↔ embarrado (Cu, cable flexible 80 °C, ≤5 m).
+function cableBateriaPorI(I) {
+  if (I <= 50)  return '10';
+  if (I <= 80)  return '16';
+  if (I <= 125) return '25';
+  if (I <= 160) return '35';
+  if (I <= 200) return '50';
+  if (I <= 250) return '70';
+  if (I <= 300) return '95';
+  if (I <= 400) return '2×70 o 120';
+  return '2×95 o 150';
+}
 
 function populateOffgridSelects() {
   const inv = document.getElementById('og-inv');
@@ -1264,11 +1268,7 @@ function calcularOffgrid() {
   const mppt = VICTRON_MPPT[mpptKey];
   const bat = BYD_BAT[batKey];
 
-  // Compatibilidad tensiones
-  const vOk = inv.vbat === bat.v;
-  const vmsg = vOk ? `<span style="color:var(--green)">✓ ${inv.vbat} V</span>` : `<span style="color:var(--red)">✗ Inversor ${inv.vbat} V vs batería ${bat.v} V</span>`;
-
-  // Protección AC salida inversor (igual que apartado "Protecciones")
+  // Protección AC salida inversor (mismas reglas que apartado "Protecciones")
   const Iac_design = inv.iac * 1.25;
   const mcb = MCB_SIZES.find(s => s >= Iac_design) || null;
   let rcd;
@@ -1278,26 +1278,30 @@ function calcularOffgrid() {
   else rcd = 'Relé dif. + toroidal';
   const mcbLabel = mcb === null ? '> 160 A' : `${mcb} A`;
 
-  // Fusible DC batería: mayor de (fabricante Victron) o (recomendación BYD si es numérica)
-  const fusBat = typeof bat.fus_rec === 'number' ? Math.max(inv.fusible_dc, bat.fus_rec) : inv.fusible_dc;
-  const fusBatNote = typeof bat.fus_rec === 'string' ? ` · BYD recomienda ${bat.fus_rec}` : '';
+  // Tramo batería: sección por corriente continua de la batería, fusible por BYD
+  const cableBat = cableBateriaPorI(bat.imax);
+  const fusBat = bat.fus_rec;
 
   box.style.display = 'block';
   box.innerHTML = `
-    <div class="calc-row"><span class="k">Tensión sistema</span><span class="v">${vmsg}</span></div>
-    <div class="calc-row"><span class="k">Inversor</span><span class="v">${invKey}</span></div>
-    <div class="calc-row"><span class="k">Batería</span><span class="v">${batKey} (${bat.cap} kWh · ${bat.modulos} módulo${bat.modulos>1?'s':''})</span></div>
-    <div class="calc-row"><span class="k">Regulador</span><span class="v">${mpptKey}</span></div>
-    <div class="calc-row"><span class="k">I_DC continua inversor</span><span class="v">${inv.idc} A · I_AC ${inv.iac} A</span></div>
+    <div class="calc-row"><span class="k">Sistema</span><span class="v">48 V DC · embarrado</span></div>
+    <div class="calc-row"><span class="k">Inversor</span><span class="v">${invKey} (I_DC ${inv.idc} A · I_AC ${inv.iac} A)</span></div>
+    <div class="calc-row"><span class="k">Batería</span><span class="v">${batKey} (${bat.cap} kWh · ${bat.modulos} módulo${bat.modulos>1?'s':''} · I_cont ${bat.imax} A)</span></div>
+    <div class="calc-row"><span class="k">Regulador</span><span class="v">${mpptKey} (I_out ${mppt.imax} A)</span></div>
 
     <div class="calc-final" style="flex-direction:column;align-items:stretch;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><div class="sub">Batería → Inversor</div><div class="big">${inv.cable_dc} mm² Cu</div></div>
-        <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${fusBat} A</div></div>
+        <div><div class="sub">Tramo Inversor ↔ Embarrado</div><div class="big">${inv.cable_dc} mm² Cu</div></div>
+        <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${inv.fusible_dc} A</div></div>
       </div>
       <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><div class="sub">Regulador → Batería</div><div class="big">${mppt.cable} mm² Cu</div></div>
+        <div><div class="sub">Tramo Batería ↔ Embarrado</div><div class="big">${cableBat} mm² Cu</div></div>
+        <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${fusBat}${typeof fusBat==='number'?' A':''}</div></div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Tramo Regulador ↔ Embarrado</div><div class="big">${mppt.cable} mm² Cu</div></div>
         <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${mppt.fusible} A</div></div>
       </div>
       <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
@@ -1308,7 +1312,7 @@ function calcularOffgrid() {
     </div>
 
     <div class="calc-note">
-      Secciones y fusibles DC según manual Victron (MultiPlus-II / SmartSolar MPPT) para longitud de cable ≤ 5 m ida+vuelta. Para longitudes mayores aumenta la sección según tabla extendida del manual. Fusible DC batería-inversor: usar portafusibles MEGA / MRBF o disyuntor DC (interrumpe tensión continua, no ACD).${fusBatNote} Protección AC curva C según 1,25·I_AC del inversor; diferencial Tipo A 30 mA en residencial (300 mA en comercial/industrial). Verifica siempre con el manual del fabricante y el proyecto.
+      Topología con embarrado DC 48 V: cada equipo se conecta al embarrado mediante su propio tramo y su fusible/disyuntor DC en el extremo del embarrado (excepto el de la batería, que va en el terminal de la batería). Secciones para longitud ≤ 5 m; a partir de ahí aumentar según tabla extendida. Tramo inversor: cable y fusible de manual Victron MultiPlus-II/Quattro. Tramo regulador: cable y fusible de manual SmartSolar MPPT. Tramo batería: sección por I continua de la batería, fusible según manual BYD (portafusibles MEGA/MRBF o disyuntor DC clase T para LVL). Protección AC curva C según 1,25·I_AC del inversor, diferencial Tipo A 30 mA residencial / 300 mA comercial-industrial. Verifica siempre con manual del fabricante y proyecto.
     </div>
   `;
 }

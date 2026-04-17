@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-cable-dc, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -184,6 +184,11 @@
         <div class="home-icon">☀</div>
         <div class="home-title">Cálculo sección cable DC</div>
         <div class="home-desc">Dimensiona el cable de string (panel–inversor) por intensidad y caída de tensión (1,5 %).</div>
+      </div>
+      <div class="home-card" onclick="enterOffgrid()">
+        <div class="home-icon">🔋</div>
+        <div class="home-title">Instalación aislada</div>
+        <div class="home-desc">Victron + BYD: secciones y fusibles DC, y protección AC según manual del fabricante.</div>
       </div>
     </div>
   </div>
@@ -402,6 +407,31 @@
     <button class="btn-primary" onclick="calcularSeccionDC()">Calcular sección DC</button>
     <div class="calc-result" id="dc-result" style="display:none"></div>
   </div>
+
+  <div id="view-offgrid">
+    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <div class="section-title">Instalación aislada — Victron + BYD</div>
+    <div class="form-group">
+      <label>Inversor/cargador Victron *</label>
+      <select id="og-inv">
+        <option value="">— Seleccionar —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Regulador MPPT Victron *</label>
+      <select id="og-mppt">
+        <option value="">— Seleccionar —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Batería BYD *</label>
+      <select id="og-bat">
+        <option value="">— Seleccionar —</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="calcularOffgrid()">Calcular</button>
+    <div class="calc-result" id="og-result" style="display:none"></div>
+  </div>
 </main>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
@@ -515,6 +545,12 @@ function enterCableDC() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-cable-dc').style.display = 'block';
+}
+function enterOffgrid() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-offgrid').style.display = 'block';
+  populateOffgridSelects();
 }
 function switchTab(tab, el) {
   document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
@@ -1147,6 +1183,134 @@ function calcularSeccionDC() {
     <div class="calc-note">
       Cable solar H1Z2Z2-K 1500 V (UNE-EN 50618), Cu (γ=56), cdt máx. 1,5 % sobre la tensión de string. Corriente de diseño 1,25·I. ${esSE?`SolarEdge: tensión de string regulada a ${V_str} V independientemente del nº de paneles, corriente = P_string/V_string.`:`Voc corregido a ${T_MIN} °C con el coeficiente térmico del panel.`} Secciones comerciales disponibles en taller: 4, 6 y 10 mm². Verifica siempre con proyecto.
     </div>`;
+}
+
+// ── INSTALACIÓN AISLADA VICTRON + BYD ──────────────────
+// Secciones cable DC (batería–inversor) y fusible DC según manual Victron
+// MultiPlus-II para longitud ≤5 m (ida+vuelta). I_cont_max ≈ P_cont / V_bat.
+// iac_mono = corriente máx. salida AC a 230 V monofásica (bypass/inversor).
+const VICTRON_INV = {
+  'MultiPlus-II 24/3000/70':   { vbat:24, pcont:2400, idc:120, cable_dc:95,    fusible_dc:200, iac:13,   tipo:'mono' },
+  'MultiPlus-II 24/5000/120':  { vbat:24, pcont:4000, idc:200, cable_dc:'2×70 o 185', fusible_dc:400, iac:21.7, tipo:'mono' },
+  'MultiPlus-II 48/3000/35':   { vbat:48, pcont:2400, idc:60,  cable_dc:35,    fusible_dc:125, iac:13,   tipo:'mono' },
+  'MultiPlus-II 48/5000/70':   { vbat:48, pcont:4000, idc:100, cable_dc:50,    fusible_dc:200, iac:21.7, tipo:'mono' },
+  'MultiPlus-II 48/8000/110':  { vbat:48, pcont:6500, idc:140, cable_dc:95,    fusible_dc:300, iac:35,   tipo:'mono' },
+  'MultiPlus-II 48/10000/140': { vbat:48, pcont:8000, idc:180, cable_dc:'2×50 o 120', fusible_dc:400, iac:43.5, tipo:'mono' },
+  'MultiPlus-II 48/15000/200': { vbat:48, pcont:12000,idc:250, cable_dc:'2×70 o 150', fusible_dc:500, iac:52,   tipo:'mono' },
+  'Quattro 48/5000/70':        { vbat:48, pcont:4000, idc:100, cable_dc:50,    fusible_dc:200, iac:21.7, tipo:'mono' },
+  'Quattro 48/8000/110':       { vbat:48, pcont:6500, idc:140, cable_dc:95,    fusible_dc:300, iac:35,   tipo:'mono' },
+  'Quattro 48/10000/140':      { vbat:48, pcont:8000, idc:180, cable_dc:'2×50 o 120', fusible_dc:400, iac:43.5, tipo:'mono' },
+  'Quattro 48/15000/200':      { vbat:48, pcont:12000,idc:250, cable_dc:'2×70 o 150', fusible_dc:500, iac:52,   tipo:'mono' }
+};
+
+// SmartSolar MPPT: cable salida (regulador–batería) y fusible DC recomendado.
+const VICTRON_MPPT = {
+  'SmartSolar MPPT 75/15':   { vmax:75,  imax:15,  cable:4,  fusible:25 },
+  'SmartSolar MPPT 100/20':  { vmax:100, imax:20,  cable:6,  fusible:30 },
+  'SmartSolar MPPT 100/30':  { vmax:100, imax:30,  cable:10, fusible:40 },
+  'SmartSolar MPPT 100/50':  { vmax:100, imax:50,  cable:16, fusible:63 },
+  'SmartSolar MPPT 150/35':  { vmax:150, imax:35,  cable:10, fusible:50 },
+  'SmartSolar MPPT 150/45':  { vmax:150, imax:45,  cable:16, fusible:63 },
+  'SmartSolar MPPT 150/60':  { vmax:150, imax:60,  cable:16, fusible:80 },
+  'SmartSolar MPPT 150/70':  { vmax:150, imax:70,  cable:25, fusible:100 },
+  'SmartSolar MPPT 150/85':  { vmax:150, imax:85,  cable:25, fusible:125 },
+  'SmartSolar MPPT 150/100': { vmax:150, imax:100, cable:35, fusible:125 },
+  'SmartSolar MPPT 250/60':  { vmax:250, imax:60,  cable:16, fusible:80 },
+  'SmartSolar MPPT 250/85':  { vmax:250, imax:85,  cable:25, fusible:125 },
+  'SmartSolar MPPT 250/100': { vmax:250, imax:100, cable:35, fusible:125 }
+};
+
+// Baterías BYD — capacidad y corriente continua de descarga según ficha BYD.
+// fus_rec = fusible/disyuntor DC aguas arriba recomendado en manual BYD.
+const BYD_BAT = {
+  'Battery-Box Premium LVS 4.0':  { v:48, cap:4.0,  imax:100, fus_rec:125, modulos:1 },
+  'Battery-Box Premium LVS 8.0':  { v:48, cap:8.0,  imax:200, fus_rec:250, modulos:2 },
+  'Battery-Box Premium LVS 12.0': { v:48, cap:12.0, imax:250, fus_rec:300, modulos:3 },
+  'Battery-Box Premium LVS 16.0': { v:48, cap:16.0, imax:250, fus_rec:300, modulos:4 },
+  'Battery-Box Premium LVS 20.0': { v:48, cap:20.0, imax:250, fus_rec:300, modulos:5 },
+  'Battery-Box Premium LVS 24.0': { v:48, cap:24.0, imax:250, fus_rec:300, modulos:6 },
+  'Battery-Box Premium LVL 15.4': { v:48, cap:15.4, imax:300, fus_rec:'Clase T 300 A', modulos:1 },
+  'B-Box Pro 2.5':  { v:48, cap:2.5,  imax:50,  fus_rec:63,  modulos:1 },
+  'B-Box Pro 5.0':  { v:48, cap:5.0,  imax:100, fus_rec:125, modulos:2 },
+  'B-Box Pro 7.5':  { v:48, cap:7.5,  imax:150, fus_rec:200, modulos:3 },
+  'B-Box Pro 10.0': { v:48, cap:10.0, imax:200, fus_rec:250, modulos:4 },
+  'B-Box Pro 12.5': { v:48, cap:12.5, imax:250, fus_rec:300, modulos:5 },
+  'B-Box Pro 13.8': { v:48, cap:13.8, imax:250, fus_rec:300, modulos:6 }
+};
+
+function populateOffgridSelects() {
+  const inv = document.getElementById('og-inv');
+  const mppt = document.getElementById('og-mppt');
+  const bat = document.getElementById('og-bat');
+  if (inv.options.length > 1) return;  // ya poblado
+  Object.keys(VICTRON_INV).forEach(k => inv.innerHTML += `<option value="${k}">${k}</option>`);
+  Object.keys(VICTRON_MPPT).forEach(k => mppt.innerHTML += `<option value="${k}">${k}</option>`);
+  Object.keys(BYD_BAT).forEach(k => bat.innerHTML += `<option value="${k}">${k}</option>`);
+}
+
+function calcularOffgrid() {
+  const invKey = document.getElementById('og-inv').value;
+  const mpptKey = document.getElementById('og-mppt').value;
+  const batKey = document.getElementById('og-bat').value;
+  const box = document.getElementById('og-result');
+
+  if (!invKey || !mpptKey || !batKey) {
+    box.style.display = 'block';
+    box.innerHTML = '<div style="color:var(--red);font-size:13px">Completa inversor, regulador y batería.</div>';
+    return;
+  }
+
+  const inv = VICTRON_INV[invKey];
+  const mppt = VICTRON_MPPT[mpptKey];
+  const bat = BYD_BAT[batKey];
+
+  // Compatibilidad tensiones
+  const vOk = inv.vbat === bat.v;
+  const vmsg = vOk ? `<span style="color:var(--green)">✓ ${inv.vbat} V</span>` : `<span style="color:var(--red)">✗ Inversor ${inv.vbat} V vs batería ${bat.v} V</span>`;
+
+  // Protección AC salida inversor (igual que apartado "Protecciones")
+  const Iac_design = inv.iac * 1.25;
+  const mcb = MCB_SIZES.find(s => s >= Iac_design) || null;
+  let rcd;
+  if (mcb === null) rcd = 'Relé dif. + toroidal';
+  else if (mcb <= 40) rcd = '40 A';
+  else if (mcb <= 63) rcd = '63 A';
+  else rcd = 'Relé dif. + toroidal';
+  const mcbLabel = mcb === null ? '> 160 A' : `${mcb} A`;
+
+  // Fusible DC batería: mayor de (fabricante Victron) o (recomendación BYD si es numérica)
+  const fusBat = typeof bat.fus_rec === 'number' ? Math.max(inv.fusible_dc, bat.fus_rec) : inv.fusible_dc;
+  const fusBatNote = typeof bat.fus_rec === 'string' ? ` · BYD recomienda ${bat.fus_rec}` : '';
+
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="calc-row"><span class="k">Tensión sistema</span><span class="v">${vmsg}</span></div>
+    <div class="calc-row"><span class="k">Inversor</span><span class="v">${invKey}</span></div>
+    <div class="calc-row"><span class="k">Batería</span><span class="v">${batKey} (${bat.cap} kWh · ${bat.modulos} módulo${bat.modulos>1?'s':''})</span></div>
+    <div class="calc-row"><span class="k">Regulador</span><span class="v">${mpptKey}</span></div>
+    <div class="calc-row"><span class="k">I_DC continua inversor</span><span class="v">${inv.idc} A · I_AC ${inv.iac} A</span></div>
+
+    <div class="calc-final" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Batería → Inversor</div><div class="big">${inv.cable_dc} mm² Cu</div></div>
+        <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${fusBat} A</div></div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Regulador → Batería</div><div class="big">${mppt.cable} mm² Cu</div></div>
+        <div style="text-align:right"><div class="sub">Fusible DC</div><div class="big">${mppt.fusible} A</div></div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.25)"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><div class="sub">Protección AC salida</div><div class="big">Mag. ${mcbLabel} · Dif. ${rcd}</div></div>
+        <div style="text-align:right"><div class="sub">Tipo</div><div class="big">Curva C · Tipo A 30 mA</div></div>
+      </div>
+    </div>
+
+    <div class="calc-note">
+      Secciones y fusibles DC según manual Victron (MultiPlus-II / SmartSolar MPPT) para longitud de cable ≤ 5 m ida+vuelta. Para longitudes mayores aumenta la sección según tabla extendida del manual. Fusible DC batería-inversor: usar portafusibles MEGA / MRBF o disyuntor DC (interrumpe tensión continua, no ACD).${fusBatNote} Protección AC curva C según 1,25·I_AC del inversor; diferencial Tipo A 30 mA en residencial (300 mA en comercial/industrial). Verifica siempre con el manual del fabricante y el proyecto.
+    </div>
+  `;
 }
 
 // Limpiar cache local para evitar quota exceeded

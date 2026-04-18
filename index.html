@@ -18,9 +18,9 @@
   header { border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 64px; background: var(--surface); position: sticky; top: 0; z-index: 100; }
   .logo { font-family: var(--mono); font-weight: 600; font-size: 20px; color: var(--accent); letter-spacing: 0.08em; padding: 10px 4px; }
   .logo span { color: var(--text-muted); font-weight: 400; }
-  .header-right { display: flex; align-items: center; gap: 10px; }
-  .sync-status { font-family: var(--mono); font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
-  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .sync-status { font-family: var(--mono); font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
   .sync-dot.ok { background: var(--green); }
   .sync-dot.err { background: var(--red); }
   .sync-dot.spin { background: var(--accent); animation: pulse 1s infinite; }
@@ -143,11 +143,11 @@
   @media (max-width: 500px) { .form-row, .home-grid { grid-template-columns: 1fr; } }
   @media (max-width: 640px) {
     header { flex-wrap: wrap; height: auto; padding: 8px 16px 10px; }
-    .header-right { flex-wrap: wrap; gap: 10px; }
+    .header-right { display: contents; }
     .logo { font-size: 22px; padding: 8px 4px; }
-    .tab-bar { width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .sync-status { margin-left: auto; font-size: 13px; }
+    .tab-bar { width: 100%; order: 3; justify-content: flex-start; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .tab { padding: 7px 12px; font-size: 13px; }
-    .sync-status { font-size: 11px; }
   }
 </style>
 </head>

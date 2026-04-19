@@ -1849,8 +1849,12 @@ function renderAdminMaestros(tipo) {
   }
   const isInst = tipo === 'instalador';
   cont.innerHTML = list.map(i => {
+    const pinDisplay = i.pin
+      ? `<span style="font-family:var(--mono);background:var(--surface2);padding:3px 7px;border-radius:4px;font-size:12px;letter-spacing:1px">${escapeHtml(i.pin)}</span>`
+      : `<span style="color:var(--red);font-family:var(--mono);font-size:10px">sin PIN</span>`;
     const extra = isInst ? `
-        <button class="toggle-btn off" onclick="cambiarPinInstalador(${i.id})" title="Cambiar PIN" style="padding:5px 8px">🔑${i.pinHash ? '' : '<span style="color:var(--red);margin-left:3px">!</span>'}</button>
+        <button class="toggle-btn off" onclick="cambiarPinInstalador(${i.id})" title="Cambiar PIN" style="padding:5px 8px">🔑</button>
+        ${pinDisplay}
         <button class="toggle-btn ${i.rol==='admin'?'on':'off'}" onclick="cambiarRolInstalador(${i.id})" style="padding:5px 8px">${i.rol==='admin'?'ADMIN':'INST'}</button>
     ` : '';
     return `
@@ -1884,9 +1888,15 @@ async function autenticarUsuario(nombre, pinPlano) {
   if (!nombre) return { ok: false, error: 'Selecciona tu nombre' };
   const user = incidents.find(i => i.tipo === 'instalador' && i.nombre === nombre && i.activa !== false);
   if (!user) return { ok: false, error: 'Usuario no encontrado o inactivo' };
-  if (!user.pinHash) return { ok: false, error: 'No tienes PIN asignado. Pídeselo al administrador.' };
-  const hash = await sha256(pinPlano);
-  if (user.pinHash !== hash) return { ok: false, error: 'PIN incorrecto' };
+  // Compatibilidad: registros antiguos con pinHash; actuales con pin en claro
+  if (user.pin) {
+    if (user.pin !== pinPlano) return { ok: false, error: 'PIN incorrecto' };
+  } else if (user.pinHash) {
+    const hash = await sha256(pinPlano);
+    if (user.pinHash !== hash) return { ok: false, error: 'PIN incorrecto' };
+  } else {
+    return { ok: false, error: 'No tienes PIN asignado. Pídeselo al administrador.' };
+  }
   return { ok: true, user: { nombre: user.nombre, rol: user.rol || 'instalador' } };
 }
 
@@ -1898,11 +1908,13 @@ async function cambiarPinInstalador(id) {
   const clean = pin.trim();
   if (clean === '') {
     if (!confirm('¿Quitar PIN? Este usuario no podrá entrar hasta que se le asigne otro.')) return;
+    delete user.pin;
     delete user.pinHash;
   } else {
     if (!/^\d{4,6}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–6 dígitos', 'err'); return; }
     if (clean === '111111') { showToast('⚠ 111111 es el PIN maestro del sistema, elige otro', 'err'); return; }
-    user.pinHash = await sha256(clean);
+    user.pin = clean;
+    delete user.pinHash;  // limpiar legado
   }
   await sheetsSave();
   renderAdminMaestros('instalador');

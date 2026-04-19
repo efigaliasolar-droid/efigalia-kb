@@ -384,7 +384,7 @@
       </div>
       <div class="form-group">
         <label>ID Obra / Cliente</label>
-        <input type="text" id="f-idobra" placeholder="Ej: Cafento">
+        <select id="f-idobra" class="select-obra"></select>
       </div>
     </div>
     <div class="form-group" id="grp-verificaciones">
@@ -648,7 +648,7 @@
         </div>
         <div class="form-group">
           <label>Obra *</label>
-          <input type="text" id="mov-obra" list="dl-obras" placeholder="Ej: Cafento, Casa García...">
+          <select id="mov-obra" class="select-obra"></select>
         </div>
       </div>
 
@@ -710,7 +710,7 @@
         </div>
         <div class="form-group">
           <label>Obra *</label>
-          <input type="text" id="parte-obra" list="dl-obras" placeholder="Ej: Cafento">
+          <select id="parte-obra" class="select-obra"></select>
         </div>
       </div>
 
@@ -980,6 +980,7 @@ function switchTab(tab, el) {
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
   if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
+  if (tab === 'registrar') sheetsLoad().then(() => fillObraSelects());
 }
 
 function enterObra(sub) {
@@ -2129,19 +2130,34 @@ const INSTALADORES = [
 ];
 
 function fillFurgonetaSelects() {
+  const lista = (typeof furgonetasActivasAdmin === 'function') ? furgonetasActivasAdmin() : FURGONETAS;
   document.querySelectorAll('.select-furgoneta').forEach(sel => {
     const cur = sel.value;
     sel.innerHTML = '<option value="">— Seleccionar —</option>' +
-      FURGONETAS.map(f => `<option value="${f}">${f}</option>`).join('');
-    if (cur && FURGONETAS.includes(cur)) sel.value = cur;
+      lista.map(f => `<option value="${f}">${f}</option>`).join('');
+    if (cur && lista.includes(cur)) sel.value = cur;
   });
 }
 function fillRegistradoPorSelects() {
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : INSTALADORES;
   document.querySelectorAll('.select-registradopor').forEach(sel => {
     const cur = sel.value || localStorage.getItem('efigalia_last_user') || '';
     sel.innerHTML = '<option value="">— Seleccionar —</option>' +
-      INSTALADORES.map(n => `<option value="${n}">${n}</option>`).join('');
-    if (cur && INSTALADORES.includes(cur)) sel.value = cur;
+      lista.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (cur && lista.includes(cur)) sel.value = cur;
+  });
+}
+function fillObraSelects() {
+  const lista = (typeof obrasActivas === 'function') ? obrasActivas() : [];
+  document.querySelectorAll('.select-obra').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      lista.map(o => `<option value="${o}">${o}</option>`).join('') +
+      '<option value="-">— Sin obra (interno) —</option>';
+    if (cur) {
+      if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+      else { const op = document.createElement('option'); op.value = cur; op.textContent = cur + ' (anterior)'; sel.appendChild(op); sel.value = cur; }
+    }
   });
 }
 
@@ -2149,8 +2165,9 @@ function fillRegistradoPorSelects() {
 function renderInstaladorPills(containerId, selected) {
   const c = document.getElementById(containerId);
   if (!c) return;
-  c._selected = (selected || []).filter(n => INSTALADORES.includes(n));
-  c.innerHTML = INSTALADORES.map(name =>
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : INSTALADORES;
+  c._selected = (selected || []).filter(n => lista.includes(n));
+  c.innerHTML = lista.map(name =>
     `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${containerId}','${name.replace(/'/g,"\\'")}')">${name}</button>`
   ).join('');
 }
@@ -2339,9 +2356,10 @@ function abrirFormMov(tipo, prefill) {
   document.getElementById('mov-form-title').textContent =
     (prefill && prefill.editId ? 'Editar' : 'Nueva') + (t === 'salida' ? ' salida a obra' : ' retorno de obra');
   document.getElementById('mov-fecha').value = (prefill && prefill.fecha) || isoToday();
-  document.getElementById('mov-obra').value = (prefill && prefill.idObra) || '';
   fillFurgonetaSelects();
   fillRegistradoPorSelects();
+  fillObraSelects();
+  document.getElementById('mov-obra').value = (prefill && prefill.idObra) || '';
   document.getElementById('mov-furgoneta').value = (prefill && prefill.furgoneta) || '';
   document.getElementById('mov-notas').value = (prefill && prefill.notas) || '';
   document.getElementById('mov-registradopor').value = (prefill && prefill.registradoPor) || localStorage.getItem('efigalia_last_user') || '';
@@ -2546,9 +2564,10 @@ function abrirFormParte(prefill) {
   document.getElementById('parte-form-title').textContent =
     (prefill && prefill.editId ? 'Editar parte' : 'Nuevo parte de hoy');
   document.getElementById('parte-fecha').value = (prefill && prefill.fecha) || isoToday();
-  document.getElementById('parte-obra').value = (prefill && prefill.idObra) || '';
   fillFurgonetaSelects();
   fillRegistradoPorSelects();
+  fillObraSelects();
+  document.getElementById('parte-obra').value = (prefill && prefill.idObra) || '';
   document.getElementById('parte-furgoneta').value = (prefill && prefill.furgoneta) || '';
   document.getElementById('parte-trabajos').value = (prefill && prefill.trabajosRealizados) || '';
   document.getElementById('parte-notas').value = (prefill && prefill.notas) || '';

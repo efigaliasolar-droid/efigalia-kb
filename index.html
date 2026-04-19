@@ -672,7 +672,7 @@
         </div>
         <div class="form-group">
           <label>Obra *</label>
-          <select id="mov-obra" class="select-obra"></select>
+          <select id="mov-obra" class="select-obra" onchange="onObraMovChange()"></select>
         </div>
       </div>
 
@@ -2759,10 +2759,10 @@ function abrirFormMov(tipo, prefill) {
   renderInstaladorPills('mov-instaladores-pills', (prefill && prefill.instaladores) || []);
   movLineas = (prefill && prefill.lineas) ? prefill.lineas.map(l => ({...l})) : [];
   renderMovLineas();
-  renderCatPicker();
   document.getElementById('mat-search').value = '';
   document.getElementById('mat-results').classList.remove('open');
   refrescarDatalists();
+  refreshMovPicker();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarFormMov() {
@@ -2775,6 +2775,13 @@ function onTipoMovChange() {
   const t = document.querySelector('input[name="mov-tipo"]:checked').value;
   document.getElementById('mov-form-title').textContent =
     'Nueva ' + (t === 'salida' ? 'salida a obra' : 'retorno de obra');
+  // Si cambias de tipo y ya hay líneas, las puedes mantener (en salida cualquier item vale, en retorno hay que validar al guardar)
+  if (t === 'entrada' && movLineas.length) {
+    if (confirm('Hay líneas añadidas. ¿Las elimino para que selecciones del material pendiente?')) {
+      movLineas = []; renderMovLineas();
+    }
+  }
+  refreshMovPicker();
 }
 function isoToday() {
   const d = new Date(), p = n => String(n).padStart(2,'0');
@@ -2827,6 +2834,129 @@ function renderCatPicker() {
       </div>
     </details>
   `).join('');
+}
+
+// ── BALANCE PARA RETORNO ───────────────────────────────
+function keyOfLinea(l) {
+  if (l.ref && l.ref.trim()) return 'R:' + l.ref.trim().toLowerCase();
+  return 'D:' + (l.descripcion||'').trim().toLowerCase() + '|' + (l.unidad||'').trim().toLowerCase();
+}
+
+function balanceObra(idObra, excludeMovId) {
+  const map = {};
+  for (const m of movimientos) {
+    if (m.idObra !== idObra) continue;
+    if (m.tipo !== 'salida' && m.tipo !== 'entrada') continue;
+    if (excludeMovId && m.id === excludeMovId) continue;
+    for (const l of (m.lineas || [])) {
+      const k = keyOfLinea(l);
+      if (!map[k]) map[k] = { descripcion: l.descripcion, ref: l.ref || '', unidad: l.unidad || 'ud', pending: 0, categoria: '' };
+      const qty = parseFloat(l.cantidad) || 0;
+      if (m.tipo === 'salida') map[k].pending += qty;
+      else map[k].pending -= qty;
+    }
+  }
+  // Solo pendientes > 0; enriquecer con categoría desde catálogo
+  const result = {};
+  for (const k in map) {
+    if (map[k].pending > 0) {
+      const cat = materiales.find(c =>
+        (c.ref && map[k].ref && c.ref === map[k].ref) ||
+        ((!c.ref || !map[k].ref) && (c.descripcion||'').toLowerCase() === (map[k].descripcion||'').toLowerCase())
+      );
+      map[k].categoria = (cat && cat.categoria) || 'SIN CATEGORÍA';
+      result[k] = map[k];
+    }
+  }
+  return result;
+}
+
+let retornoPendientes = [];
+let retornoPendientesObra = null;
+
+function renderRetornoPicker(idObra, excludeMovId) {
+  const c = document.getElementById('cat-picker');
+  if (!c) return;
+  if (!idObra) {
+    retornoPendientes = []; retornoPendientesObra = null;
+    c.innerHTML = '<div class="empty-state" style="padding:18px"><div class="icon">📥</div>Selecciona la obra para ver el material pendiente de retorno.</div>';
+    return;
+  }
+  const balance = balanceObra(idObra, excludeMovId);
+  retornoPendientes = Object.values(balance);
+  retornoPendientesObra = idObra;
+  if (!retornoPendientes.length) {
+    c.innerHTML = `<div class="empty-state" style="padding:18px"><div class="icon">📦</div>No hay material pendiente de retorno en <b>${escapeHtml(idObra)}</b>.</div>`;
+    return;
+  }
+  // Agrupar por categoría
+  const porCat = {};
+  retornoPendientes.forEach((it, idx) => {
+    const cat = it.categoria || 'SIN CATEGORÍA';
+    (porCat[cat] ||= []).push({ it, idx });
+  });
+  const cats = Object.keys(porCat).sort();
+  c.innerHTML = cats.map(cat => `
+    <details class="cat-group" open>
+      <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
+      <div class="cat-items">
+        ${porCat[cat].map(({ it, idx }) => `
+          <div class="cat-item">
+            <div class="cat-item-desc">${escapeHtml(it.descripcion || '—')}<small>Pendiente: <b>${it.pending}</b> ${escapeHtml(it.unidad)}${it.ref ? ' · ' + escapeHtml(it.ref) : ''}</small></div>
+            <input type="number" min="0" max="${it.pending}" step="any" class="cat-qty" id="ret-qty-${idx}" placeholder="${escapeHtml(it.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addLineaRetorno(${idx}, this.value||1)}">
+            <button type="button" class="cat-add" onclick="addLineaRetorno(${idx}, document.getElementById('ret-qty-${idx}').value||1)" title="Añadir">+</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `).join('');
+}
+
+function addLineaRetorno(idx, qty) {
+  const item = retornoPendientes[idx];
+  if (!item) return;
+  const cantidad = parseFloat(qty) > 0 ? parseFloat(qty) : 1;
+  const k = keyOfLinea(item);
+  const yaAcumulado = movLineas.filter(l => keyOfLinea(l) === k).reduce((s, l) => s + (parseFloat(l.cantidad)||0), 0);
+  const restante = item.pending - yaAcumulado;
+  if (cantidad > restante) {
+    showToast(`⚠ Máx ${restante} ${item.unidad} disponibles para "${item.descripcion}"`, 'err');
+    return;
+  }
+  const existing = movLineas.find(l => keyOfLinea(l) === k);
+  if (existing) existing.cantidad = (parseFloat(existing.cantidad)||0) + cantidad;
+  else movLineas.push({ ref: item.ref, descripcion: item.descripcion, unidad: item.unidad, cantidad });
+  const qtyEl = document.getElementById(`ret-qty-${idx}`);
+  if (qtyEl) qtyEl.value = '';
+  renderMovLineas();
+}
+
+function refreshMovPicker() {
+  const tipoEl = document.querySelector('input[name="mov-tipo"]:checked');
+  if (!tipoEl) return;
+  const t = tipoEl.value;
+  const obra = document.getElementById('mov-obra').value;
+  const search = document.getElementById('mat-search');
+  const searchWrap = search ? search.closest('.mat-search-wrap') : null;
+  if (t === 'entrada') {
+    if (searchWrap) searchWrap.style.display = 'none';
+    renderRetornoPicker(obra, movForm && movForm.editId);
+  } else {
+    if (searchWrap) searchWrap.style.display = '';
+    renderCatPicker();
+  }
+}
+
+function onObraMovChange() {
+  const tipoEl = document.querySelector('input[name="mov-tipo"]:checked');
+  if (tipoEl && tipoEl.value === 'entrada' && movLineas.length) {
+    if (!confirm('Cambiar de obra borrará las líneas añadidas (porque dejan de ser válidas para la nueva obra). ¿Continuar?')) {
+      return;
+    }
+    movLineas = [];
+    renderMovLineas();
+  }
+  refreshMovPicker();
 }
 
 function addLineaFromCatalogo(idx) { addLineaFromCatalogoQty(idx, 1); }
@@ -2897,6 +3027,26 @@ async function guardarMovimiento() {
   if (!instaladores.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
   if (!registradoPor) { showToast('⚠ Selecciona quién lo registra', 'err'); return; }
   if (!movLineas.length) { showToast('⚠ Añade al menos un material', 'err'); return; }
+
+  // Validación adicional para retorno: cantidad ≤ pendiente
+  if (tipo === 'entrada') {
+    await movimientosLoad();
+    const balance = balanceObra(idObra, movForm && movForm.editId);
+    // Sumar cantidades por clave dentro del retorno actual
+    const sumaPorKey = {};
+    for (const l of movLineas) {
+      const k = keyOfLinea(l);
+      sumaPorKey[k] = (sumaPorKey[k] || 0) + (parseFloat(l.cantidad) || 0);
+    }
+    for (const k in sumaPorKey) {
+      const pendiente = balance[k] ? balance[k].pending : 0;
+      if (sumaPorKey[k] > pendiente) {
+        const desc = (balance[k] && balance[k].descripcion) || (movLineas.find(l => keyOfLinea(l) === k) || {}).descripcion || k;
+        showToast(`⚠ "${desc}": pides ${sumaPorKey[k]} y solo hay ${pendiente} pendiente`, 'err');
+        return;
+      }
+    }
+  }
 
   const btn = document.getElementById('btn-mov-save');
   btn.disabled = true; btn.textContent = 'Guardando...';

@@ -149,6 +149,75 @@
     .tab-bar { width: 100%; order: 3; justify-content: flex-start; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .tab { padding: 7px 12px; font-size: 13px; }
   }
+
+  /* ── Obra: action rows, tipo switch, chips, buscador, tabla líneas ── */
+  .action-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .action-row .btn-primary { width: auto; flex: 1; min-width: 140px; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; flex: 1; min-width: 140px; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+  .tipo-switch { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tipo-switch label { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); font-family: var(--sans); transition: all 0.15s; display: block; margin: 0; }
+  .tipo-switch input { display: none; }
+  .tipo-switch label:has(input:checked) { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .chips-input { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px; min-height: 42px; align-items: center; }
+  .chips-input:focus-within { border-color: var(--accent); }
+  .chip { background: var(--surface2); color: var(--text); border-radius: 6px; padding: 4px 8px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+  .chip button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+  .chip button:hover { color: var(--red); }
+  .chips-input input { flex: 1; min-width: 100px; background: transparent; border: none; outline: none; color: var(--text); font-family: var(--sans); font-size: 14px; padding: 4px; }
+
+  .mat-search-wrap { position: relative; margin-bottom: 10px; }
+  .mat-search-wrap input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; }
+  .mat-search-wrap input:focus { border-color: var(--accent); }
+  .mat-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 220px; overflow-y: auto; z-index: 50; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  .mat-results.open { display: block; }
+  .mat-result { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .mat-result:last-child { border-bottom: none; }
+  .mat-result:hover { background: var(--surface2); }
+  .mat-result .ref { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .mat-result .desc { color: var(--text); margin-top: 2px; }
+  .mat-result .cat { font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
+
+  .lineas-table { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+  .lineas-table .lh, .lineas-table .lr { display: grid; grid-template-columns: 90px 1fr 70px 70px 28px; gap: 8px; padding: 8px 10px; align-items: center; font-size: 12px; }
+  .lineas-table .lh { background: var(--surface2); font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .lineas-table .lr { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .lineas-table .lr:last-child { border-bottom: none; }
+  .lineas-table .ref { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .lineas-table .un { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+  .lineas-table input[type=number].qty { padding: 4px 6px; font-size: 12px; text-align: right; }
+  .lineas-table .del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 0; }
+  .lineas-table .del:hover { color: var(--red); }
+  .lineas-empty { text-align: center; color: var(--text-muted); font-size: 12px; padding: 14px; background: var(--surface); }
+  @media (max-width: 500px) {
+    .lineas-table .lh, .lineas-table .lr { grid-template-columns: 1fr 60px 60px 24px; }
+    .lineas-table .lh .col-ref, .lineas-table .lr .ref { display: none; }
+  }
+
+  .mov-card, .parte-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; margin-bottom: 10px; }
+  .mov-card:hover, .parte-card:hover { border-color: var(--accent); background: var(--surface2); }
+  .mov-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 10px; }
+  .mov-obra { font-weight: 600; font-size: 14px; }
+  .badge-salida { background: #2b2218; color: var(--accent); }
+  .badge-entrada { background: #1e2220; color: var(--green); }
+  .mov-meta { font-family: var(--mono); font-size: 10px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 10px; }
+  .mov-meta span { white-space: nowrap; }
+
+  .form-section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .form-section-hdr .back { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; font-family: var(--sans); display: flex; align-items: center; gap: 4px; padding: 0; }
+  .form-section-hdr .back:hover { color: var(--accent); }
+  .form-section-hdr h2 { font-size: 15px; font-weight: 600; margin: 0; }
+
+  .action-btns-row { display: flex; gap: 8px; margin: 10px 0 16px; flex-wrap: wrap; }
+  .action-btns-row .btn-ghost { flex: 1; min-width: 140px; }
+
+  .ref-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .ref-list .ref-item { background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--mono); color: var(--text); }
+  .ref-list .ref-item .ref-lbl { color: var(--text-muted); margin-right: 6px; }
 </style>
 </head>
 <body>
@@ -504,6 +573,162 @@
     <button class="btn-primary" onclick="calcularOffgrid()">Calcular</button>
     <div class="calc-result" id="og-result" style="display:none"></div>
   </div>
+
+  <!-- ═══════════════ MATERIALES ═══════════════ -->
+  <div id="view-materiales">
+    <div id="mat-list-section">
+      <button class="back-link" onclick="goHome()">← Atrás</button>
+      <div class="section-title">Salida / entrada de materiales</div>
+      <div class="action-row">
+        <button class="btn-primary" onclick="abrirFormMov('salida')">+ Salida a obra</button>
+        <button class="btn-secondary" onclick="abrirFormMov('entrada')">+ Entrada de obra</button>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="mov-search" placeholder="Filtrar por obra, furgoneta, fecha..." oninput="renderMovimientos()">
+      </div>
+      <div id="mov-container"></div>
+    </div>
+
+    <div id="mat-form-section" style="display:none">
+      <div class="form-section-hdr">
+        <button class="back" onclick="cerrarFormMov()">← Volver</button>
+        <h2 id="mov-form-title">Nueva salida a obra</h2>
+      </div>
+
+      <div class="tipo-switch">
+        <label><input type="radio" name="mov-tipo" value="salida" onchange="onTipoMovChange()"><span>Salida a obra</span></label>
+        <label><input type="radio" name="mov-tipo" value="entrada" onchange="onTipoMovChange()"><span>Entrada de obra</span></label>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="mov-fecha">
+        </div>
+        <div class="form-group">
+          <label>Obra *</label>
+          <input type="text" id="mov-obra" list="dl-obras" placeholder="Ej: Cafento, Casa García...">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Furgoneta</label>
+        <input type="text" id="mov-furgoneta" list="dl-furgonetas" placeholder="Ej: Furgo 1 - 1234ABC">
+      </div>
+
+      <div class="form-group">
+        <label>Instaladores</label>
+        <div class="chips-input" id="mov-instaladores-chips" onclick="document.getElementById('mov-instaladores-input').focus()">
+          <input type="text" id="mov-instaladores-input" list="dl-instaladores" placeholder="Añadir instalador + Enter">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Materiales</label>
+        <div class="mat-search-wrap">
+          <input type="text" id="mat-search" placeholder="Buscar material por referencia o descripción..." oninput="renderMatSearch()" onfocus="renderMatSearch()" onblur="setTimeout(()=>document.getElementById('mat-results').classList.remove('open'),180)">
+          <div class="mat-results" id="mat-results"></div>
+        </div>
+        <div id="mov-lineas-container"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea class="field" id="mov-notas" placeholder="Observaciones (opcional)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Registrado por</label>
+        <input type="text" id="mov-registradopor" placeholder="Tu nombre">
+      </div>
+
+      <button class="btn-primary" id="btn-mov-save" onclick="guardarMovimiento()">Guardar movimiento</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PARTES DE SEGUIMIENTO ═══════════════ -->
+  <div id="view-partes">
+    <div id="partes-list-section">
+      <button class="back-link" onclick="goHome()">← Atrás</button>
+      <div class="section-title">Partes de seguimiento diario</div>
+      <div class="action-row">
+        <button class="btn-primary" onclick="abrirFormParte()">+ Nuevo parte de hoy</button>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="parte-search" placeholder="Filtrar por obra, fecha, instalador..." oninput="renderPartes()">
+      </div>
+      <div id="partes-container"></div>
+    </div>
+
+    <div id="partes-form-section" style="display:none">
+      <div class="form-section-hdr">
+        <button class="back" onclick="cerrarFormParte()">← Volver</button>
+        <h2 id="parte-form-title">Nuevo parte de hoy</h2>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="parte-fecha">
+        </div>
+        <div class="form-group">
+          <label>Obra *</label>
+          <input type="text" id="parte-obra" list="dl-obras" placeholder="Ej: Cafento">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Furgoneta</label>
+        <input type="text" id="parte-furgoneta" list="dl-furgonetas" placeholder="Ej: Furgo 1 - 1234ABC">
+      </div>
+
+      <div class="form-group">
+        <label>Instaladores</label>
+        <div class="chips-input" id="parte-instaladores-chips" onclick="document.getElementById('parte-instaladores-input').focus()">
+          <input type="text" id="parte-instaladores-input" list="dl-instaladores" placeholder="Añadir instalador + Enter">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Trabajos realizados</label>
+        <textarea class="field" id="parte-trabajos" placeholder="Qué se ha hecho hoy en esta obra..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Fotos (opcional)</label>
+        <div class="photo-drop" onclick="document.getElementById('parte-fotos').click()">
+          <input type="file" id="parte-fotos" accept="image/*" multiple onchange="previewParteFotos(event)">
+          📷 Toca para adjuntar fotos
+        </div>
+        <div class="photo-previews" id="parte-foto-previews"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Acciones</label>
+        <div class="action-btns-row">
+          <button class="btn-ghost" onclick="solicitarMaterialDesdeParte()">➜ Solicitar material</button>
+          <button class="btn-ghost" onclick="registrarIncidenciaDesdeParte()">➜ Registrar incidencia</button>
+        </div>
+        <div id="parte-enlaces"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea class="field" id="parte-notas" placeholder="Observaciones adicionales (opcional)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Registrado por</label>
+        <input type="text" id="parte-registradopor" placeholder="Tu nombre">
+      </div>
+
+      <button class="btn-primary" id="btn-parte-save" onclick="guardarParte()">Guardar parte</button>
+    </div>
+  </div>
+
+  <datalist id="dl-obras"></datalist>
+  <datalist id="dl-furgonetas"></datalist>
+  <datalist id="dl-instaladores"></datalist>
 </main>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
@@ -643,6 +868,36 @@ function switchTab(tab, el) {
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
   if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
+}
+
+function enterObra(tab) {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('tab-bar-obra').style.display = 'flex';
+  const tabs = document.querySelectorAll('#tab-bar-obra .tab');
+  const target = tab || 'materiales';
+  tabs.forEach(t => t.classList.remove('active'));
+  const btn = Array.from(tabs).find(t => t.textContent.trim().toLowerCase() === target.toLowerCase());
+  if (btn) btn.classList.add('active'); else if (tabs[0]) tabs[0].classList.add('active');
+  switchTabObra(target, btn || tabs[0]);
+}
+
+function switchTabObra(tab, el) {
+  document.querySelectorAll('#tab-bar-obra .tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  hideAllViews();
+  document.getElementById('view-' + tab).style.display = 'block';
+  // Cerrar cualquier formulario abierto al cambiar de tab
+  const ml = document.getElementById('mat-list-section'); if (ml) ml.style.display = 'block';
+  const mf = document.getElementById('mat-form-section'); if (mf) mf.style.display = 'none';
+  const pl = document.getElementById('partes-list-section'); if (pl) pl.style.display = 'block';
+  const pf = document.getElementById('partes-form-section'); if (pf) pf.style.display = 'none';
+  if (tab === 'materiales') {
+    Promise.all([materialesLoad(), movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => { refrescarDatalists(); renderMovimientos(); });
+  }
+  if (tab === 'partes') {
+    Promise.all([movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => { refrescarDatalists(); renderPartes(); });
+  }
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
@@ -926,6 +1181,11 @@ async function guardarIncidencia() {
   const lblArch = document.getElementById('archivo-label'); if (lblArch) lblArch.textContent = '📄 Toca para seleccionar archivo';
   onTipoChange();  // restablecer etiquetas/visibilidades según tipo seleccionado
   showToast(tipo === 'documento' ? '✓ Documento subido' : (tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada'), 'ok');
+
+  // Si venimos de un parte que pidió registrar incidencia, volver allí
+  if (typeof returnTarget !== 'undefined' && returnTarget === 'parte_incidencia' && typeof handleReturnFromIncidencia === 'function') {
+    handleReturnFromIncidencia(reg.id);
+  }
 }
 
 // ── LISTADO ────────────────────────────────────────────
@@ -1599,6 +1859,617 @@ function calcularOffgrid() {
     </div>
   `;
 }
+
+let materiales = [];
+let movimientos = [];
+let partes = [];
+let movForm = null;
+let parteForm = null;
+let returnTarget = null;
+let movLineas = [];
+let parteFotoFiles = [];
+
+// ── CARGA Y GUARDADO ───────────────────────────────────
+async function materialesLoad() {
+  try {
+    const res = await fetch(WORKER + '/materiales');
+    const data = await res.json();
+    if (Array.isArray(data)) materiales = data;
+  } catch(e) {
+    const stored = localStorage.getItem('efigalia_materiales_v1');
+    if (stored) materiales = JSON.parse(stored);
+    if (!materiales.length) showToast('⚠ Catálogo no disponible. Texto libre.', 'err');
+  }
+  if (materiales.length) {
+    try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
+  }
+}
+
+async function movimientosLoad() {
+  try {
+    const res = await fetch(WORKER + '/movimientos');
+    const data = await res.json();
+    if (Array.isArray(data)) movimientos = data;
+    try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
+  } catch(e) {
+    const stored = localStorage.getItem('efigalia_movimientos_v1');
+    movimientos = stored ? JSON.parse(stored) : [];
+  }
+}
+
+async function movimientosSave() {
+  try {
+    await fetch(WORKER + '/movimientos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(movimientos)
+    });
+    try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
+    return true;
+  } catch(e) {
+    try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e2) {}
+    showToast('⚠ Guardado solo en local', 'err');
+    return false;
+  }
+}
+
+async function partesLoad() {
+  try {
+    const res = await fetch(WORKER + '/partes');
+    const data = await res.json();
+    if (Array.isArray(data)) partes = data;
+    try {
+      const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
+      localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
+    } catch(e) {}
+  } catch(e) {
+    const stored = localStorage.getItem('efigalia_partes_v1');
+    partes = stored ? JSON.parse(stored) : [];
+  }
+}
+
+async function partesSave() {
+  try {
+    await fetch(WORKER + '/partes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partes)
+    });
+    try {
+      const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
+      localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
+    } catch(e) {}
+    return true;
+  } catch(e) {
+    try {
+      const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
+      localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
+    } catch(e2) {}
+    showToast('⚠ Guardado solo en local', 'err');
+    return false;
+  }
+}
+
+// ── DATALISTS (obras, furgonetas, instaladores) ────────
+function obrasUsadas() {
+  const set = new Set();
+  incidents.forEach(i => { if (i.idObra && i.idObra !== '-') set.add(i.idObra); });
+  movimientos.forEach(m => { if (m.idObra) set.add(m.idObra); });
+  partes.forEach(p => { if (p.idObra) set.add(p.idObra); });
+  return [...set].sort();
+}
+function furgonetasUsadas() {
+  const set = new Set();
+  movimientos.forEach(m => { if (m.furgoneta) set.add(m.furgoneta); });
+  partes.forEach(p => { if (p.furgoneta) set.add(p.furgoneta); });
+  return [...set].sort();
+}
+function instaladoresUsados() {
+  const set = new Set();
+  movimientos.forEach(m => (m.instaladores||[]).forEach(i => set.add(i)));
+  partes.forEach(p => (p.instaladores||[]).forEach(i => set.add(i)));
+  incidents.forEach(i => { if (i.tecnico && i.tecnico !== 'Anónimo' && i.tecnico !== '-') set.add(i.tecnico); });
+  return [...set].sort();
+}
+function refrescarDatalists() {
+  const fill = (id, arr) => {
+    const dl = document.getElementById(id);
+    if (dl) dl.innerHTML = arr.map(v => `<option value="${escapeHtml(v)}">`).join('');
+  };
+  fill('dl-obras', obrasUsadas());
+  fill('dl-furgonetas', furgonetasUsadas());
+  fill('dl-instaladores', instaladoresUsados());
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ── CHIPS INPUT (instaladores) ─────────────────────────
+function setupChipsInput(containerId, inputId, values) {
+  const container = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  if (!container || !input) return;
+  container._chips = values.slice();
+  renderChips(containerId, inputId);
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (v && !container._chips.includes(v)) {
+        container._chips.push(v);
+        renderChips(containerId, inputId);
+      }
+      input.value = '';
+    } else if (e.key === 'Backspace' && !input.value && container._chips.length) {
+      container._chips.pop();
+      renderChips(containerId, inputId);
+    }
+  };
+  input.onblur = () => {
+    const v = input.value.trim();
+    if (v && !container._chips.includes(v)) {
+      container._chips.push(v);
+      renderChips(containerId, inputId);
+    }
+    input.value = '';
+  };
+}
+function renderChips(containerId, inputId) {
+  const container = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  const chipsHtml = (container._chips || []).map((c, idx) =>
+    `<span class="chip">${escapeHtml(c)}<button type="button" onclick="removeChip('${containerId}','${inputId}',${idx})">✕</button></span>`
+  ).join('');
+  container.innerHTML = chipsHtml;
+  container.appendChild(input);
+  input.focus();
+}
+function removeChip(containerId, inputId, idx) {
+  const container = document.getElementById(containerId);
+  container._chips.splice(idx, 1);
+  renderChips(containerId, inputId);
+}
+function getChips(containerId) {
+  const container = document.getElementById(containerId);
+  return (container && container._chips) ? container._chips.slice() : [];
+}
+
+// ── FORMULARIO MOVIMIENTO ──────────────────────────────
+function abrirFormMov(tipo, prefill) {
+  document.getElementById('mat-list-section').style.display = 'none';
+  document.getElementById('mat-form-section').style.display = 'block';
+  const t = (prefill && prefill.tipo) || tipo || 'salida';
+  document.querySelector(`input[name="mov-tipo"][value="${t}"]`).checked = true;
+  document.getElementById('mov-form-title').textContent =
+    (prefill && prefill.editId ? 'Editar' : 'Nueva') + (t === 'salida' ? ' salida a obra' : ' entrada de obra');
+  document.getElementById('mov-fecha').value = (prefill && prefill.fecha) || isoToday();
+  document.getElementById('mov-obra').value = (prefill && prefill.idObra) || '';
+  document.getElementById('mov-furgoneta').value = (prefill && prefill.furgoneta) || '';
+  document.getElementById('mov-notas').value = (prefill && prefill.notas) || '';
+  document.getElementById('mov-registradopor').value = (prefill && prefill.registradoPor) || localStorage.getItem('efigalia_last_user') || '';
+  setupChipsInput('mov-instaladores-chips', 'mov-instaladores-input', (prefill && prefill.instaladores) || []);
+  movLineas = (prefill && prefill.lineas) ? prefill.lineas.map(l => ({...l})) : [];
+  renderMovLineas();
+  document.getElementById('mat-search').value = '';
+  document.getElementById('mat-results').classList.remove('open');
+  refrescarDatalists();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function cerrarFormMov() {
+  document.getElementById('mat-list-section').style.display = 'block';
+  document.getElementById('mat-form-section').style.display = 'none';
+  movForm = null;
+  movLineas = [];
+}
+function onTipoMovChange() {
+  const t = document.querySelector('input[name="mov-tipo"]:checked').value;
+  document.getElementById('mov-form-title').textContent =
+    'Nueva ' + (t === 'salida' ? 'salida a obra' : 'entrada de obra');
+}
+function isoToday() {
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+// Buscador de materiales
+function renderMatSearch() {
+  const q = document.getElementById('mat-search').value.trim().toLowerCase();
+  const box = document.getElementById('mat-results');
+  if (!q) { box.classList.remove('open'); return; }
+  const results = materiales.filter(m =>
+    (m.ref||'').toLowerCase().includes(q) ||
+    (m.descripcion||'').toLowerCase().includes(q) ||
+    (m.categoria||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+  if (!results.length) {
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onclick="addLineaLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.classList.add('open');
+    return;
+  }
+  box.innerHTML = results.map((m, i) => `
+    <div class="mat-result" onmousedown="addLineaFromCatalogo(${materiales.indexOf(m)})">
+      <div class="ref">${escapeHtml(m.ref || '—')} <span class="cat">· ${escapeHtml(m.categoria || '')}</span></div>
+      <div class="desc">${escapeHtml(m.descripcion || '')} <span class="cat">(${escapeHtml(m.unidad || 'ud')})</span></div>
+    </div>`).join('');
+  box.classList.add('open');
+}
+function addLineaFromCatalogo(idx) {
+  const m = materiales[idx];
+  if (!m) return;
+  const existing = movLineas.find(l => l.ref === m.ref);
+  if (existing) { existing.cantidad = (parseFloat(existing.cantidad)||0) + 1; }
+  else { movLineas.push({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: 1 }); }
+  document.getElementById('mat-search').value = '';
+  document.getElementById('mat-results').classList.remove('open');
+  renderMovLineas();
+}
+function addLineaLibre(desc) {
+  if (!desc) return;
+  movLineas.push({ ref: '', descripcion: desc, unidad: 'ud', cantidad: 1 });
+  document.getElementById('mat-search').value = '';
+  document.getElementById('mat-results').classList.remove('open');
+  renderMovLineas();
+}
+function renderMovLineas() {
+  const c = document.getElementById('mov-lineas-container');
+  if (!movLineas.length) {
+    c.innerHTML = '<div class="lineas-empty">Aún no has añadido materiales. Usa el buscador de arriba.</div>';
+    return;
+  }
+  c.innerHTML = `
+    <div class="lineas-table">
+      <div class="lh"><span class="col-ref">Ref.</span><span>Descripción</span><span style="text-align:right">Ud</span><span style="text-align:right">Cant.</span><span></span></div>
+      ${movLineas.map((l, i) => `
+        <div class="lr">
+          <span class="ref col-ref">${escapeHtml(l.ref || '—')}</span>
+          <span class="desc">${escapeHtml(l.descripcion || '')}</span>
+          <span class="un" style="text-align:right">${escapeHtml(l.unidad || 'ud')}</span>
+          <input type="number" class="qty" min="0" step="any" value="${l.cantidad}" oninput="updateLineaQty(${i}, this.value)">
+          <button class="del" onclick="removeLinea(${i})" title="Eliminar">✕</button>
+        </div>`).join('')}
+    </div>`;
+}
+function updateLineaQty(i, val) {
+  if (movLineas[i]) movLineas[i].cantidad = parseFloat(val) || 0;
+}
+function removeLinea(i) {
+  movLineas.splice(i, 1);
+  renderMovLineas();
+}
+
+async function guardarMovimiento() {
+  const tipo = document.querySelector('input[name="mov-tipo"]:checked').value;
+  const fecha = document.getElementById('mov-fecha').value;
+  const idObra = document.getElementById('mov-obra').value.trim();
+  const furgoneta = document.getElementById('mov-furgoneta').value.trim();
+  const instaladores = getChips('mov-instaladores-chips');
+  const notas = document.getElementById('mov-notas').value.trim();
+  const registradoPor = document.getElementById('mov-registradopor').value.trim();
+
+  if (!fecha || !idObra) { showToast('⚠ Fecha y obra son obligatorias', 'err'); return; }
+  if (!movLineas.length) { showToast('⚠ Añade al menos un material', 'err'); return; }
+
+  const btn = document.getElementById('btn-mov-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  if (registradoPor) localStorage.setItem('efigalia_last_user', registradoPor);
+
+  const mov = {
+    id: (movForm && movForm.editId) || Date.now(),
+    fecha, tipo, idObra, furgoneta,
+    instaladores,
+    lineas: movLineas.map(l => ({...l, cantidad: parseFloat(l.cantidad) || 0})),
+    notas,
+    registradoPor: registradoPor || 'Anónimo',
+    timestamp: Date.now()
+  };
+
+  await movimientosLoad();
+  const idx = movimientos.findIndex(m => m.id === mov.id);
+  if (idx >= 0) movimientos[idx] = mov; else movimientos.unshift(mov);
+  await movimientosSave();
+
+  btn.disabled = false; btn.textContent = 'Guardar movimiento';
+  showToast('✓ Movimiento guardado', 'ok');
+
+  const wasReturn = (returnTarget === 'parte_material' && parteForm);
+  cerrarFormMov();
+
+  if (wasReturn) {
+    parteForm.movimientosIds = (parteForm.movimientosIds || []).concat([mov.id]);
+    returnTarget = null;
+    setTimeout(() => abrirFormParte(parteForm), 80);
+  } else {
+    renderMovimientos();
+  }
+}
+
+// ── LISTADO Y MODAL DE MOVIMIENTOS ─────────────────────
+function renderMovimientos() {
+  const c = document.getElementById('mov-container');
+  const q = (document.getElementById('mov-search')?.value || '').toLowerCase();
+  const list = q
+    ? movimientos.filter(m => [m.idObra, m.furgoneta, m.fecha, m.tipo, (m.instaladores||[]).join(' '), m.notas].some(f => (f||'').toLowerCase().includes(q)))
+    : movimientos;
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state"><div class="icon">📦</div>${q?'Sin resultados.':'Aún no hay movimientos.'}</div>`;
+    return;
+  }
+  c.innerHTML = list.map(m => `
+    <div class="mov-card" onclick="openMovModal(${m.id})">
+      <div class="mov-head">
+        <div class="mov-obra">${escapeHtml(m.idObra)}</div>
+        <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? '↗ SALIDA' : '↙ ENTRADA'}</span>
+      </div>
+      <div class="mov-meta">
+        <span>📅 ${escapeHtml(m.fecha)}</span>
+        ${m.furgoneta ? `<span>🚐 ${escapeHtml(m.furgoneta)}</span>` : ''}
+        ${(m.instaladores||[]).length ? `<span>👷 ${escapeHtml((m.instaladores||[]).join(', '))}</span>` : ''}
+        <span>📋 ${(m.lineas||[]).length} líneas</span>
+      </div>
+    </div>`).join('');
+}
+function openMovModal(id) {
+  const m = movimientos.find(x => x.id === id);
+  if (!m) return;
+  const lineasHtml = (m.lineas||[]).map(l =>
+    `<div class="ref-item"><span class="ref-lbl">${escapeHtml(l.ref || '—')}</span>${escapeHtml(l.descripcion || '')} — <b>${l.cantidad} ${escapeHtml(l.unidad || 'ud')}</b></div>`
+  ).join('');
+  document.getElementById('modal-inner').innerHTML = `
+    <div class="modal-title">${escapeHtml(m.idObra)}</div>
+    <div class="modal-badges">
+      <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? 'SALIDA' : 'ENTRADA'}</span>
+      <span class="badge badge-marca">${escapeHtml(m.fecha)}</span>
+    </div>
+    ${m.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(m.furgoneta)}</div></div>` : ''}
+    ${(m.instaladores||[]).length ? `<div class="modal-section"><div class="modal-label">Instaladores</div><div class="modal-value">${escapeHtml((m.instaladores||[]).join(', '))}</div></div>` : ''}
+    <div class="modal-section"><div class="modal-label">Materiales</div><div class="ref-list">${lineasHtml || '<div class="modal-value" style="color:var(--text-muted)">—</div>'}</div></div>
+    ${m.notas ? `<div class="modal-section"><div class="modal-label">Notas</div><div class="modal-value">${escapeHtml(m.notas)}</div></div>` : ''}
+    <div class="modal-section"><div class="modal-label">Registrado por</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${escapeHtml(m.registradoPor || '—')}</div></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-ghost" onclick="editarMovimiento(${m.id})">Editar</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function editarMovimiento(id) {
+  const m = movimientos.find(x => x.id === id);
+  if (!m) return;
+  closeModal();
+  abrirFormMov(m.tipo, { editId: m.id, ...m });
+  movForm = { editId: m.id };
+}
+
+// ── FORMULARIO PARTE ───────────────────────────────────
+function abrirFormParte(prefill) {
+  document.getElementById('partes-list-section').style.display = 'none';
+  document.getElementById('partes-form-section').style.display = 'block';
+  document.getElementById('parte-form-title').textContent =
+    (prefill && prefill.editId ? 'Editar parte' : 'Nuevo parte de hoy');
+  document.getElementById('parte-fecha').value = (prefill && prefill.fecha) || isoToday();
+  document.getElementById('parte-obra').value = (prefill && prefill.idObra) || '';
+  document.getElementById('parte-furgoneta').value = (prefill && prefill.furgoneta) || '';
+  document.getElementById('parte-trabajos').value = (prefill && prefill.trabajosRealizados) || '';
+  document.getElementById('parte-notas').value = (prefill && prefill.notas) || '';
+  document.getElementById('parte-registradopor').value = (prefill && prefill.registradoPor) || localStorage.getItem('efigalia_last_user') || '';
+  setupChipsInput('parte-instaladores-chips', 'parte-instaladores-input', (prefill && prefill.instaladores) || []);
+  parteFotoFiles = [];
+  document.getElementById('parte-foto-previews').innerHTML = '';
+  parteForm = {
+    editId: prefill && prefill.editId,
+    fotosExistentes: (prefill && prefill.fotos) ? prefill.fotos.slice() : [],
+    incidenciasIds: (prefill && prefill.incidenciasIds) ? prefill.incidenciasIds.slice() : [],
+    movimientosIds: (prefill && prefill.movimientosIds) ? prefill.movimientosIds.slice() : []
+  };
+  renderParteEnlaces();
+  if (parteForm.fotosExistentes.length) {
+    const cont = document.getElementById('parte-foto-previews');
+    parteForm.fotosExistentes.forEach(url => {
+      const img = document.createElement('img');
+      img.src = url; cont.appendChild(img);
+    });
+  }
+  refrescarDatalists();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function cerrarFormParte() {
+  document.getElementById('partes-list-section').style.display = 'block';
+  document.getElementById('partes-form-section').style.display = 'none';
+  parteForm = null;
+  parteFotoFiles = [];
+}
+function previewParteFotos(event) {
+  parteFotoFiles = Array.from(event.target.files);
+  const cont = document.getElementById('parte-foto-previews');
+  cont.innerHTML = '';
+  (parteForm?.fotosExistentes || []).forEach(url => {
+    const img = document.createElement('img'); img.src = url; cont.appendChild(img);
+  });
+  parteFotoFiles.forEach(file => {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    cont.appendChild(img);
+  });
+}
+function renderParteEnlaces() {
+  const c = document.getElementById('parte-enlaces');
+  if (!c || !parteForm) return;
+  const mats = (parteForm.movimientosIds || []).map(id => {
+    const m = movimientos.find(x => x.id === id);
+    return m ? `<div class="ref-item">📦 Salida · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
+  }).join('');
+  const incs = (parteForm.incidenciasIds || []).map(id => {
+    const inc = incidents.find(x => x.id === id);
+    return inc ? `<div class="ref-item">🛠 Incidencia · ${escapeHtml((inc.incidencia||'').substring(0,60))}</div>` : '';
+  }).join('');
+  c.innerHTML = (mats || incs) ? `<div class="ref-list" style="margin-top:8px">${mats}${incs}</div>` : '';
+}
+
+function capturarParteForm() {
+  return {
+    editId: parteForm && parteForm.editId,
+    fecha: document.getElementById('parte-fecha').value,
+    idObra: document.getElementById('parte-obra').value.trim(),
+    furgoneta: document.getElementById('parte-furgoneta').value.trim(),
+    instaladores: getChips('parte-instaladores-chips'),
+    trabajosRealizados: document.getElementById('parte-trabajos').value,
+    notas: document.getElementById('parte-notas').value,
+    registradoPor: document.getElementById('parte-registradopor').value.trim(),
+    fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : [],
+    incidenciasIds: (parteForm && parteForm.incidenciasIds) ? parteForm.incidenciasIds.slice() : [],
+    movimientosIds: (parteForm && parteForm.movimientosIds) ? parteForm.movimientosIds.slice() : []
+  };
+}
+
+function solicitarMaterialDesdeParte() {
+  const snap = capturarParteForm();
+  if (!snap.idObra) { showToast('⚠ Rellena la obra antes de solicitar material', 'err'); return; }
+  parteForm = { ...parteForm, ...snap };
+  returnTarget = 'parte_material';
+  cerrarFormParte();
+  setTimeout(() => abrirFormMov('salida', {
+    fecha: snap.fecha,
+    idObra: snap.idObra,
+    furgoneta: snap.furgoneta,
+    instaladores: snap.instaladores,
+    registradoPor: snap.registradoPor,
+    lineas: [],
+    notas: `Solicitado desde parte de ${snap.fecha}`
+  }), 50);
+}
+
+function registrarIncidenciaDesdeParte() {
+  const snap = capturarParteForm();
+  if (!snap.idObra) { showToast('⚠ Rellena la obra antes de registrar incidencia', 'err'); return; }
+  parteForm = { ...parteForm, ...snap };
+  returnTarget = 'parte_incidencia';
+  cerrarFormParte();
+  enterIncidencias();
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('#tab-bar-incidencias .tab');
+    if (tabs[2]) tabs[2].click();   // Registrar
+    const tipoSel = document.getElementById('f-tipo'); if (tipoSel) { tipoSel.value = 'incidencia'; if (typeof onTipoChange === 'function') onTipoChange(); }
+    document.getElementById('f-idobra').value = snap.idObra;
+    if (snap.registradoPor) document.getElementById('f-tecnico').value = snap.registradoPor;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 80);
+}
+
+function handleReturnFromIncidencia(incId) {
+  if (!parteForm) { returnTarget = null; return; }
+  parteForm.incidenciasIds = (parteForm.incidenciasIds || []).concat([incId]);
+  returnTarget = null;
+  enterObra('partes');
+  setTimeout(() => abrirFormParte(parteForm), 80);
+}
+
+async function guardarParte() {
+  const snap = capturarParteForm();
+  if (!snap.fecha || !snap.idObra) { showToast('⚠ Fecha y obra son obligatorias', 'err'); return; }
+  if (!snap.trabajosRealizados.trim()) { showToast('⚠ Describe los trabajos realizados', 'err'); return; }
+
+  const btn = document.getElementById('btn-parte-save');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  if (snap.registradoPor) localStorage.setItem('efigalia_last_user', snap.registradoPor);
+
+  let fotosUrls = snap.fotos.slice();
+  if (parteFotoFiles.length > 0) {
+    btn.textContent = 'Subiendo fotos...';
+    try {
+      const nuevas = await Promise.all(parteFotoFiles.map(f => subirFoto(f)));
+      fotosUrls = fotosUrls.concat(nuevas.filter(u => !!u));
+    } catch(e) {
+      showToast('⚠ Error al subir fotos', 'err');
+    }
+  }
+
+  btn.textContent = 'Guardando...';
+  await partesLoad();
+
+  const parte = {
+    id: snap.editId || Date.now(),
+    fecha: snap.fecha,
+    idObra: snap.idObra,
+    furgoneta: snap.furgoneta,
+    instaladores: snap.instaladores,
+    trabajosRealizados: snap.trabajosRealizados,
+    fotos: fotosUrls,
+    incidenciasIds: snap.incidenciasIds,
+    movimientosIds: snap.movimientosIds,
+    notas: snap.notas,
+    registradoPor: snap.registradoPor || 'Anónimo',
+    timestamp: Date.now()
+  };
+
+  const idx = partes.findIndex(p => p.id === parte.id);
+  if (idx >= 0) partes[idx] = parte; else partes.unshift(parte);
+  await partesSave();
+
+  btn.disabled = false; btn.textContent = 'Guardar parte';
+  showToast('✓ Parte guardado', 'ok');
+  cerrarFormParte();
+  renderPartes();
+}
+
+// ── LISTADO Y MODAL DE PARTES ──────────────────────────
+function renderPartes() {
+  const c = document.getElementById('partes-container');
+  const q = (document.getElementById('parte-search')?.value || '').toLowerCase();
+  const list = q
+    ? partes.filter(p => [p.idObra, p.fecha, p.furgoneta, (p.instaladores||[]).join(' '), p.trabajosRealizados].some(f => (f||'').toLowerCase().includes(q)))
+    : partes;
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state"><div class="icon">📋</div>${q?'Sin resultados.':'Aún no hay partes.'}</div>`;
+    return;
+  }
+  c.innerHTML = list.map(p => `
+    <div class="parte-card" onclick="openParteModal(${p.id})">
+      <div class="mov-head">
+        <div class="mov-obra">${escapeHtml(p.idObra)}</div>
+        <span class="badge badge-marca">${escapeHtml(p.fecha)}</span>
+      </div>
+      <div class="card-desc">${escapeHtml((p.trabajosRealizados||'').substring(0,110))}${(p.trabajosRealizados||'').length>110?'…':''}</div>
+      <div class="mov-meta" style="margin-top:6px">
+        ${(p.instaladores||[]).length ? `<span>👷 ${escapeHtml((p.instaladores||[]).join(', '))}</span>` : ''}
+        ${p.furgoneta ? `<span>🚐 ${escapeHtml(p.furgoneta)}</span>` : ''}
+        ${(p.fotos||[]).length ? `<span>📷 ${p.fotos.length}</span>` : ''}
+        ${(p.movimientosIds||[]).length ? `<span>📦 ${p.movimientosIds.length}</span>` : ''}
+        ${(p.incidenciasIds||[]).length ? `<span>🛠 ${p.incidenciasIds.length}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+function openParteModal(id) {
+  const p = partes.find(x => x.id === id);
+  if (!p) return;
+  const photos = (p.fotos||[]).length
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    : '';
+  const mats = (p.movimientosIds||[]).map(id => {
+    const m = movimientos.find(x => x.id === id);
+    return m ? `<div class="ref-item">📦 ${m.tipo.toUpperCase()} · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
+  }).join('');
+  const incs = (p.incidenciasIds||[]).map(id => {
+    const inc = incidents.find(x => x.id === id);
+    return inc ? `<div class="ref-item">🛠 ${escapeHtml((inc.incidencia||'').substring(0,80))}</div>` : '';
+  }).join('');
+  document.getElementById('modal-inner').innerHTML = `
+    <div class="modal-title">${escapeHtml(p.idObra)} · ${escapeHtml(p.fecha)}</div>
+    ${p.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(p.furgoneta)}</div></div>` : ''}
+    ${(p.instaladores||[]).length ? `<div class="modal-section"><div class="modal-label">Instaladores</div><div class="modal-value">${escapeHtml((p.instaladores||[]).join(', '))}</div></div>` : ''}
+    <div class="modal-section"><div class="modal-label">Trabajos realizados</div><div class="modal-value">${escapeHtml(p.trabajosRealizados || '')}</div></div>
+    ${photos}
+    ${(mats || incs) ? `<div class="modal-section"><div class="modal-label">Enlaces</div><div class="ref-list">${mats}${incs}</div></div>` : ''}
+    ${p.notas ? `<div class="modal-section"><div class="modal-label">Notas</div><div class="modal-value">${escapeHtml(p.notas)}</div></div>` : ''}
+    <div class="modal-section"><div class="modal-label">Registrado por</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${escapeHtml(p.registradoPor || '—')}</div></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-ghost" onclick="editarParte(${p.id})">Editar</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function editarParte(id) {
+  const p = partes.find(x => x.id === id);
+  if (!p) return;
+  closeModal();
+  abrirFormParte({ editId: p.id, ...p });
+}
+
+// ── INIT ───────────────────────────────────────────────
 
 // Limpiar cache local para evitar quota exceeded
 try { localStorage.removeItem('efigalia_kb_v4'); } catch(e) {}

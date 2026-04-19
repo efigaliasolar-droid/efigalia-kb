@@ -1013,57 +1013,47 @@
 
     <!-- Cabecera (admin) -->
     <details class="filtros-panel" open id="visita-sec-admin">
-      <summary>Datos de admin (cliente, proyecto, asignación)</summary>
+      <summary>Datos de la visita</summary>
       <div class="filtros-body">
-        <div class="section-title" style="margin-top:4px">Cliente</div>
-        <div class="form-row">
-          <div class="form-group"><label>Nombre *</label><input type="text" id="v-cli-nombre"></div>
-          <div class="form-group"><label>Apellidos *</label><input type="text" id="v-cli-apellidos"></div>
+        <div class="form-group">
+          <label>Título del proyecto *</label>
+          <input type="text" id="v-titulo" placeholder="Ej: Autoconsumo nave Portela">
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Teléfono *</label><input type="text" id="v-cli-telefono" inputmode="tel"></div>
-          <div class="form-group"><label>Email *</label><input type="text" id="v-cli-email" inputmode="email"></div>
+          <div class="form-group">
+            <label>Cliente *</label>
+            <input type="text" id="v-cliente" placeholder="Nombre o razón social">
+          </div>
+          <div class="form-group">
+            <label>Teléfono *</label>
+            <input type="text" id="v-telefono" inputmode="tel">
+          </div>
         </div>
-        <div class="form-group"><label>Dirección fiscal *</label><input type="text" id="v-cli-direccion"></div>
-        <div class="form-row">
-          <div class="form-group"><label>CIF / NIF *</label><input type="text" id="v-cli-cif"></div>
-          <div class="form-group"><label>ID Cliente</label><input type="text" id="v-cli-id" placeholder="opcional"></div>
+        <div class="form-group">
+          <label>Dirección de la instalación *</label>
+          <input type="text" id="v-direccion" placeholder="Calle, polígono...">
         </div>
-
-        <div class="section-title" style="margin-top:12px">Proyecto</div>
-        <div class="form-group"><label>Título de la oportunidad *</label><input type="text" id="v-pro-titulo" placeholder="Ej: Autoconsumo nave Portela"></div>
-        <div class="form-row">
-          <div class="form-group"><label>Comercial</label><input type="text" id="v-pro-comercial"></div>
-          <div class="form-group"><label>Tipo proyecto</label><input type="text" id="v-pro-tipoproyecto" placeholder="Ej: Autoconsumo industrial"></div>
+        <div class="form-group">
+          <label>Enlace Google Maps</label>
+          <input type="text" id="v-maps" placeholder="https://...">
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Tipo de cliente *</label><input type="text" id="v-pro-tipocliente" placeholder="Ej: Empresa, Particular..."></div>
-          <div class="form-group"><label>Provincia *</label><input type="text" id="v-pro-provincia" placeholder="Ej: A Coruña"></div>
-        </div>
-        <div class="form-group"><label>Dirección instalación *</label><input type="text" id="v-pro-dirinst"></div>
-        <div class="form-row">
-          <div class="form-group"><label>URL Google Maps *</label><input type="text" id="v-pro-maps" placeholder="https://..."></div>
-          <div class="form-group"><label>Ref. catastral *</label><input type="text" id="v-pro-catastro"></div>
+        <div class="form-group">
+          <label>Equipos previstos</label>
+          <textarea class="field" id="v-equipos" placeholder="Ej: 20 paneles Longi 535W · 1 Huawei SUN2000-10KTL · 1 batería LUNA 10 kWh" style="min-height:70px"></textarea>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Latitud obra *</label><input type="text" id="v-pro-lat" inputmode="decimal"></div>
-          <div class="form-group"><label>Longitud obra *</label><input type="text" id="v-pro-lng" inputmode="decimal"></div>
+          <div class="form-group">
+            <label>Operario asignado *</label>
+            <select id="v-operario"></select>
+          </div>
+          <div class="form-group">
+            <label>Fecha prevista *</label>
+            <input type="date" id="v-fecha">
+          </div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Tipo de actuación *</label><input type="text" id="v-pro-actuacion" placeholder="Ej: Nueva, ampliación..."></div>
-          <div class="form-group"><label>Tarifa de red</label><input type="text" id="v-pro-tarifa" placeholder="Ej: 2.0TD, 3.0TD..."></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>CIE *</label><input type="text" id="v-pro-cie"></div>
-          <div class="form-group"><label>CUPS *</label><input type="text" id="v-pro-cups"></div>
-        </div>
-        <div class="form-group"><label><input type="checkbox" id="v-pro-aislada" style="margin-right:6px">Instalación aislada / sin factura de red</label></div>
-        <div class="form-group"><label>Observaciones del proyecto</label><textarea class="field" id="v-pro-obs"></textarea></div>
-
-        <div class="section-title" style="margin-top:12px">Asignación</div>
-        <div class="form-row">
-          <div class="form-group"><label>Operario asignado *</label><select id="v-asig-operario"></select></div>
-          <div class="form-group"><label>Fecha visita prevista *</label><input type="date" id="v-asig-fecha"></div>
+        <div class="form-group">
+          <label>Observaciones para el operario</label>
+          <textarea class="field" id="v-obs" placeholder="Ej: ir con escalera extra, puerta lateral, preguntar por Luis..."></textarea>
         </div>
       </div>
     </details>
@@ -3479,11 +3469,10 @@ function renderVisitas() {
   if (opF) list = list.filter(v => v.operarioAsignado === opF);
   if (q) list = list.filter(v => {
     const haystack = [
+      v.titulo, v.cliente_nombre, v.direccion, v.equipos, v.operarioAsignado,
       v.cliente && (v.cliente.nombre + ' ' + (v.cliente.apellidos||'')),
       v.proyecto && v.proyecto.titulo,
-      v.proyecto && v.proyecto.dirInst,
-      v.proyecto && v.proyecto.provincia,
-      v.operarioAsignado
+      v.proyecto && v.proyecto.dirInst
     ].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(q);
   });
@@ -3513,8 +3502,8 @@ function renderVisitas() {
       completada: '<span class="badge" style="background:#1e2220;color:#7ae8a4">✓ COMPLETADA</span>',
       cancelada: '<span class="badge" style="background:#2b1818;color:var(--red)">✗ CANCELADA</span>'
     }[estado] || '';
-    const cliente = v.cliente ? `${v.cliente.nombre || ''} ${v.cliente.apellidos || ''}`.trim() : '';
-    const titulo = (v.proyecto && v.proyecto.titulo) || cliente || '—';
+    const cliente = v.cliente_nombre || (v.cliente ? `${v.cliente.nombre || ''} ${v.cliente.apellidos || ''}`.trim() : '');
+    const titulo = v.titulo || (v.proyecto && v.proyecto.titulo) || cliente || '—';
     return `
       <div class="mov-card" onclick="abrirVisita(${v.id})">
         <div class="mov-head">
@@ -3525,7 +3514,7 @@ function renderVisitas() {
           ${cliente && cliente !== titulo ? `<span>👤 ${escapeHtml(cliente)}</span>` : ''}
           ${v.fechaPrevista ? `<span>📅 ${escapeHtml(v.fechaPrevista)}</span>` : ''}
           ${v.operarioAsignado ? `<span>👷 ${escapeHtml(v.operarioAsignado)}</span>` : ''}
-          ${v.proyecto && v.proyecto.provincia ? `<span>📍 ${escapeHtml(v.proyecto.provincia)}</span>` : ''}
+          ${v.direccion ? `<span>📍 ${escapeHtml(v.direccion.substring(0, 30))}${v.direccion.length > 30 ? '…' : ''}</span>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -3549,41 +3538,29 @@ function abrirFormularioVisita(v) {
   document.getElementById('view-visita').style.display = 'block';
 
   // Rellenar select de operario
-  const selOp = document.getElementById('v-asig-operario');
+  const selOp = document.getElementById('v-operario');
   const lista = instaladoresActivosAdmin();
   const curOp = v && v.operarioAsignado;
   selOp.innerHTML = '<option value="">— Seleccionar —</option>' + lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   if (curOp && lista.includes(curOp)) selOp.value = curOp;
 
-  // Rellenar campos
-  const c = v && v.cliente ? v.cliente : {};
-  document.getElementById('v-cli-nombre').value = c.nombre || '';
-  document.getElementById('v-cli-apellidos').value = c.apellidos || '';
-  document.getElementById('v-cli-telefono').value = c.telefono || '';
-  document.getElementById('v-cli-email').value = c.email || '';
-  document.getElementById('v-cli-direccion').value = c.direccion || '';
-  document.getElementById('v-cli-cif').value = c.cif || '';
-  document.getElementById('v-cli-id').value = c.idCliente || '';
+  // Compatibilidad con el esquema anterior (nested cliente/proyecto)
+  const titulo = (v && (v.titulo || (v.proyecto && v.proyecto.titulo))) || '';
+  const cliente = (v && (v.cliente_nombre || (v.cliente && (v.cliente.nombre + (v.cliente.apellidos ? ' ' + v.cliente.apellidos : '')).trim()))) || '';
+  const telefono = (v && (v.telefono || (v.cliente && v.cliente.telefono))) || '';
+  const direccion = (v && (v.direccion || (v.proyecto && v.proyecto.dirInst))) || '';
+  const maps = (v && (v.urlMaps || (v.proyecto && v.proyecto.urlMaps))) || '';
+  const equipos = (v && v.equipos) || '';
+  const obs = (v && (v.observaciones || (v.proyecto && v.proyecto.observaciones))) || '';
 
-  const p = v && v.proyecto ? v.proyecto : {};
-  document.getElementById('v-pro-titulo').value = p.titulo || '';
-  document.getElementById('v-pro-comercial').value = p.comercial || '';
-  document.getElementById('v-pro-tipoproyecto').value = p.tipoProyecto || '';
-  document.getElementById('v-pro-tipocliente').value = p.tipoCliente || '';
-  document.getElementById('v-pro-provincia').value = p.provincia || '';
-  document.getElementById('v-pro-dirinst').value = p.dirInst || '';
-  document.getElementById('v-pro-maps').value = p.urlMaps || '';
-  document.getElementById('v-pro-catastro').value = p.refCatastral || '';
-  document.getElementById('v-pro-lat').value = p.latitud || '';
-  document.getElementById('v-pro-lng').value = p.longitud || '';
-  document.getElementById('v-pro-actuacion').value = p.tipoActuacion || '';
-  document.getElementById('v-pro-tarifa').value = p.tarifaRed || '';
-  document.getElementById('v-pro-cie').value = p.cie || '';
-  document.getElementById('v-pro-cups').value = p.cups || '';
-  document.getElementById('v-pro-aislada').checked = !!p.aislada;
-  document.getElementById('v-pro-obs').value = p.observaciones || '';
-
-  document.getElementById('v-asig-fecha').value = (v && v.fechaPrevista) || '';
+  document.getElementById('v-titulo').value = titulo;
+  document.getElementById('v-cliente').value = cliente;
+  document.getElementById('v-telefono').value = telefono;
+  document.getElementById('v-direccion').value = direccion;
+  document.getElementById('v-maps').value = maps;
+  document.getElementById('v-equipos').value = equipos;
+  document.getElementById('v-obs').value = obs;
+  document.getElementById('v-fecha').value = (v && v.fechaPrevista) || '';
 
   // Título y extras
   document.getElementById('visita-form-title').textContent = v ? (isAdmin() ? 'Editar visita' : 'Visita previa') : 'Nueva visita';
@@ -3591,13 +3568,12 @@ function abrirFormularioVisita(v) {
 
   // Permisos: si es instalador y la visita ya existe, campos de admin readonly
   const readOnly = v && !isAdmin();
-  ['v-cli-nombre','v-cli-apellidos','v-cli-telefono','v-cli-email','v-cli-direccion','v-cli-cif','v-cli-id','v-pro-titulo','v-pro-comercial','v-pro-tipoproyecto','v-pro-tipocliente','v-pro-provincia','v-pro-dirinst','v-pro-maps','v-pro-catastro','v-pro-lat','v-pro-lng','v-pro-actuacion','v-pro-tarifa','v-pro-cie','v-pro-cups','v-pro-obs','v-asig-operario','v-asig-fecha'].forEach(id => {
+  ['v-titulo','v-cliente','v-telefono','v-direccion','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') el.disabled = readOnly;
     else el.readOnly = readOnly;
   });
-  document.getElementById('v-pro-aislada').disabled = readOnly;
   // Colapsa la cabecera admin para instalador (ya la ha leído)
   document.getElementById('visita-sec-admin').open = !v || isAdmin();
 
@@ -3606,35 +3582,15 @@ function abrirFormularioVisita(v) {
 
 function leerFormularioVisita() {
   return {
-    cliente: {
-      nombre: document.getElementById('v-cli-nombre').value.trim(),
-      apellidos: document.getElementById('v-cli-apellidos').value.trim(),
-      telefono: document.getElementById('v-cli-telefono').value.trim(),
-      email: document.getElementById('v-cli-email').value.trim(),
-      direccion: document.getElementById('v-cli-direccion').value.trim(),
-      cif: document.getElementById('v-cli-cif').value.trim(),
-      idCliente: document.getElementById('v-cli-id').value.trim()
-    },
-    proyecto: {
-      titulo: document.getElementById('v-pro-titulo').value.trim(),
-      comercial: document.getElementById('v-pro-comercial').value.trim(),
-      tipoProyecto: document.getElementById('v-pro-tipoproyecto').value.trim(),
-      tipoCliente: document.getElementById('v-pro-tipocliente').value.trim(),
-      provincia: document.getElementById('v-pro-provincia').value.trim(),
-      dirInst: document.getElementById('v-pro-dirinst').value.trim(),
-      urlMaps: document.getElementById('v-pro-maps').value.trim(),
-      refCatastral: document.getElementById('v-pro-catastro').value.trim(),
-      latitud: document.getElementById('v-pro-lat').value.trim(),
-      longitud: document.getElementById('v-pro-lng').value.trim(),
-      tipoActuacion: document.getElementById('v-pro-actuacion').value.trim(),
-      tarifaRed: document.getElementById('v-pro-tarifa').value.trim(),
-      cie: document.getElementById('v-pro-cie').value.trim(),
-      cups: document.getElementById('v-pro-cups').value.trim(),
-      aislada: document.getElementById('v-pro-aislada').checked,
-      observaciones: document.getElementById('v-pro-obs').value.trim()
-    },
-    operarioAsignado: document.getElementById('v-asig-operario').value,
-    fechaPrevista: document.getElementById('v-asig-fecha').value
+    titulo: document.getElementById('v-titulo').value.trim(),
+    cliente_nombre: document.getElementById('v-cliente').value.trim(),
+    telefono: document.getElementById('v-telefono').value.trim(),
+    direccion: document.getElementById('v-direccion').value.trim(),
+    urlMaps: document.getElementById('v-maps').value.trim(),
+    equipos: document.getElementById('v-equipos').value.trim(),
+    observaciones: document.getElementById('v-obs').value.trim(),
+    operarioAsignado: document.getElementById('v-operario').value,
+    fechaPrevista: document.getElementById('v-fecha').value
   };
 }
 
@@ -3642,14 +3598,15 @@ async function guardarVisita() {
   const datos = leerFormularioVisita();
   const esNueva = !visitaEnEdicion;
 
-  // Validación: admin rellena cabecera al crear o editar
   if (isAdmin()) {
-    if (!datos.cliente.nombre || !datos.cliente.apellidos) { showToast('⚠ Rellena nombre y apellidos del cliente', 'err'); return; }
-    if (!datos.proyecto.titulo) { showToast('⚠ Rellena el título de la oportunidad', 'err'); return; }
+    if (!datos.titulo) { showToast('⚠ Rellena el título del proyecto', 'err'); return; }
+    if (!datos.cliente_nombre) { showToast('⚠ Rellena el nombre del cliente', 'err'); return; }
+    if (!datos.telefono) { showToast('⚠ Rellena el teléfono del cliente', 'err'); return; }
+    if (!datos.direccion) { showToast('⚠ Rellena la dirección de la instalación', 'err'); return; }
     if (!datos.operarioAsignado) { showToast('⚠ Asigna un operario', 'err'); return; }
     if (!datos.fechaPrevista) { showToast('⚠ Indica la fecha prevista', 'err'); return; }
   } else if (!esNueva) {
-    // Instalador guardando visita existente: la cabecera ya vino de admin, no se valida aquí
+    // Instalador guardando visita existente: la cabecera vino de admin y está en readonly
   } else {
     showToast('⚠ Solo admin puede crear visitas', 'err');
     return;

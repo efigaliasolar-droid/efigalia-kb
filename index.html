@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -801,6 +801,11 @@
         <div class="home-title">Instaladores</div>
         <div class="home-desc">Gestionar la lista de instaladores activos.</div>
       </div>
+      <div class="home-card" onclick="enterAdminCatalogo()">
+        <div class="home-icon">📚</div>
+        <div class="home-title">Catálogo de materiales</div>
+        <div class="home-desc">Importar y gestionar el catálogo de materiales por categoría.</div>
+      </div>
     </div>
   </div>
 
@@ -843,6 +848,25 @@
     </div>
     <div class="admin-list" id="adm-instaladores-list"></div>
     <div class="calc-note">Si la lista está vacía se muestran los instaladores predefinidos. En cuanto añadas el primero, esta lista pasa a ser la única que ven los técnicos.</div>
+  </div>
+
+  <div id="view-admin-catalogo">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Catálogo de materiales</div>
+    <div class="form-group">
+      <label>Importar desde Excel (pegar filas)</label>
+      <textarea class="field" id="cat-import-text" placeholder="Pega aquí filas desde Excel. Formato por fila (tabulado):&#10;CATEGORIA&#9;DESCRIPCION&#10;(opcional: &#9;REFERENCIA&#9;UNIDAD)" style="min-height:140px;font-family:var(--mono);font-size:12px"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn-primary" style="width:auto;flex:1;min-width:140px" onclick="importarCatalogo('merge')">Añadir al catálogo</button>
+        <button class="btn-secondary" style="flex:0 0 auto" onclick="importarCatalogo('replace')">Reemplazar todo</button>
+      </div>
+      <div class="calc-note">Unidad por defecto: <b>m</b> si la categoría es CABLEADO, <b>ud</b> en el resto. Podrás ajustarla después si algún caso no cuadra.</div>
+    </div>
+    <div class="form-group">
+      <label>Filtrar</label>
+      <input type="text" id="cat-search" placeholder="Buscar por categoría, referencia o descripción..." oninput="renderCatalogo()">
+    </div>
+    <div id="cat-list"></div>
   </div>
 </main>
 
@@ -1114,6 +1138,99 @@ function enterAdminInstaladores() {
   hideAllViews();
   document.getElementById('view-admin-instaladores').style.display = 'block';
   seedMaestrosSiVacio('instalador', INSTALADORES).then(() => renderAdminMaestros('instalador'));
+}
+
+function enterAdminCatalogo() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-catalogo').style.display = 'block';
+  materialesLoad().then(() => renderCatalogo());
+}
+
+function parseFilasCatalogo(texto) {
+  const nuevos = [];
+  const lines = texto.split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const parts = line.split('\t').map(s => s.trim());
+    // Fallback: si solo viene una coma o no hay tab, probamos con comas o puntos y coma
+    const cols = parts.length >= 2 ? parts : line.split(/[;,]/).map(s => s.trim());
+    if (cols.length < 2) continue;
+    const [categoria, descripcion, ref, unidad] = cols;
+    if (!categoria || !descripcion) continue;
+    const catU = categoria.toUpperCase();
+    const un = unidad || (catU === 'CABLEADO' ? 'm' : 'ud');
+    nuevos.push({ ref: ref || '', categoria: catU, descripcion, unidad: un });
+  }
+  return nuevos;
+}
+
+async function importarCatalogo(modo) {
+  const texto = document.getElementById('cat-import-text').value;
+  const nuevos = parseFilasCatalogo(texto);
+  if (!nuevos.length) { showToast('⚠ No se han detectado filas válidas', 'err'); return; }
+
+  await materialesLoad();
+  if (modo === 'replace') {
+    if (!confirm(`Se sustituirá todo el catálogo actual (${materiales.length} items) por ${nuevos.length} nuevos. ¿Continuar?`)) return;
+    materiales = nuevos;
+  } else {
+    // merge: evitar duplicados exactos (misma categoría + descripción)
+    const key = (m) => `${(m.categoria||'').toUpperCase()}|${(m.descripcion||'').trim().toLowerCase()}`;
+    const existentes = new Set(materiales.map(key));
+    let añadidos = 0;
+    for (const m of nuevos) {
+      if (!existentes.has(key(m))) { materiales.push(m); añadidos++; }
+    }
+    showToast(`✓ ${añadidos} añadidos (${nuevos.length - añadidos} duplicados ignorados)`, 'ok');
+  }
+  await materialesSave();
+  document.getElementById('cat-import-text').value = '';
+  renderCatalogo();
+}
+
+async function eliminarMaterial(i) {
+  if (!confirm('¿Eliminar este material del catálogo?')) return;
+  await materialesLoad();
+  materiales.splice(i, 1);
+  await materialesSave();
+  renderCatalogo();
+}
+
+function renderCatalogo() {
+  const c = document.getElementById('cat-list');
+  if (!c) return;
+  const q = (document.getElementById('cat-search')?.value || '').toLowerCase();
+  const list = q
+    ? materiales.filter(m => [m.categoria, m.ref, m.descripcion].some(f => (f||'').toLowerCase().includes(q)))
+    : materiales;
+  if (!list.length) {
+    c.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon">📭</div>Sin resultados.</div>';
+    return;
+  }
+  // Agrupar por categoría
+  const grupos = {};
+  list.forEach(m => { (grupos[m.categoria || 'SIN CATEGORÍA'] ||= []).push(m); });
+  const cats = Object.keys(grupos).sort();
+  c.innerHTML = cats.map(cat => `
+    <div style="margin-top:16px">
+      <div class="section-title" style="margin-bottom:6px">${escapeHtml(cat)} · ${grupos[cat].length}</div>
+      <div class="admin-list">
+        ${grupos[cat].map(m => {
+          const i = materiales.indexOf(m);
+          return `
+            <div class="admin-row">
+              <div class="nombre" style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.descripcion || '—')}${m.ref ? ` <span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">· ${escapeHtml(m.ref)}</span>` : ''}</div>
+              <div class="acciones">
+                <span class="toggle-btn on" style="cursor:default">${escapeHtml(m.unidad || 'ud')}</span>
+                <button class="icon-btn" onclick="eliminarMaterial(${i})" title="Eliminar">🗑</button>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
 }
 
 // ── MAESTROS (obras / furgonetas / instaladores) en /data ──
@@ -2413,6 +2530,16 @@ function getPills(containerId) {
 }
 
 // ── CARGA Y GUARDADO ───────────────────────────────────
+// Seed de prueba. Si no hay catálogo ni en Worker ni en localStorage, se usa esto.
+const MATERIALES_SEED = [
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Negro 1x10 - H1Z2Z2-K', unidad:'m' },
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Negro 1x4 - H1Z2Z2-K',  unidad:'m' },
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Negro 1x6 - H1Z2Z2-K',  unidad:'m' },
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Rojo 1x10 - H1Z2Z2-K',  unidad:'m' },
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Rojo 1x4 - H1Z2Z2-K',   unidad:'m' },
+  { ref:'', categoria:'CABLEADO', descripcion:'Cable Solar Rojo 1x6 - H1Z2Z2-K',   unidad:'m' }
+];
+
 async function materialesLoad() {
   try {
     const res = await fetch(WORKER + '/materiales');
@@ -2420,11 +2547,29 @@ async function materialesLoad() {
     if (Array.isArray(data)) materiales = data;
   } catch(e) {
     const stored = localStorage.getItem('efigalia_materiales_v1');
-    if (stored) materiales = JSON.parse(stored);
-    if (!materiales.length) showToast('⚠ Catálogo no disponible. Texto libre.', 'err');
+    if (stored) try { materiales = JSON.parse(stored); } catch(e2) {}
   }
-  if (materiales.length) {
+  if (!materiales || !materiales.length) {
+    const stored = localStorage.getItem('efigalia_materiales_v1');
+    if (stored) { try { materiales = JSON.parse(stored); } catch(e) {} }
+    if (!materiales || !materiales.length) materiales = [...MATERIALES_SEED];
+  }
+  try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
+}
+
+async function materialesSave() {
+  try {
+    await fetch(WORKER + '/materiales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(materiales)
+    });
     try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
+    return true;
+  } catch(e) {
+    try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e2) {}
+    showToast('⚠ Guardado solo local (Worker sin /materiales POST)', 'err');
+    return false;
   }
 }
 

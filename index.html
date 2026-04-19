@@ -40,7 +40,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -448,7 +448,6 @@
       <select id="f-tipo" onchange="onTipoChange()">
         <option value="incidencia">Incidencia resuelta</option>
         <option value="nota">Nota técnica / chuleta</option>
-        <option value="documento">Documento / manual</option>
       </select>
     </div>
     <div class="form-group">
@@ -496,13 +495,6 @@
     <div class="form-group">
       <label>Palabras clave</label>
       <input type="text" id="f-keywords" placeholder="Ej: contraseña, reset, toroidal, pines...">
-    </div>
-    <div class="form-group" id="grp-archivo" style="display:none">
-      <label>Archivo (PDF, imagen…) *</label>
-      <div class="photo-drop" onclick="document.getElementById('f-archivo').click()">
-        <input type="file" id="f-archivo" accept=".pdf,image/*" onchange="previewArchivo(event)">
-        <span id="archivo-label">📄 Toca para seleccionar archivo</span>
-      </div>
     </div>
     <div class="form-group" id="grp-fotos">
       <label>Fotos (opcional)</label>
@@ -577,7 +569,7 @@
     </div>
     <div id="doc-container"></div>
     <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted);line-height:1.5">
-      Para añadir un documento nuevo (manual, guía, ficha técnica, chuleta de pineado...) ve a la pestaña <b>Registrar</b>, elige tipo <b>Documento</b> y sube el archivo (PDF o imagen).
+      Los documentos se suben y gestionan desde <b>Administración → Documentos</b> (acceso con PIN).
     </div>
   </div>
 
@@ -990,6 +982,11 @@
         <div class="home-title">Catálogo de materiales</div>
         <div class="home-desc">Importar y gestionar el catálogo de materiales por categoría.</div>
       </div>
+      <div class="home-card" onclick="enterAdminDocumentos()">
+        <div class="home-icon">📄</div>
+        <div class="home-title">Documentos</div>
+        <div class="home-desc">Subir y gestionar manuales, guías y fichas técnicas.</div>
+      </div>
     </div>
   </div>
 
@@ -1032,6 +1029,47 @@
     </div>
     <div class="admin-list" id="adm-instaladores-list"></div>
     <div class="calc-note">Si la lista está vacía se muestran los instaladores predefinidos. En cuanto añadas el primero, esta lista pasa a ser la única que ven los técnicos.</div>
+  </div>
+
+  <div id="view-admin-documentos">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Documentos y manuales</div>
+    <div class="form-group">
+      <label>Título *</label>
+      <input type="text" id="doc-titulo" placeholder="Ej: Manual Huawei SUN2000 L1 v3.2">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Marca *</label>
+        <input type="text" id="doc-marca" placeholder="Ej: Huawei">
+      </div>
+      <div class="form-group">
+        <label>Modelo</label>
+        <input type="text" id="doc-modelo" placeholder="Ej: SUN2000">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción (opcional)</label>
+      <input type="text" id="doc-descripcion" placeholder="Resumen del contenido">
+    </div>
+    <div class="form-group">
+      <label>Palabras clave</label>
+      <input type="text" id="doc-keywords" placeholder="pineado, error, configuración...">
+    </div>
+    <div class="form-group">
+      <label>Archivo (PDF, imagen…) *</label>
+      <div class="photo-drop" onclick="document.getElementById('doc-archivo').click()">
+        <input type="file" id="doc-archivo" accept=".pdf,image/*" onchange="previewDocArchivo(event)">
+        <span id="doc-archivo-label">📄 Toca para seleccionar archivo</span>
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-doc-save" onclick="guardarDocumento()">Subir documento</button>
+
+    <div style="margin-top:22px">
+      <div class="section-title">Documentos subidos</div>
+      <input type="text" id="adm-doc-search" placeholder="Buscar..." oninput="renderAdminDocumentos()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px">
+      <div class="admin-list" id="adm-doc-list"></div>
+    </div>
   </div>
 
   <div id="view-admin-catalogo">
@@ -1460,6 +1498,162 @@ function enterAdminInstaladores() {
   seedMaestrosSiVacio('instalador', INSTALADORES).then(() => renderAdminMaestros('instalador'));
 }
 
+// ── ADMIN · DOCUMENTOS ─────────────────────────────────
+let docArchivoFile = null;
+let docEditingId = null;
+
+function previewDocArchivo(event) {
+  docArchivoFile = event.target.files[0] || null;
+  const lbl = document.getElementById('doc-archivo-label');
+  if (lbl) lbl.textContent = docArchivoFile ? `📄 ${docArchivoFile.name}` : '📄 Toca para seleccionar archivo';
+}
+
+function resetDocForm() {
+  ['doc-titulo','doc-marca','doc-modelo','doc-descripcion','doc-keywords'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  docArchivoFile = null;
+  const fArch = document.getElementById('doc-archivo'); if (fArch) fArch.value = '';
+  const lbl = document.getElementById('doc-archivo-label'); if (lbl) lbl.textContent = '📄 Toca para seleccionar archivo';
+  docEditingId = null;
+  const btn = document.getElementById('btn-doc-save'); if (btn) btn.textContent = 'Subir documento';
+}
+
+function enterAdminDocumentos() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-documentos').style.display = 'block';
+  resetDocForm();
+  sheetsLoad().then(() => renderAdminDocumentos());
+}
+
+async function guardarDocumento() {
+  const titulo = document.getElementById('doc-titulo').value.trim();
+  const marca = document.getElementById('doc-marca').value.trim();
+  const modelo = document.getElementById('doc-modelo').value.trim();
+  const descripcion = document.getElementById('doc-descripcion').value.trim();
+  const keywords = document.getElementById('doc-keywords').value.trim();
+
+  if (!titulo || !marca) { showToast('⚠ Título y marca son obligatorios', 'err'); return; }
+  if (!docEditingId && !docArchivoFile) { showToast('⚠ Selecciona un archivo', 'err'); return; }
+
+  const btn = document.getElementById('btn-doc-save');
+  btn.disabled = true;
+
+  let archivoUrl = '', archivoNombre = '', contenidoExtraido = '';
+  await sheetsLoad();
+  const original = docEditingId ? incidents.find(i => i.id === docEditingId) : null;
+
+  if (docArchivoFile) {
+    if (docArchivoFile.type === 'application/pdf') {
+      btn.textContent = 'Leyendo PDF...';
+      try { contenidoExtraido = await extractPdfText(docArchivoFile); }
+      catch(e) { console.warn('No se pudo extraer texto del PDF:', e); }
+    }
+    btn.textContent = 'Subiendo archivo...';
+    try {
+      const r = await subirArchivo(docArchivoFile);
+      archivoUrl = r.url;
+      archivoNombre = r.nombre;
+    } catch(e) {
+      showToast('⚠ Error al subir archivo', 'err');
+      btn.disabled = false; btn.textContent = 'Subir documento';
+      return;
+    }
+  } else if (original) {
+    archivoUrl = original.archivoUrl || '';
+    archivoNombre = original.archivoNombre || '';
+    contenidoExtraido = original.contenidoExtraido || '';
+  }
+
+  btn.textContent = 'Guardando...';
+
+  const reg = {
+    id: docEditingId || Date.now(),
+    tipo: 'documento',
+    idObra: (original && original.idObra) || '-',
+    marca,
+    modelo: modelo || '-',
+    codError: '-',
+    incidencia: titulo,
+    verificaciones: '',
+    solucion: '',
+    documentacion: descripcion || '-',
+    keywords,
+    tecnico: (original && original.tecnico) || 'Admin',
+    fecha: original ? original.fecha : new Date().toLocaleDateString('es-ES'),
+    fotos: (original && original.fotos) || [],
+    archivoUrl,
+    archivoNombre,
+    contenidoExtraido
+  };
+
+  if (docEditingId) {
+    const idx = incidents.findIndex(i => i.id === docEditingId);
+    if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+  } else {
+    incidents.unshift(reg);
+  }
+  await sheetsSave();
+
+  btn.disabled = false;
+  showToast(docEditingId ? '✓ Documento actualizado' : '✓ Documento subido', 'ok');
+  resetDocForm();
+  renderAdminDocumentos();
+}
+
+function editarDocumento(id) {
+  const d = incidents.find(i => i.id === id && i.tipo === 'documento');
+  if (!d) return;
+  docEditingId = id;
+  document.getElementById('doc-titulo').value = d.incidencia || '';
+  document.getElementById('doc-marca').value = d.marca || '';
+  document.getElementById('doc-modelo').value = (d.modelo === '-' ? '' : d.modelo) || '';
+  document.getElementById('doc-descripcion').value = (d.documentacion === '-' ? '' : d.documentacion) || '';
+  document.getElementById('doc-keywords').value = d.keywords || '';
+  docArchivoFile = null;
+  const lbl = document.getElementById('doc-archivo-label');
+  if (lbl) lbl.textContent = d.archivoNombre ? `📄 ${d.archivoNombre} (sin cambios)` : '📄 Toca para seleccionar archivo';
+  document.getElementById('btn-doc-save').textContent = 'Actualizar documento';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function eliminarDocumento(id) {
+  if (!confirm('¿Eliminar este documento? No se puede deshacer.')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => i.id !== id);
+  await sheetsSave();
+  showToast('✓ Documento eliminado', 'ok');
+  renderAdminDocumentos();
+}
+
+function renderAdminDocumentos() {
+  const cont = document.getElementById('adm-doc-list');
+  if (!cont) return;
+  const q = (document.getElementById('adm-doc-search')?.value || '').toLowerCase();
+  let list = incidents.filter(i => i.tipo === 'documento');
+  if (q) list = list.filter(d => [d.incidencia, d.marca, d.modelo, d.keywords, d.documentacion, d.archivoNombre].some(f => (f||'').toLowerCase().includes(q)));
+  if (!list.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon">📭</div>Aún no hay documentos. Sube el primero arriba.</div>';
+    return;
+  }
+  cont.innerHTML = list.map(d => `
+    <div class="admin-row" style="flex-wrap:wrap;gap:8px">
+      <div class="nombre" style="min-width:0;flex:1">
+        ${escapeHtml(d.incidencia || '—')}
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-top:2px">
+          ${escapeHtml(d.marca||'')}${d.modelo&&d.modelo!=='-'?` · ${escapeHtml(d.modelo)}`:''}${d.archivoNombre?` · ${escapeHtml(d.archivoNombre)}`:''}
+        </div>
+      </div>
+      <div class="acciones" style="gap:4px">
+        ${d.archivoUrl ? `<a class="toggle-btn on" href="${d.archivoUrl}" target="_blank" rel="noopener" style="text-decoration:none">VER</a>` : ''}
+        <button class="toggle-btn off" onclick="editarDocumento(${d.id})">EDITAR</button>
+        <button class="icon-btn" onclick="eliminarDocumento(${d.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 function enterAdminCatalogo() {
   if (!adminAutenticado) { pedirPin(); return; }
   hideAllViews();
@@ -1886,7 +2080,7 @@ async function extractPdfText(file) {
 // ── CAMBIO DE TIPO EN REGISTRAR ────────────────────────
 function onTipoChange() {
   const tipo = document.getElementById('f-tipo').value;
-  const show = (id, yes) => document.getElementById(id).style.display = yes ? '' : 'none';
+  const show = (id, yes) => { const el = document.getElementById(id); if (el) el.style.display = yes ? '' : 'none'; };
   const lblInc = document.getElementById('lbl-incidencia');
   const lblSol = document.getElementById('lbl-solucion');
   const lblDoc = document.getElementById('lbl-doc');
@@ -1902,19 +2096,8 @@ function onTipoChange() {
     show('row-coderror-obra', false);
     show('grp-verificaciones', false);
     show('grp-solucion', true);
-    show('grp-archivo', false);
     show('grp-fotos', true);
     btn.textContent = 'Guardar nota';
-  } else if (tipo === 'documento') {
-    lblInc.textContent = 'Título del documento *';
-    inpIncidencia.placeholder = 'Ej: Manual Huawei SUN2000 L1 v3.2';
-    lblDoc.textContent = 'Descripción (opcional)';
-    show('row-coderror-obra', false);
-    show('grp-verificaciones', false);
-    show('grp-solucion', false);
-    show('grp-archivo', true);
-    show('grp-fotos', false);
-    btn.textContent = 'Subir documento';
   } else {
     lblInc.textContent = 'Descripción del problema *';
     inpIncidencia.placeholder = 'Ej: Inversor no sincroniza tras cambio de tarjeta';
@@ -1924,7 +2107,6 @@ function onTipoChange() {
     show('row-coderror-obra', true);
     show('grp-verificaciones', true);
     show('grp-solucion', true);
-    show('grp-archivo', false);
     show('grp-fotos', true);
     btn.textContent = 'Guardar y sincronizar';
   }
@@ -1946,12 +2128,7 @@ async function guardarIncidencia() {
   const solucion = document.getElementById('f-solucion').value.trim();
 
   // Validación por tipo
-  if (tipo === 'documento') {
-    if (!titulo || !marca || !archivoFile) {
-      showToast('⚠ Rellena título, marca y selecciona archivo', 'err');
-      return;
-    }
-  } else if (tipo === 'nota') {
+  if (tipo === 'nota') {
     if (!titulo || !marca || !solucion) {
       showToast('⚠ Rellena título, marca y contenido', 'err');
       return;
@@ -1967,31 +2144,9 @@ async function guardarIncidencia() {
   btn.disabled = true;
 
   let archivoUrl = '', archivoNombre = '', contenidoExtraido = '';
-  if (tipo === 'documento' && archivoFile) {
-    // Extraer texto si es PDF (mejora la búsqueda de la IA)
-    if (archivoFile.type === 'application/pdf') {
-      btn.textContent = 'Leyendo PDF...';
-      try {
-        contenidoExtraido = await extractPdfText(archivoFile);
-      } catch(e) {
-        console.warn('No se pudo extraer texto del PDF:', e);
-      }
-    }
-    btn.textContent = 'Subiendo archivo...';
-    try {
-      const r = await subirArchivo(archivoFile);
-      archivoUrl = r.url;
-      archivoNombre = r.nombre;
-    } catch(e) {
-      showToast('⚠ Error al subir archivo', 'err');
-      btn.disabled = false;
-      btn.textContent = 'Subir documento';
-      return;
-    }
-  }
 
   let fotosUrls = [];
-  if (tipo !== 'documento' && fotoFiles.length > 0) {
+  if (fotoFiles.length > 0) {
     btn.textContent = 'Subiendo fotos...';
     try {
       fotosUrls = await Promise.all(fotoFiles.map(f => subirFoto(f)));
@@ -2040,11 +2195,8 @@ async function guardarIncidencia() {
   ['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('foto-previews').innerHTML = '';
   fotoFiles = [];
-  archivoFile = null;
-  const fArch = document.getElementById('f-archivo'); if (fArch) fArch.value = '';
-  const lblArch = document.getElementById('archivo-label'); if (lblArch) lblArch.textContent = '📄 Toca para seleccionar archivo';
   onTipoChange();  // restablecer etiquetas/visibilidades según tipo seleccionado
-  showToast(tipo === 'documento' ? '✓ Documento subido' : (tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada'), 'ok');
+  showToast(tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada', 'ok');
 }
 
 // ── LISTADO ────────────────────────────────────────────
@@ -2212,6 +2364,17 @@ function editarRegistro(id) {
   const inc = incidents.find(i => i.id === id);
   if (!inc) return;
   closeModal();
+  // Documentos se editan desde Administración (requiere PIN)
+  if ((inc.tipo || 'incidencia') === 'documento') {
+    if (!adminAutenticado) {
+      showToast('⚠ Necesitas PIN de administración para editar documentos', 'err');
+      pedirPin();
+      return;
+    }
+    enterAdminDocumentos();
+    setTimeout(() => editarDocumento(id), 200);
+    return;
+  }
   // Ir a Registrar
   enterIncidencias();
   setTimeout(() => {

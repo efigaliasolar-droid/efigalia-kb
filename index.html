@@ -117,7 +117,7 @@
   select, input[type=number] { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
   select:focus, input[type=number]:focus { border-color: var(--accent); }
   select { cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a8099' d='M6 9L1 4h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  input[type=number]:read-only { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; }
+  input[type=number]:read-only, input[type=date]:read-only { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; }
 
   .calc-result { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-top: 18px; }
   .calc-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14px; gap: 10px; }
@@ -624,8 +624,8 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>Fecha *</label>
-          <input type="date" id="mov-fecha">
+          <label>Fecha</label>
+          <input type="date" id="mov-fecha" readonly>
         </div>
         <div class="form-group">
           <label>Obra *</label>
@@ -686,8 +686,8 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>Fecha *</label>
-          <input type="date" id="parte-fecha">
+          <label>Fecha</label>
+          <input type="date" id="parte-fecha" readonly>
         </div>
         <div class="form-group">
           <label>Obra *</label>

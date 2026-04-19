@@ -681,7 +681,7 @@
         <select id="mov-furgoneta" class="select-furgoneta"></select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" id="mov-grp-instaladores">
         <label>Instaladores *</label>
         <div class="pill-selector" id="mov-instaladores-pills"></div>
       </div>
@@ -2938,6 +2938,9 @@ function refreshMovPicker() {
   const obra = document.getElementById('mov-obra').value;
   const search = document.getElementById('mat-search');
   const searchWrap = search ? search.closest('.mat-search-wrap') : null;
+  // En retorno no se piden instaladores
+  const grpInst = document.getElementById('mov-grp-instaladores');
+  if (grpInst) grpInst.style.display = (t === 'entrada') ? 'none' : '';
   if (t === 'entrada') {
     if (searchWrap) searchWrap.style.display = 'none';
     renderRetornoPicker(obra, movForm && movForm.editId);
@@ -3024,7 +3027,7 @@ async function guardarMovimiento() {
 
   if (!fecha || !idObra) { showToast('⚠ Fecha y obra son obligatorias', 'err'); return; }
   if (!furgoneta) { showToast('⚠ Selecciona la furgoneta', 'err'); return; }
-  if (!instaladores.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
+  if (tipo === 'salida' && !instaladores.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
   if (!registradoPor) { showToast('⚠ Selecciona quién lo registra', 'err'); return; }
   if (!movLineas.length) { showToast('⚠ Añade al menos un material', 'err'); return; }
 
@@ -3055,7 +3058,7 @@ async function guardarMovimiento() {
   const mov = {
     id: (movForm && movForm.editId) || Date.now(),
     fecha, tipo, idObra, furgoneta,
-    instaladores,
+    instaladores: tipo === 'salida' ? instaladores : [],
     lineas: movLineas.map(l => ({...l, cantidad: parseFloat(l.cantidad) || 0})),
     notas,
     registradoPor: registradoPor || 'Anónimo',

@@ -1058,9 +1058,199 @@
       </div>
     </details>
 
-    <div id="visita-campo-placeholder" style="padding:14px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text-muted);text-align:center;margin-top:14px">
-      Los bloques de la visita en campo (cubierta, correas, grecas, cableado…) se añadirán en la siguiente actualización.
-    </div>
+    <div id="visita-campo-placeholder" style="display:none"></div>
+
+    <!-- ────── BLOQUE DE CAMPO (lo rellena el operario durante la visita) ────── -->
+
+    <details class="filtros-panel">
+      <summary>Contacto para la visita</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>¿Quién nos recibe?</label>
+          <select id="v-contacto-tipo" onchange="onContactoTipoChange()">
+            <option value="cliente">El propio cliente</option>
+            <option value="otro">Otra persona</option>
+          </select>
+        </div>
+        <div id="v-contacto-otro-wrap" style="display:none">
+          <div class="form-row">
+            <div class="form-group"><label>Nombre</label><input type="text" id="v-contacto-nombre"></div>
+            <div class="form-group"><label>Teléfono</label><input type="text" id="v-contacto-telefono" inputmode="tel"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Observaciones</label>
+          <textarea class="field" id="v-contacto-obs" placeholder="Hora de la visita, parentesco, instrucciones..."></textarea>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Cubierta</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Tipo de cubierta *</label>
+          <select id="v-cub-tipo">
+            <option value="">— Seleccionar —</option>
+            <option>Panel sándwich</option><option>Chapa</option><option>Fibrocemento</option>
+            <option>Teja</option><option>Pizarra</option><option>Plana</option><option>Suelo</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Largo de la cumbrera (m)</label><input type="number" step="any" inputmode="decimal" id="v-cub-largo"></div>
+          <div class="form-group"><label>Distancia cumbrera al borde inferior (m)</label><input type="number" step="any" inputmode="decimal" id="v-cub-borde"></div>
+        </div>
+        <div class="form-group">
+          <label>Otras medidas / notas</label>
+          <textarea class="field" id="v-cub-otras"></textarea>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Correas</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Tipo de correa *</label>
+          <select id="v-cor-tipo">
+            <option value="">— Seleccionar —</option>
+            <option>Metálica</option><option>Hormigón macizo</option>
+            <option>Hormigón hueco</option><option>Madera</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Distancia entre correas (m)</label><input type="number" step="any" inputmode="decimal" id="v-cor-dist"></div>
+          <div class="form-group"><label>Nº correas por cara de cubierta</label><input type="number" step="1" inputmode="numeric" id="v-cor-num"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Grecas</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group"><label>Altura (cm)</label><input type="number" step="any" inputmode="decimal" id="v-gre-altura"></div>
+          <div class="form-group"><label>Distancia entre (cm)</label><input type="number" step="any" inputmode="decimal" id="v-gre-dist"></div>
+        </div>
+        <div class="form-group"><label>Ancho (cm)</label><input type="number" step="any" inputmode="decimal" id="v-gre-ancho"></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Obstáculos / sombras en la cubierta</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label><input type="checkbox" id="v-obs-no-existen" onchange="onObsNoExistenChange()" style="margin-right:6px">No hay obstáculos en la cubierta</label>
+        </div>
+        <div id="v-obs-wrap">
+          <div class="form-row">
+            <div class="form-group"><label>Altura muretes/barandillas (cm)</label><input type="number" step="any" inputmode="decimal" id="v-obs-muretes"></div>
+            <div class="form-group"><label>Altura chimeneas (cm)</label><input type="number" step="any" inputmode="decimal" id="v-obs-chimeneas"></div>
+          </div>
+          <div class="form-group">
+            <label>Otros obstáculos (árboles cercanos, silos, edificios…)</label>
+            <textarea class="field" id="v-obs-otros"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Ubicación de los elementos (descripción)</label>
+            <textarea class="field" id="v-obs-ubic"></textarea>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Acceso a cubierta</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Ubicación del acceso</label><input type="text" id="v-acc-ubic"></div>
+        <div class="form-group"><label>Altura de la cubierta (m)</label><input type="number" step="any" inputmode="decimal" id="v-acc-altura"></div>
+        <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-acc-obs"></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Acopio de material</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label><input type="checkbox" id="v-aco-cerrado" style="margin-right:6px">Hay acopio exterior en recinto cerrado</label>
+        </div>
+        <div class="form-group"><label>Detalles del acopio</label><textarea class="field" id="v-aco-detalles" placeholder="Dónde, tamaño, accesos..."></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Medio de elevación del material</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Detalles</label><textarea class="field" id="v-ele-detalles" placeholder="Grúa, carretilla, manual, escaleras..."></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Ubicación del inversor</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-inv-obs" placeholder="Ubicación prevista del inversor..."></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Ubicación del cuadro de protección</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-cuap-obs"></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Cuadro general existente</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Interruptor general (intensidad, modelo…)</label><input type="text" id="v-cug-interruptor" placeholder="Ej: 63 A tetrapolar"></div>
+        <div class="form-group">
+          <label><input type="checkbox" id="v-cug-toroidales" style="margin-right:6px">Es posible colocar los toroidales dentro del cuadro</label>
+        </div>
+        <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-cug-obs"></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Cableado</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group"><label>Distancia módulos ↔ inversor (m)</label><input type="number" step="any" inputmode="decimal" id="v-cab-mod-inv"></div>
+          <div class="form-group"><label>Distancia inversor ↔ cuadro general (m) *</label><input type="number" step="any" inputmode="decimal" id="v-cab-inv-cua"></div>
+        </div>
+        <div class="form-group">
+          <label>Entrada a interior de la nave (observaciones)</label>
+          <textarea class="field" id="v-cab-entrada-obs" placeholder="Punto de entrada, pasatubos, bandejas existentes..."></textarea>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Conexión a internet</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Router</label>
+            <select id="v-net-router">
+              <option value="">— Seleccionar —</option>
+              <option>Sí, con acceso</option><option>Sí, sin acceso</option>
+              <option>No hay</option><option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center">
+            <label style="margin:0"><input type="checkbox" id="v-net-wifi" style="margin-right:6px">Hay WiFi disponible</label>
+          </div>
+        </div>
+        <div class="form-group"><label>Distancia hasta el router (m)</label><input type="number" step="any" inputmode="decimal" id="v-net-dist"></div>
+        <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-net-obs"></textarea></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Otros datos de interés</summary>
+      <div class="filtros-body">
+        <div class="form-group"><label>Notas</label><textarea class="field" id="v-otros"></textarea></div>
+      </div>
+    </details>
 
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn-secondary" onclick="enterVisitas()" style="flex:1;min-width:0">Cancelar</button>
@@ -3562,18 +3752,48 @@ function abrirFormularioVisita(v) {
   document.getElementById('v-obs').value = obs;
   document.getElementById('v-fecha').value = (v && v.fechaPrevista) || '';
 
+  // Rellenar bloque de campo
+  rellenarCampoVisita(v && v.campo);
+
   // Título y extras
   document.getElementById('visita-form-title').textContent = v ? (isAdmin() ? 'Editar visita' : 'Visita previa') : 'Nueva visita';
   document.getElementById('visita-extra-actions').style.display = (v && isAdmin()) ? '' : 'none';
 
-  // Permisos: si es instalador y la visita ya existe, campos de admin readonly
-  const readOnly = v && !isAdmin();
+  // Permisos admin-only: cabecera readonly para instalador con visita existente
+  const adminReadOnly = v && !isAdmin();
   ['v-titulo','v-cliente','v-telefono','v-direccion','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (el.tagName === 'SELECT') el.disabled = readOnly;
-    else el.readOnly = readOnly;
+    if (el.tagName === 'SELECT') el.disabled = adminReadOnly;
+    else el.readOnly = adminReadOnly;
   });
+
+  // Bloque de campo: editable si es admin o si es el operario asignado. En completadas, solo admin.
+  const esOperario = v && currentUser && v.operarioAsignado === currentUser.nombre;
+  const estado = v && (v.estado || 'pendiente');
+  const campoEditable = !v  // nueva → admin está creando, puede dejar campo vacío
+                      || isAdmin()
+                      || (esOperario && estado !== 'cancelada');
+  const campoIds = ['v-contacto-tipo','v-contacto-nombre','v-contacto-telefono','v-contacto-obs',
+    'v-cub-tipo','v-cub-largo','v-cub-borde','v-cub-otras',
+    'v-cor-tipo','v-cor-dist','v-cor-num',
+    'v-gre-altura','v-gre-dist','v-gre-ancho',
+    'v-obs-no-existen','v-obs-muretes','v-obs-chimeneas','v-obs-otros','v-obs-ubic',
+    'v-acc-ubic','v-acc-altura','v-acc-obs',
+    'v-aco-cerrado','v-aco-detalles',
+    'v-ele-detalles','v-inv-obs','v-cuap-obs',
+    'v-cug-interruptor','v-cug-toroidales','v-cug-obs',
+    'v-cab-mod-inv','v-cab-inv-cua','v-cab-entrada-obs',
+    'v-net-router','v-net-wifi','v-net-dist','v-net-obs',
+    'v-otros'];
+  campoIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.disabled = !campoEditable;
+    else if (el.tagName === 'SELECT') el.disabled = !campoEditable;
+    else el.readOnly = !campoEditable;
+  });
+
   // Colapsa la cabecera admin para instalador (ya la ha leído)
   document.getElementById('visita-sec-admin').open = !v || isAdmin();
 
@@ -3581,17 +3801,165 @@ function abrirFormularioVisita(v) {
 }
 
 function leerFormularioVisita() {
+  const num = id => { const v = document.getElementById(id).value; return v === '' ? '' : (parseFloat(v) || 0); };
+  const txt = id => document.getElementById(id).value.trim();
+  const chk = id => document.getElementById(id).checked;
   return {
-    titulo: document.getElementById('v-titulo').value.trim(),
-    cliente_nombre: document.getElementById('v-cliente').value.trim(),
-    telefono: document.getElementById('v-telefono').value.trim(),
-    direccion: document.getElementById('v-direccion').value.trim(),
-    urlMaps: document.getElementById('v-maps').value.trim(),
-    equipos: document.getElementById('v-equipos').value.trim(),
-    observaciones: document.getElementById('v-obs').value.trim(),
+    titulo: txt('v-titulo'),
+    cliente_nombre: txt('v-cliente'),
+    telefono: txt('v-telefono'),
+    direccion: txt('v-direccion'),
+    urlMaps: txt('v-maps'),
+    equipos: txt('v-equipos'),
+    observaciones: txt('v-obs'),
     operarioAsignado: document.getElementById('v-operario').value,
-    fechaPrevista: document.getElementById('v-fecha').value
+    fechaPrevista: document.getElementById('v-fecha').value,
+    campo: {
+      contacto: {
+        tipo: document.getElementById('v-contacto-tipo').value,
+        nombre: txt('v-contacto-nombre'),
+        telefono: txt('v-contacto-telefono'),
+        observaciones: txt('v-contacto-obs')
+      },
+      cubierta: {
+        tipo: document.getElementById('v-cub-tipo').value,
+        largoCumbrera: num('v-cub-largo'),
+        distanciaBorde: num('v-cub-borde'),
+        otrasMedidas: txt('v-cub-otras')
+      },
+      correas: {
+        tipo: document.getElementById('v-cor-tipo').value,
+        distanciaEntre: num('v-cor-dist'),
+        numPorCara: num('v-cor-num')
+      },
+      grecas: {
+        altura: num('v-gre-altura'),
+        distanciaEntre: num('v-gre-dist'),
+        ancho: num('v-gre-ancho')
+      },
+      obstaculos: {
+        noExisten: chk('v-obs-no-existen'),
+        alturaMuretes: num('v-obs-muretes'),
+        alturaChimeneas: num('v-obs-chimeneas'),
+        otros: txt('v-obs-otros'),
+        ubicacion: txt('v-obs-ubic')
+      },
+      acceso: {
+        ubicacion: txt('v-acc-ubic'),
+        altura: num('v-acc-altura'),
+        observaciones: txt('v-acc-obs')
+      },
+      acopio: {
+        exteriorCerrado: chk('v-aco-cerrado'),
+        detalles: txt('v-aco-detalles')
+      },
+      elevacion: {
+        detalles: txt('v-ele-detalles')
+      },
+      inversor: {
+        observaciones: txt('v-inv-obs')
+      },
+      cuadroProteccion: {
+        observaciones: txt('v-cuap-obs')
+      },
+      cuadroGeneral: {
+        interruptor: txt('v-cug-interruptor'),
+        toroidalesDentro: chk('v-cug-toroidales'),
+        observaciones: txt('v-cug-obs')
+      },
+      cableado: {
+        distModulosInversor: num('v-cab-mod-inv'),
+        distInversorCuadro: num('v-cab-inv-cua'),
+        entradaNaveObs: txt('v-cab-entrada-obs')
+      },
+      internet: {
+        router: document.getElementById('v-net-router').value,
+        wifi: chk('v-net-wifi'),
+        distanciaRouter: num('v-net-dist'),
+        observaciones: txt('v-net-obs')
+      },
+      otros: txt('v-otros')
+    }
   };
+}
+
+function onContactoTipoChange() {
+  const tipo = document.getElementById('v-contacto-tipo').value;
+  const wrap = document.getElementById('v-contacto-otro-wrap');
+  if (wrap) wrap.style.display = tipo === 'otro' ? '' : 'none';
+}
+function onObsNoExistenChange() {
+  const no = document.getElementById('v-obs-no-existen').checked;
+  const wrap = document.getElementById('v-obs-wrap');
+  if (wrap) wrap.style.display = no ? 'none' : '';
+}
+
+function rellenarCampoVisita(campo) {
+  campo = campo || {};
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = (val == null ? '' : val); };
+  const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+
+  const c = campo.contacto || {};
+  set('v-contacto-tipo', c.tipo || 'cliente');
+  set('v-contacto-nombre', c.nombre);
+  set('v-contacto-telefono', c.telefono);
+  set('v-contacto-obs', c.observaciones);
+  onContactoTipoChange();
+
+  const cb = campo.cubierta || {};
+  set('v-cub-tipo', cb.tipo);
+  set('v-cub-largo', cb.largoCumbrera);
+  set('v-cub-borde', cb.distanciaBorde);
+  set('v-cub-otras', cb.otrasMedidas);
+
+  const co = campo.correas || {};
+  set('v-cor-tipo', co.tipo);
+  set('v-cor-dist', co.distanciaEntre);
+  set('v-cor-num', co.numPorCara);
+
+  const gr = campo.grecas || {};
+  set('v-gre-altura', gr.altura);
+  set('v-gre-dist', gr.distanciaEntre);
+  set('v-gre-ancho', gr.ancho);
+
+  const ob = campo.obstaculos || {};
+  setChk('v-obs-no-existen', ob.noExisten);
+  set('v-obs-muretes', ob.alturaMuretes);
+  set('v-obs-chimeneas', ob.alturaChimeneas);
+  set('v-obs-otros', ob.otros);
+  set('v-obs-ubic', ob.ubicacion);
+  onObsNoExistenChange();
+
+  const ac = campo.acceso || {};
+  set('v-acc-ubic', ac.ubicacion);
+  set('v-acc-altura', ac.altura);
+  set('v-acc-obs', ac.observaciones);
+
+  const ao = campo.acopio || {};
+  setChk('v-aco-cerrado', ao.exteriorCerrado);
+  set('v-aco-detalles', ao.detalles);
+
+  set('v-ele-detalles', (campo.elevacion || {}).detalles);
+  set('v-inv-obs', (campo.inversor || {}).observaciones);
+  set('v-cuap-obs', (campo.cuadroProteccion || {}).observaciones);
+
+  const cg = campo.cuadroGeneral || {};
+  set('v-cug-interruptor', cg.interruptor);
+  setChk('v-cug-toroidales', cg.toroidalesDentro);
+  set('v-cug-obs', cg.observaciones);
+
+  const cab = campo.cableado || {};
+  set('v-cab-mod-inv', cab.distModulosInversor);
+  set('v-cab-inv-cua', cab.distInversorCuadro);
+  set('v-cab-entrada-obs', cab.entradaNaveObs);
+
+  const net = campo.internet || {};
+  set('v-net-router', net.router);
+  setChk('v-net-wifi', net.wifi);
+  set('v-net-dist', net.distanciaRouter);
+  set('v-net-obs', net.observaciones);
+
+  set('v-otros', campo.otros);
 }
 
 async function guardarVisita() {
@@ -3623,7 +3991,6 @@ async function guardarVisita() {
       tipo: 'visita',
       estado: 'pendiente',
       ...datos,
-      campo: {},   // lo rellena el instalador en Commit 2
       creadoPor: currentUser && currentUser.nombre,
       creadoTs: Date.now()
     };
@@ -3632,7 +3999,9 @@ async function guardarVisita() {
     const idx = visitas.findIndex(v => v.id === visitaEnEdicion);
     if (idx < 0) { showToast('⚠ Visita no encontrada', 'err'); btn.disabled = false; btn.textContent = 'Guardar'; return; }
     const prev = visitas[idx];
-    visita = { ...prev, ...datos };
+    // Si es instalador editando una visita existente, mantén la cabecera original (no la puede cambiar desde UI readonly, pero por seguridad)
+    const merged = isAdmin() ? { ...prev, ...datos } : { ...prev, campo: datos.campo };
+    visita = merged;
     // Si es instalador completando por primera vez, marcar completada
     if (!isAdmin() && prev.estado === 'pendiente') {
       visita.estado = 'completada';

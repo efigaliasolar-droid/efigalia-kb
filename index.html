@@ -322,12 +322,17 @@
       <div class="home-card" onclick="enterMateriales()">
         <div class="home-icon">📦</div>
         <div class="home-title">Materiales</div>
-        <div class="home-desc">Salidas y retornos de material por obra, con furgoneta e instaladores.</div>
+        <div class="home-desc">Historial de salidas y retornos de material por obra.</div>
+      </div>
+      <div class="home-card" onclick="enterSolicitudMaterial()">
+        <div class="home-icon">📥</div>
+        <div class="home-title">Solicitud de material</div>
+        <div class="home-desc">Crear una solicitud rápida para una obra concreta.</div>
       </div>
       <div class="home-card" onclick="enterPartes()">
         <div class="home-icon">📋</div>
         <div class="home-title">Partes</div>
-        <div class="home-desc">Partes de seguimiento diario con fotos, solicitud de material e incidencias.</div>
+        <div class="home-desc">Parte de seguimiento diario con fotos por obra.</div>
       </div>
     </div>
   </div>
@@ -739,15 +744,6 @@
       </div>
 
       <div class="form-group">
-        <label>Acciones</label>
-        <div class="action-btns-row">
-          <button class="btn-ghost" onclick="solicitarMaterialDesdeParte()">➜ Solicitar material</button>
-          <button class="btn-ghost" onclick="registrarIncidenciaDesdeParte()">➜ Registrar incidencia</button>
-        </div>
-        <div id="parte-enlaces"></div>
-      </div>
-
-      <div class="form-group">
         <label>Notas</label>
         <textarea class="field" id="parte-notas" placeholder="Observaciones adicionales (opcional)"></textarea>
       </div>
@@ -993,6 +989,7 @@ function enterObra(sub) {
 }
 
 function enterMateriales() {
+  solicitudDirecta = false;
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-materiales').style.display = 'block';
@@ -1001,6 +998,19 @@ function enterMateriales() {
   Promise.all([materialesLoad(), movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => {
     refrescarDatalists(); renderMovimientos();
     restaurarDraftMov();
+  });
+}
+
+let solicitudDirecta = false;
+function enterSolicitudMaterial() {
+  solicitudDirecta = true;
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-materiales').style.display = 'block';
+  Promise.all([materialesLoad(), movimientosLoad(), sheetsLoad()]).then(() => {
+    refrescarDatalists();
+    abrirFormMov('salida');
+    document.getElementById('mat-list-section').style.display = 'none';
   });
 }
 
@@ -1560,11 +1570,6 @@ async function guardarIncidencia() {
   const lblArch = document.getElementById('archivo-label'); if (lblArch) lblArch.textContent = '📄 Toca para seleccionar archivo';
   onTipoChange();  // restablecer etiquetas/visibilidades según tipo seleccionado
   showToast(tipo === 'documento' ? '✓ Documento subido' : (tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada'), 'ok');
-
-  // Si venimos de un parte que pidió registrar incidencia, volver allí
-  if (typeof returnTarget !== 'undefined' && returnTarget === 'parte_incidencia' && typeof handleReturnFromIncidencia === 'function') {
-    handleReturnFromIncidencia(reg.id);
-  }
 }
 
 // ── LISTADO ────────────────────────────────────────────
@@ -2297,7 +2302,6 @@ let movimientos = [];
 let partes = [];
 let movForm = null;
 let parteForm = null;
-let returnTarget = null;
 let movLineas = [];
 let parteFotoFiles = [];
 
@@ -2558,6 +2562,12 @@ function abrirFormMov(tipo, prefill) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarFormMov() {
+  if (solicitudDirecta) {
+    solicitudDirecta = false;
+    movForm = null; movLineas = [];
+    enterObra();
+    return;
+  }
   document.getElementById('mat-list-section').style.display = 'block';
   document.getElementById('mat-form-section').style.display = 'none';
   movForm = null;
@@ -2677,16 +2687,8 @@ async function guardarMovimiento() {
   clearDraft(DRAFT_KEYS.movimiento);
   showToast('✓ Movimiento guardado', 'ok');
 
-  const wasReturn = (returnTarget === 'parte_material' && parteForm);
   cerrarFormMov();
-
-  if (wasReturn) {
-    parteForm.movimientosIds = (parteForm.movimientosIds || []).concat([mov.id]);
-    returnTarget = null;
-    setTimeout(() => abrirFormParte(parteForm), 80);
-  } else {
-    renderMovimientos();
-  }
+  if (!solicitudDirecta) renderMovimientos();
 }
 
 // ── LISTADO Y MODAL DE MOVIMIENTOS ─────────────────────
@@ -2764,11 +2766,8 @@ function abrirFormParte(prefill) {
   document.getElementById('parte-foto-previews').innerHTML = '';
   parteForm = {
     editId: prefill && prefill.editId,
-    fotosExistentes: (prefill && prefill.fotos) ? prefill.fotos.slice() : [],
-    incidenciasIds: (prefill && prefill.incidenciasIds) ? prefill.incidenciasIds.slice() : [],
-    movimientosIds: (prefill && prefill.movimientosIds) ? prefill.movimientosIds.slice() : []
+    fotosExistentes: (prefill && prefill.fotos) ? prefill.fotos.slice() : []
   };
-  renderParteEnlaces();
   if (parteForm.fotosExistentes.length) {
     const cont = document.getElementById('parte-foto-previews');
     parteForm.fotosExistentes.forEach(url => {
@@ -2798,20 +2797,6 @@ function previewParteFotos(event) {
     cont.appendChild(img);
   });
 }
-function renderParteEnlaces() {
-  const c = document.getElementById('parte-enlaces');
-  if (!c || !parteForm) return;
-  const mats = (parteForm.movimientosIds || []).map(id => {
-    const m = movimientos.find(x => x.id === id);
-    return m ? `<div class="ref-item">📦 Salida · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
-  }).join('');
-  const incs = (parteForm.incidenciasIds || []).map(id => {
-    const inc = incidents.find(x => x.id === id);
-    return inc ? `<div class="ref-item">🛠 Incidencia · ${escapeHtml((inc.incidencia||'').substring(0,60))}</div>` : '';
-  }).join('');
-  c.innerHTML = (mats || incs) ? `<div class="ref-list" style="margin-top:8px">${mats}${incs}</div>` : '';
-}
-
 function capturarParteForm() {
   return {
     editId: parteForm && parteForm.editId,
@@ -2822,52 +2807,8 @@ function capturarParteForm() {
     trabajosRealizados: document.getElementById('parte-trabajos').value,
     notas: document.getElementById('parte-notas').value,
     registradoPor: document.getElementById('parte-registradopor').value,
-    fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : [],
-    incidenciasIds: (parteForm && parteForm.incidenciasIds) ? parteForm.incidenciasIds.slice() : [],
-    movimientosIds: (parteForm && parteForm.movimientosIds) ? parteForm.movimientosIds.slice() : []
+    fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : []
   };
-}
-
-function solicitarMaterialDesdeParte() {
-  const snap = capturarParteForm();
-  if (!snap.idObra) { showToast('⚠ Rellena la obra antes de solicitar material', 'err'); return; }
-  parteForm = { ...parteForm, ...snap };
-  returnTarget = 'parte_material';
-  cerrarFormParte();
-  setTimeout(() => abrirFormMov('salida', {
-    fecha: snap.fecha,
-    idObra: snap.idObra,
-    furgoneta: snap.furgoneta,
-    instaladores: snap.instaladores,
-    registradoPor: snap.registradoPor,
-    lineas: [],
-    notas: `Solicitado desde parte de ${snap.fecha}`
-  }), 50);
-}
-
-function registrarIncidenciaDesdeParte() {
-  const snap = capturarParteForm();
-  if (!snap.idObra) { showToast('⚠ Rellena la obra antes de registrar incidencia', 'err'); return; }
-  parteForm = { ...parteForm, ...snap };
-  returnTarget = 'parte_incidencia';
-  cerrarFormParte();
-  enterIncidencias();
-  setTimeout(() => {
-    const tabs = document.querySelectorAll('#tab-bar-incidencias .tab');
-    if (tabs[2]) tabs[2].click();   // Registrar
-    const tipoSel = document.getElementById('f-tipo'); if (tipoSel) { tipoSel.value = 'incidencia'; if (typeof onTipoChange === 'function') onTipoChange(); }
-    document.getElementById('f-idobra').value = snap.idObra;
-    if (snap.registradoPor) document.getElementById('f-tecnico').value = snap.registradoPor;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 80);
-}
-
-function handleReturnFromIncidencia(incId) {
-  if (!parteForm) { returnTarget = null; return; }
-  parteForm.incidenciasIds = (parteForm.incidenciasIds || []).concat([incId]);
-  returnTarget = null;
-  enterObra('partes');
-  setTimeout(() => abrirFormParte(parteForm), 80);
 }
 
 async function guardarParte() {
@@ -2904,8 +2845,6 @@ async function guardarParte() {
     instaladores: snap.instaladores,
     trabajosRealizados: snap.trabajosRealizados,
     fotos: fotosUrls,
-    incidenciasIds: snap.incidenciasIds,
-    movimientosIds: snap.movimientosIds,
     notas: snap.notas,
     registradoPor: snap.registradoPor || 'Anónimo',
     timestamp: Date.now()
@@ -2944,8 +2883,6 @@ function renderPartes() {
         ${(p.instaladores||[]).length ? `<span>👷 ${escapeHtml((p.instaladores||[]).join(', '))}</span>` : ''}
         ${p.furgoneta ? `<span>🚐 ${escapeHtml(p.furgoneta)}</span>` : ''}
         ${(p.fotos||[]).length ? `<span>📷 ${p.fotos.length}</span>` : ''}
-        ${(p.movimientosIds||[]).length ? `<span>📦 ${p.movimientosIds.length}</span>` : ''}
-        ${(p.incidenciasIds||[]).length ? `<span>🛠 ${p.incidenciasIds.length}</span>` : ''}
       </div>
     </div>`).join('');
 }
@@ -2955,21 +2892,12 @@ function openParteModal(id) {
   const photos = (p.fotos||[]).length
     ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
     : '';
-  const mats = (p.movimientosIds||[]).map(id => {
-    const m = movimientos.find(x => x.id === id);
-    return m ? `<div class="ref-item">📦 ${m.tipo === 'salida' ? 'SALIDA' : 'RETORNO'} · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
-  }).join('');
-  const incs = (p.incidenciasIds||[]).map(id => {
-    const inc = incidents.find(x => x.id === id);
-    return inc ? `<div class="ref-item">🛠 ${escapeHtml((inc.incidencia||'').substring(0,80))}</div>` : '';
-  }).join('');
   document.getElementById('modal-inner').innerHTML = `
     <div class="modal-title">${escapeHtml(p.idObra)} · ${escapeHtml(p.fecha)}</div>
     ${p.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(p.furgoneta)}</div></div>` : ''}
     ${(p.instaladores||[]).length ? `<div class="modal-section"><div class="modal-label">Instaladores</div><div class="modal-value">${escapeHtml((p.instaladores||[]).join(', '))}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Trabajos realizados</div><div class="modal-value">${escapeHtml(p.trabajosRealizados || '')}</div></div>
     ${photos}
-    ${(mats || incs) ? `<div class="modal-section"><div class="modal-label">Enlaces</div><div class="ref-list">${mats}${incs}</div></div>` : ''}
     ${p.notas ? `<div class="modal-section"><div class="modal-label">Notas</div><div class="modal-value">${escapeHtml(p.notas)}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Registrado por</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${escapeHtml(p.registradoPor || '—')}</div></div>
     <div style="display:flex;gap:8px;margin-top:12px">

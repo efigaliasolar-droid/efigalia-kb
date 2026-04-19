@@ -980,7 +980,7 @@ function switchTab(tab, el) {
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
   if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
-  if (tab === 'registrar') sheetsLoad().then(() => fillObraSelects());
+  if (tab === 'registrar') sheetsLoad().then(() => { fillObraSelects(); restaurarDraftRegistrar(); });
 }
 
 function enterObra(sub) {
@@ -1000,6 +1000,7 @@ function enterMateriales() {
   document.getElementById('mat-form-section').style.display = 'none';
   Promise.all([materialesLoad(), movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => {
     refrescarDatalists(); renderMovimientos();
+    restaurarDraftMov();
   });
 }
 
@@ -1011,6 +1012,7 @@ function enterPartes() {
   document.getElementById('partes-form-section').style.display = 'none';
   Promise.all([movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => {
     refrescarDatalists(); renderPartes();
+    restaurarDraftParte();
   });
 }
 
@@ -1235,6 +1237,132 @@ function previewArchivo(event) {
   lbl.textContent = archivoFile ? `📄 ${archivoFile.name}` : '📄 Toca para seleccionar archivo';
 }
 
+// ── BORRADOR (auto-guardado en localStorage) ───────────
+const DRAFT_KEYS = {
+  registrar: 'efigalia_draft_registrar',
+  movimiento: 'efigalia_draft_mov',
+  parte: 'efigalia_draft_parte'
+};
+
+function saveDraft(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
+function loadDraft(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    // expira a las 48 h
+    if (Date.now() - obj.ts > 48 * 3600 * 1000) { localStorage.removeItem(key); return null; }
+    return obj.data;
+  } catch(e) { return null; }
+}
+function clearDraft(key) { try { localStorage.removeItem(key); } catch(e) {} }
+
+function tieneContenidoRegistrar(d) {
+  return d && (d.titulo || d.marca || d.modelo || d.solucion || d.verificaciones || d.keywords || d.codError);
+}
+function tieneContenidoMov(d) {
+  return d && (d.idObra || d.furgoneta || (d.instaladores||[]).length || (d.lineas||[]).length || d.notas);
+}
+function tieneContenidoParte(d) {
+  return d && (d.idObra || d.furgoneta || (d.instaladores||[]).length || d.trabajosRealizados || d.notas);
+}
+
+function autoSaveRegistrar() {
+  if (editingId) return;  // no guardar borrador en modo edición
+  const d = {
+    tipo: document.getElementById('f-tipo').value,
+    titulo: document.getElementById('f-incidencia').value,
+    marca: document.getElementById('f-marca').value,
+    modelo: document.getElementById('f-modelo').value,
+    codError: document.getElementById('f-coderror').value,
+    idObra: document.getElementById('f-idobra').value,
+    verificaciones: document.getElementById('f-verificaciones').value,
+    solucion: document.getElementById('f-solucion').value,
+    documentacion: document.getElementById('f-doc').value,
+    tecnico: document.getElementById('f-tecnico').value,
+    keywords: document.getElementById('f-keywords').value
+  };
+  if (tieneContenidoRegistrar(d)) saveDraft(DRAFT_KEYS.registrar, d);
+}
+
+function restaurarDraftRegistrar() {
+  const d = loadDraft(DRAFT_KEYS.registrar);
+  if (!tieneContenidoRegistrar(d)) return;
+  if (!confirm('Hay un borrador sin guardar de Registrar. ¿Recuperarlo?')) { clearDraft(DRAFT_KEYS.registrar); return; }
+  document.getElementById('f-tipo').value = d.tipo || 'incidencia';
+  onTipoChange();
+  fillObraSelects();
+  document.getElementById('f-incidencia').value = d.titulo || '';
+  document.getElementById('f-marca').value = d.marca || '';
+  document.getElementById('f-modelo').value = d.modelo || '';
+  document.getElementById('f-coderror').value = d.codError || '';
+  document.getElementById('f-idobra').value = d.idObra || '';
+  document.getElementById('f-verificaciones').value = d.verificaciones || '';
+  document.getElementById('f-solucion').value = d.solucion || '';
+  document.getElementById('f-doc').value = d.documentacion || '';
+  document.getElementById('f-tecnico').value = d.tecnico || '';
+  document.getElementById('f-keywords').value = d.keywords || '';
+}
+
+function autoSaveMov() {
+  if (movForm && movForm.editId) return;
+  const d = {
+    tipo: (document.querySelector('input[name="mov-tipo"]:checked')||{}).value || 'salida',
+    idObra: document.getElementById('mov-obra').value,
+    furgoneta: document.getElementById('mov-furgoneta').value,
+    instaladores: getPills('mov-instaladores-pills'),
+    notas: document.getElementById('mov-notas').value,
+    registradoPor: document.getElementById('mov-registradopor').value,
+    lineas: movLineas.map(l => ({...l}))
+  };
+  if (tieneContenidoMov(d)) saveDraft(DRAFT_KEYS.movimiento, d);
+}
+
+function restaurarDraftMov() {
+  const d = loadDraft(DRAFT_KEYS.movimiento);
+  if (!tieneContenidoMov(d)) return false;
+  if (!confirm('Hay un movimiento sin guardar. ¿Recuperarlo?')) { clearDraft(DRAFT_KEYS.movimiento); return false; }
+  abrirFormMov(d.tipo || 'salida', { ...d, fecha: isoToday() });
+  return true;
+}
+
+function autoSaveParte() {
+  if (parteForm && parteForm.editId) return;
+  const snap = capturarParteForm();
+  if (tieneContenidoParte(snap)) saveDraft(DRAFT_KEYS.parte, snap);
+}
+
+function restaurarDraftParte() {
+  const d = loadDraft(DRAFT_KEYS.parte);
+  if (!tieneContenidoParte(d)) return false;
+  if (!confirm('Hay un parte sin guardar. ¿Recuperarlo?')) { clearDraft(DRAFT_KEYS.parte); return false; }
+  abrirFormParte({ ...d, fecha: isoToday() });
+  return true;
+}
+
+// Listener genérico (debounced) que llama a la función de guardado del formulario activo
+let draftTimer = null;
+function scheduleDraftSave(fn) {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(fn, 800);
+}
+
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || !el.id) return;
+  if (document.getElementById('view-registrar')?.style.display === 'block') {
+    if (['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords','f-tipo'].includes(el.id)) {
+      scheduleDraftSave(autoSaveRegistrar);
+    }
+  } else if (document.getElementById('mat-form-section')?.style.display === 'block') {
+    if (el.id.startsWith('mov-') || el.id === 'mat-search') scheduleDraftSave(autoSaveMov);
+  } else if (document.getElementById('partes-form-section')?.style.display === 'block') {
+    if (el.id.startsWith('parte-')) scheduleDraftSave(autoSaveParte);
+  }
+});
+
 // ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js CDN) ───
 let pdfjsPromise = null;
 function loadPdfjs() {
@@ -1420,6 +1548,7 @@ async function guardarIncidencia() {
   }
   await sheetsSave();
   editingId = null;
+  clearDraft(DRAFT_KEYS.registrar);
 
   btn.disabled = false;
   document.getElementById('btn-guardar').textContent = 'Guardar y sincronizar';
@@ -2545,6 +2674,7 @@ async function guardarMovimiento() {
   await movimientosSave();
 
   btn.disabled = false; btn.textContent = 'Guardar movimiento';
+  clearDraft(DRAFT_KEYS.movimiento);
   showToast('✓ Movimiento guardado', 'ok');
 
   const wasReturn = (returnTarget === 'parte_material' && parteForm);
@@ -2786,6 +2916,7 @@ async function guardarParte() {
   await partesSave();
 
   btn.disabled = false; btn.textContent = 'Guardar parte';
+  clearDraft(DRAFT_KEYS.parte);
   showToast('✓ Parte guardado', 'ok');
   cerrarFormParte();
   renderPartes();

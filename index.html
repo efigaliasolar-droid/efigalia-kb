@@ -1105,6 +1105,22 @@
           <label>Otras medidas / notas</label>
           <textarea class="field" id="v-cub-otras"></textarea>
         </div>
+        <div class="form-group foto-group" data-foto-key="cubierta">
+          <label>Fotos generales de la cubierta</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cubierta').click()">
+            <input type="file" id="vf-cubierta" accept="image/*" multiple onchange="onVisitaFotosChange('cubierta', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cubierta"></div>
+        </div>
+        <div class="form-group foto-group" data-foto-key="cubiertaDetalle">
+          <label>Foto detalle del tipo de cubierta</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cubiertaDetalle').click()">
+            <input type="file" id="vf-cubiertaDetalle" accept="image/*" multiple onchange="onVisitaFotosChange('cubiertaDetalle', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cubiertaDetalle"></div>
+        </div>
       </div>
     </details>
 
@@ -1156,6 +1172,14 @@
             <label>Ubicación de los elementos (descripción)</label>
             <textarea class="field" id="v-obs-ubic"></textarea>
           </div>
+          <div class="form-group foto-group" data-foto-key="obstaculos">
+            <label>Fotos de los obstáculos</label>
+            <div class="photo-drop foto-drop" onclick="document.getElementById('vf-obstaculos').click()">
+              <input type="file" id="vf-obstaculos" accept="image/*" multiple onchange="onVisitaFotosChange('obstaculos', event)">
+              📷 Añadir fotos
+            </div>
+            <div class="photo-previews" id="vp-obstaculos"></div>
+          </div>
         </div>
       </div>
     </details>
@@ -1166,6 +1190,14 @@
         <div class="form-group"><label>Ubicación del acceso</label><input type="text" id="v-acc-ubic"></div>
         <div class="form-group"><label>Altura de la cubierta (m)</label><input type="number" step="any" inputmode="decimal" id="v-acc-altura"></div>
         <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-acc-obs"></textarea></div>
+        <div class="form-group foto-group" data-foto-key="acceso">
+          <label>Foto del acceso a la cubierta</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-acceso').click()">
+            <input type="file" id="vf-acceso" accept="image/*" multiple onchange="onVisitaFotosChange('acceso', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-acceso"></div>
+        </div>
       </div>
     </details>
 
@@ -1176,6 +1208,14 @@
           <label><input type="checkbox" id="v-aco-cerrado" style="margin-right:6px">Hay acopio exterior en recinto cerrado</label>
         </div>
         <div class="form-group"><label>Detalles del acopio</label><textarea class="field" id="v-aco-detalles" placeholder="Dónde, tamaño, accesos..."></textarea></div>
+        <div class="form-group foto-group" data-foto-key="acopio">
+          <label>Fotos del acopio</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-acopio').click()">
+            <input type="file" id="vf-acopio" accept="image/*" multiple onchange="onVisitaFotosChange('acopio', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-acopio"></div>
+        </div>
       </div>
     </details>
 
@@ -1183,6 +1223,14 @@
       <summary>Medio de elevación del material</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Detalles</label><textarea class="field" id="v-ele-detalles" placeholder="Grúa, carretilla, manual, escaleras..."></textarea></div>
+        <div class="form-group foto-group" data-foto-key="elevacion">
+          <label>Fotos del medio de elevación</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-elevacion').click()">
+            <input type="file" id="vf-elevacion" accept="image/*" multiple onchange="onVisitaFotosChange('elevacion', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-elevacion"></div>
+        </div>
       </div>
     </details>
 
@@ -1190,6 +1238,22 @@
       <summary>Ubicación del inversor</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-inv-obs" placeholder="Ubicación prevista del inversor..."></textarea></div>
+        <div class="form-group foto-group" data-foto-key="inversorPlano">
+          <label>Foto del plano con ubicación del inversor</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-inversorPlano').click()">
+            <input type="file" id="vf-inversorPlano" accept="image/*" multiple onchange="onVisitaFotosChange('inversorPlano', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-inversorPlano"></div>
+        </div>
+        <div class="form-group foto-group" data-foto-key="inversorEquipos">
+          <label>Fotos de los equipos</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-inversorEquipos').click()">
+            <input type="file" id="vf-inversorEquipos" accept="image/*" multiple onchange="onVisitaFotosChange('inversorEquipos', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-inversorEquipos"></div>
+        </div>
       </div>
     </details>
 
@@ -1197,6 +1261,14 @@
       <summary>Ubicación del cuadro de protección</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-cuap-obs"></textarea></div>
+        <div class="form-group foto-group" data-foto-key="cuadroProteccion">
+          <label>Foto del plano con ubicación</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroProteccion').click()">
+            <input type="file" id="vf-cuadroProteccion" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroProteccion', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cuadroProteccion"></div>
+        </div>
       </div>
     </details>
 
@@ -1208,6 +1280,22 @@
           <label><input type="checkbox" id="v-cug-toroidales" style="margin-right:6px">Es posible colocar los toroidales dentro del cuadro</label>
         </div>
         <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-cug-obs"></textarea></div>
+        <div class="form-group foto-group" data-foto-key="cuadroInterruptor">
+          <label>Foto del interruptor general</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroInterruptor').click()">
+            <input type="file" id="vf-cuadroInterruptor" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroInterruptor', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cuadroInterruptor"></div>
+        </div>
+        <div class="form-group foto-group" data-foto-key="cuadroGeneral">
+          <label>Foto del cuadro general</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroGeneral').click()">
+            <input type="file" id="vf-cuadroGeneral" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroGeneral', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cuadroGeneral"></div>
+        </div>
       </div>
     </details>
 
@@ -1221,6 +1309,22 @@
         <div class="form-group">
           <label>Entrada a interior de la nave (observaciones)</label>
           <textarea class="field" id="v-cab-entrada-obs" placeholder="Punto de entrada, pasatubos, bandejas existentes..."></textarea>
+        </div>
+        <div class="form-group foto-group" data-foto-key="cableadoEntrada">
+          <label>Foto entrada del cableado</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cableadoEntrada').click()">
+            <input type="file" id="vf-cableadoEntrada" accept="image/*" multiple onchange="onVisitaFotosChange('cableadoEntrada', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cableadoEntrada"></div>
+        </div>
+        <div class="form-group foto-group" data-foto-key="cableadoRecorrido">
+          <label>Foto recorrido del cableado</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cableadoRecorrido').click()">
+            <input type="file" id="vf-cableadoRecorrido" accept="image/*" multiple onchange="onVisitaFotosChange('cableadoRecorrido', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-cableadoRecorrido"></div>
         </div>
       </div>
     </details>
@@ -1243,6 +1347,14 @@
         </div>
         <div class="form-group"><label>Distancia hasta el router (m)</label><input type="number" step="any" inputmode="decimal" id="v-net-dist"></div>
         <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-net-obs"></textarea></div>
+        <div class="form-group foto-group" data-foto-key="router">
+          <label>Foto del router</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-router').click()">
+            <input type="file" id="vf-router" accept="image/*" multiple onchange="onVisitaFotosChange('router', event)">
+            📷 Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-router"></div>
+        </div>
       </div>
     </details>
 
@@ -3776,6 +3888,18 @@ function abrirFormularioVisita(v) {
   const campoEditable = !v  // nueva → admin está creando, puede dejar campo vacío
                       || isAdmin()
                       || (esOperario && estado !== 'cancelada');
+  visitaEditable = campoEditable;
+
+  // Inicializar estado de fotos
+  visitaFotoFiles = {};
+  visitaFotoUrls = {};
+  const fotosExistentes = (v && v.campo && v.campo.fotos) || {};
+  VISITA_FOTO_KEYS.forEach(k => {
+    visitaFotoUrls[k] = Array.isArray(fotosExistentes[k]) ? fotosExistentes[k].slice() : [];
+    visitaFotoFiles[k] = [];
+    renderVisitaFotos(k);
+  });
+  aplicarEditabilidadFotos(visitaEditable);
   const campoIds = ['v-contacto-tipo','v-contacto-nombre','v-contacto-telefono','v-contacto-obs',
     'v-cub-tipo','v-cub-largo','v-cub-borde','v-cub-otras',
     'v-cor-tipo','v-cor-dist','v-cor-num',
@@ -3883,6 +4007,102 @@ function leerFormularioVisita() {
       otros: txt('v-otros')
     }
   };
+}
+
+// ── FOTOS DE LA VISITA ─────────────────────────────────
+const VISITA_FOTO_KEYS = ['cubierta','cubiertaDetalle','obstaculos','acceso','acopio','elevacion','inversorPlano','inversorEquipos','cuadroProteccion','cuadroInterruptor','cuadroGeneral','cableadoEntrada','cableadoRecorrido','router'];
+let visitaFotoFiles = {};   // key → [File] (nuevas, pendientes de subir)
+let visitaFotoUrls = {};    // key → [URL] (ya subidas)
+let visitaEditable = false; // global computado al abrir la visita
+
+function onVisitaFotosChange(key, event) {
+  const files = Array.from((event && event.target && event.target.files) || []);
+  if (!files.length) return;
+  visitaFotoFiles[key] = (visitaFotoFiles[key] || []).concat(files);
+  if (event && event.target) event.target.value = '';
+  renderVisitaFotos(key);
+}
+
+function renderVisitaFotos(key) {
+  const cont = document.getElementById('vp-' + key);
+  if (!cont) return;
+  cont.innerHTML = '';
+  const urls = visitaFotoUrls[key] || [];
+  urls.forEach((url, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = url;
+    img.onclick = () => window.open(url, '_blank');
+    wrap.appendChild(img);
+    if (visitaEditable) {
+      const btnDel = document.createElement('button');
+      btnDel.type = 'button';
+      btnDel.className = 'btn-anot';
+      btnDel.title = 'Quitar foto';
+      btnDel.textContent = '✕';
+      btnDel.onclick = (e) => {
+        e.stopPropagation();
+        if (!confirm('¿Quitar esta foto de la visita?')) return;
+        visitaFotoUrls[key].splice(idx, 1);
+        renderVisitaFotos(key);
+      };
+      wrap.appendChild(btnDel);
+    }
+    cont.appendChild(wrap);
+  });
+  const nuevos = visitaFotoFiles[key] || [];
+  nuevos.forEach((file, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    wrap.appendChild(img);
+    if (visitaEditable) {
+      const btnAnot = document.createElement('button');
+      btnAnot.type = 'button';
+      btnAnot.className = 'btn-anot';
+      btnAnot.title = 'Anotar';
+      btnAnot.textContent = '✎';
+      btnAnot.onclick = () => openAnotador(file, (nf) => { visitaFotoFiles[key][idx] = nf; renderVisitaFotos(key); });
+      wrap.appendChild(btnAnot);
+      const btnDel = document.createElement('button');
+      btnDel.type = 'button';
+      btnDel.className = 'btn-anot';
+      btnDel.title = 'Quitar';
+      btnDel.textContent = '✕';
+      btnDel.style.right = '36px';
+      btnDel.onclick = (e) => {
+        e.stopPropagation();
+        visitaFotoFiles[key].splice(idx, 1);
+        renderVisitaFotos(key);
+      };
+      wrap.appendChild(btnDel);
+    }
+    cont.appendChild(wrap);
+  });
+}
+
+function aplicarEditabilidadFotos(editable) {
+  document.querySelectorAll('#view-visita .foto-group .foto-drop').forEach(el => {
+    el.style.display = editable ? '' : 'none';
+  });
+}
+
+async function subirTodasFotosVisita() {
+  const out = {};
+  for (const k of VISITA_FOTO_KEYS) out[k] = (visitaFotoUrls[k] || []).slice();
+  for (const k of VISITA_FOTO_KEYS) {
+    const files = visitaFotoFiles[k] || [];
+    if (!files.length) continue;
+    for (const f of files) {
+      try {
+        const url = await subirFoto(f);
+        if (url) out[k].push(url);
+      } catch(e) { console.warn('Error subiendo foto', k, e); }
+    }
+  }
+  return out;
 }
 
 function onContactoTipoChange() {
@@ -3995,7 +4215,11 @@ async function guardarVisita() {
   }
 
   const btn = document.getElementById('btn-visita-save');
-  btn.disabled = true; btn.textContent = 'Guardando...';
+  btn.disabled = true; btn.textContent = 'Subiendo fotos...';
+  const fotosFinales = await subirTodasFotosVisita();
+  if (!datos.campo) datos.campo = {};
+  datos.campo.fotos = fotosFinales;
+  btn.textContent = 'Guardando...';
   await visitasLoad();
 
   let visita;

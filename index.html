@@ -269,6 +269,16 @@
   .balance-row .n.p.off { color: var(--text-muted); }
   .balance-head { background: var(--surface2); font-family: var(--mono); text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; color: var(--text-muted); padding: 7px 10px; display: grid; grid-template-columns: 1fr 60px 60px 80px; gap: 8px; border-bottom: 1px solid var(--border); }
 
+  /* ── Panel de filtros colapsable ── */
+  .filtros-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 10px 14px; margin-bottom: 14px; }
+  .filtros-panel summary { cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; padding: 2px 0; }
+  .filtros-panel summary::-webkit-details-marker { display: none; }
+  .filtros-panel summary::after { content: '▾'; color: var(--text-muted); transition: transform 0.2s; }
+  .filtros-panel[open] summary::after { transform: rotate(180deg); color: var(--accent); }
+  .filtros-panel[open] summary { color: var(--accent); }
+  .filtros-panel .filtros-body { padding-top: 12px; }
+  .filtros-badge { background: var(--accent); color: #fff; border-radius: 10px; padding: 2px 8px; font-size: 10px; font-family: var(--mono); margin-left: 8px; }
+
   /* ── Pill selector (instaladores) ── */
   .pill-selector { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
   .pill { padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); user-select: none; }
@@ -476,21 +486,51 @@
   <div id="view-listado">
     <button class="back-link" onclick="goHome()">← Atrás</button>
     <div class="section-title">Listado</div>
-    <div class="form-row" style="margin-bottom:10px">
-      <div class="form-group" style="margin:0">
-        <label>Filtrar por tipo</label>
-        <select id="listado-tipo" onchange="renderListado()">
-          <option value="">Todos</option>
-          <option value="incidencia">Incidencias</option>
-          <option value="nota">Notas técnicas</option>
-          <option value="documento">Documentos</option>
-        </select>
+    <details class="filtros-panel" open>
+      <summary>Filtros<span class="filtros-badge" id="listado-filtros-count" style="display:none">0</span></summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Buscar</label>
+          <input type="text" id="listado-search" placeholder="Texto libre (descripción, keywords, archivo...)" oninput="renderListado()">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="listado-tipo" onchange="renderListado()">
+              <option value="">Todos</option>
+              <option value="incidencia">Incidencias</option>
+              <option value="nota">Notas técnicas</option>
+              <option value="documento">Documentos</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Obra</label>
+            <select id="listado-obra" onchange="renderListado()"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Técnico</label>
+            <select id="listado-tecnico" onchange="renderListado()"></select>
+          </div>
+          <div class="form-group">
+            <label>Marca</label>
+            <input type="text" id="listado-marca" placeholder="Ej: Huawei" oninput="renderListado()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Desde</label>
+            <input type="date" id="listado-desde" onchange="renderListado()">
+          </div>
+          <div class="form-group">
+            <label>Hasta</label>
+            <input type="date" id="listado-hasta" onchange="renderListado()">
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="limpiarFiltrosListado()" style="width:100%;margin-top:4px">Limpiar filtros</button>
       </div>
-      <div class="form-group" style="margin:0">
-        <label>Buscar</label>
-        <input type="text" id="listado-search" placeholder="Marca, modelo, palabra clave..." oninput="renderListado()">
-      </div>
-    </div>
+    </details>
     <div id="listado-container"></div>
   </div>
 
@@ -672,9 +712,41 @@
         <button class="btn-primary" onclick="abrirFormMov('salida')">+ Salida a obra</button>
         <button class="btn-secondary" onclick="abrirFormMov('entrada')">+ Retorno de obra</button>
       </div>
-      <div class="search-bar">
-        <input type="text" id="mov-search" placeholder="Filtrar por obra, furgoneta, fecha..." oninput="renderMovimientos()">
-      </div>
+      <details class="filtros-panel">
+        <summary>Filtros<span class="filtros-badge" id="mov-filtros-count" style="display:none">0</span></summary>
+        <div class="filtros-body">
+          <div class="form-group">
+            <label>Buscar</label>
+            <input type="text" id="mov-search" placeholder="Texto libre (obra, furgoneta, notas...)" oninput="renderMovimientos()">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo</label>
+              <select id="mov-tipo-filtro" onchange="renderMovimientos()">
+                <option value="">Todos</option>
+                <option value="salida">Salidas</option>
+                <option value="entrada">Retornos</option>
+                <option value="solicitud">Solicitudes</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Obra</label>
+              <select id="mov-obra-filtro" onchange="renderMovimientos()"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="mov-desde" onchange="renderMovimientos()">
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="mov-hasta" onchange="renderMovimientos()">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="limpiarFiltrosMov()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+        </div>
+      </details>
       <div id="mov-container"></div>
     </div>
 
@@ -740,9 +812,36 @@
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormParte()">+ Nuevo parte de hoy</button>
       </div>
-      <div class="search-bar">
-        <input type="text" id="parte-search" placeholder="Filtrar por obra, fecha, instalador..." oninput="renderPartes()">
-      </div>
+      <details class="filtros-panel">
+        <summary>Filtros<span class="filtros-badge" id="parte-filtros-count" style="display:none">0</span></summary>
+        <div class="filtros-body">
+          <div class="form-group">
+            <label>Buscar</label>
+            <input type="text" id="parte-search" placeholder="Texto libre (obra, trabajos, notas...)" oninput="renderPartes()">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Obra</label>
+              <select id="parte-obra-filtro" onchange="renderPartes()"></select>
+            </div>
+            <div class="form-group">
+              <label>Instalador</label>
+              <select id="parte-instalador-filtro" onchange="renderPartes()"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="parte-desde" onchange="renderPartes()">
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="parte-hasta" onchange="renderPartes()">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="limpiarFiltrosPartes()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+        </div>
+      </details>
       <div id="partes-container"></div>
     </div>
 
@@ -1892,15 +1991,75 @@ function esRegistroDeUsuario(inc) {
   return t === 'incidencia' || t === 'nota' || t === 'documento';
 }
 
+function parseFechaES(str) {
+  const m = (str||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(+m[3], +m[2]-1, +m[1]);
+}
+
+function parseFechaISO(str) {
+  if (!str) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) return new Date(str.substring(0,10));
+  return parseFechaES(str);
+}
+
+function fillListadoFilterSelects() {
+  const userRecords = incidents.filter(esRegistroDeUsuario);
+  const obras = [...new Set(userRecords.map(i => i.idObra).filter(v => v && v !== '-'))].sort();
+  const tecnicos = [...new Set(userRecords.map(i => i.tecnico).filter(v => v && v !== 'Anónimo' && v !== '-'))].sort();
+  const obraSel = document.getElementById('listado-obra');
+  const tecnicoSel = document.getElementById('listado-tecnico');
+  if (obraSel) {
+    const cur = obraSel.value;
+    obraSel.innerHTML = '<option value="">Todas</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    obraSel.value = cur;
+  }
+  if (tecnicoSel) {
+    const cur = tecnicoSel.value;
+    tecnicoSel.innerHTML = '<option value="">Todos</option>' + tecnicos.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    tecnicoSel.value = cur;
+  }
+}
+
+function limpiarFiltrosListado() {
+  ['listado-tipo','listado-obra','listado-tecnico','listado-marca','listado-desde','listado-hasta','listado-search'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderListado();
+}
+
 function renderListado() {
+  fillListadoFilterSelects();
   const container = document.getElementById('listado-container');
-  const q = (document.getElementById('listado-search')?.value || '').toLowerCase();
+  const q = (document.getElementById('listado-search')?.value || '').toLowerCase().trim();
   const tipoFiltro = document.getElementById('listado-tipo')?.value || '';
+  const obraFiltro = document.getElementById('listado-obra')?.value || '';
+  const tecnicoFiltro = document.getElementById('listado-tecnico')?.value || '';
+  const marcaFiltro = (document.getElementById('listado-marca')?.value || '').toLowerCase().trim();
+  const desdeStr = document.getElementById('listado-desde')?.value || '';
+  const hastaStr = document.getElementById('listado-hasta')?.value || '';
+  const desde = desdeStr ? new Date(desdeStr) : null;
+  const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
+
   let list = incidents.filter(esRegistroDeUsuario);
-  if (tipoFiltro) list = list.filter(inc => (inc.tipo || 'incidencia') === tipoFiltro);
-  if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
+  if (tipoFiltro)    list = list.filter(inc => (inc.tipo || 'incidencia') === tipoFiltro);
+  if (obraFiltro)    list = list.filter(inc => inc.idObra === obraFiltro);
+  if (tecnicoFiltro) list = list.filter(inc => inc.tecnico === tecnicoFiltro);
+  if (marcaFiltro)   list = list.filter(inc => (inc.marca||'').toLowerCase().includes(marcaFiltro));
+  if (desde)         list = list.filter(inc => { const f = parseFechaES(inc.fecha); return f && f >= desde; });
+  if (hasta)         list = list.filter(inc => { const f = parseFechaES(inc.fecha); return f && f <= hasta; });
+  if (q)             list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
+
+  // Contador de filtros activos
+  const activos = [tipoFiltro, obraFiltro, tecnicoFiltro, marcaFiltro, desdeStr, hastaStr, q].filter(Boolean).length;
+  const badge = document.getElementById('listado-filtros-count');
+  if (badge) {
+    badge.textContent = activos;
+    badge.style.display = activos > 0 ? '' : 'none';
+  }
+
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q||tipoFiltro?'Sin resultados.':'No hay registros.'}</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${activos ? 'Sin resultados con los filtros aplicados.' : 'No hay registros.'}</div>`;
     return;
   }
   container.innerHTML = '<div class="incidents-grid">' + list.map(inc => {
@@ -3262,14 +3421,47 @@ async function guardarSolicitud() {
   enterObra();
 }
 
+function fillMovFilterSelects() {
+  const obras = [...new Set(movimientos.map(m => m.idObra).filter(Boolean))].sort();
+  const obraSel = document.getElementById('mov-obra-filtro');
+  if (obraSel) {
+    const cur = obraSel.value;
+    obraSel.innerHTML = '<option value="">Todas</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    obraSel.value = cur;
+  }
+}
+
+function limpiarFiltrosMov() {
+  ['mov-search','mov-tipo-filtro','mov-obra-filtro','mov-desde','mov-hasta'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderMovimientos();
+}
+
 function renderMovimientos() {
+  fillMovFilterSelects();
   const c = document.getElementById('mov-container');
-  const q = (document.getElementById('mov-search')?.value || '').toLowerCase();
-  const list = q
-    ? movimientos.filter(m => [m.idObra, m.furgoneta, m.fecha, m.tipo, (m.instaladores||[]).join(' '), m.notas, m.materialTexto].some(f => (f||'').toLowerCase().includes(q)))
-    : movimientos;
+  const q = (document.getElementById('mov-search')?.value || '').toLowerCase().trim();
+  const tipoF = document.getElementById('mov-tipo-filtro')?.value || '';
+  const obraF = document.getElementById('mov-obra-filtro')?.value || '';
+  const desdeStr = document.getElementById('mov-desde')?.value || '';
+  const hastaStr = document.getElementById('mov-hasta')?.value || '';
+  const desde = desdeStr ? new Date(desdeStr) : null;
+  const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
+
+  let list = movimientos.slice();
+  if (tipoF) list = list.filter(m => m.tipo === tipoF);
+  if (obraF) list = list.filter(m => m.idObra === obraF);
+  if (desde) list = list.filter(m => { const f = parseFechaISO(m.fecha); return f && f >= desde; });
+  if (hasta) list = list.filter(m => { const f = parseFechaISO(m.fecha); return f && f <= hasta; });
+  if (q) list = list.filter(m => [m.idObra, m.furgoneta, m.fecha, m.tipo, (m.instaladores||[]).join(' '), m.notas, m.materialTexto, m.registradoPor].some(f => (f||'').toLowerCase().includes(q)));
+
+  const activos = [q, tipoF, obraF, desdeStr, hastaStr].filter(Boolean).length;
+  const badge = document.getElementById('mov-filtros-count');
+  if (badge) { badge.textContent = activos; badge.style.display = activos > 0 ? '' : 'none'; }
+
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📦</div>${q?'Sin resultados.':'Aún no hay movimientos.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon">📦</div>${activos ? 'Sin resultados.' : 'Aún no hay movimientos.'}</div>`;
     return;
   }
   c.innerHTML = list.map(m => {
@@ -3459,14 +3651,56 @@ async function guardarParte() {
 }
 
 // ── LISTADO Y MODAL DE PARTES ──────────────────────────
+function fillPartesFilterSelects() {
+  const obras = [...new Set(partes.map(p => p.idObra).filter(Boolean))].sort();
+  const instaladoresSet = new Set();
+  partes.forEach(p => (p.instaladores || []).forEach(i => instaladoresSet.add(i)));
+  const instList = [...instaladoresSet].sort();
+  const obraSel = document.getElementById('parte-obra-filtro');
+  const instSel = document.getElementById('parte-instalador-filtro');
+  if (obraSel) {
+    const cur = obraSel.value;
+    obraSel.innerHTML = '<option value="">Todas</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    obraSel.value = cur;
+  }
+  if (instSel) {
+    const cur = instSel.value;
+    instSel.innerHTML = '<option value="">Todos</option>' + instList.map(i => `<option value="${escapeHtml(i)}">${escapeHtml(i)}</option>`).join('');
+    instSel.value = cur;
+  }
+}
+
+function limpiarFiltrosPartes() {
+  ['parte-search','parte-obra-filtro','parte-instalador-filtro','parte-desde','parte-hasta'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderPartes();
+}
+
 function renderPartes() {
+  fillPartesFilterSelects();
   const c = document.getElementById('partes-container');
-  const q = (document.getElementById('parte-search')?.value || '').toLowerCase();
-  const list = q
-    ? partes.filter(p => [p.idObra, p.fecha, p.furgoneta, (p.instaladores||[]).join(' '), p.trabajosRealizados].some(f => (f||'').toLowerCase().includes(q)))
-    : partes;
+  const q = (document.getElementById('parte-search')?.value || '').toLowerCase().trim();
+  const obraF = document.getElementById('parte-obra-filtro')?.value || '';
+  const instF = document.getElementById('parte-instalador-filtro')?.value || '';
+  const desdeStr = document.getElementById('parte-desde')?.value || '';
+  const hastaStr = document.getElementById('parte-hasta')?.value || '';
+  const desde = desdeStr ? new Date(desdeStr) : null;
+  const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
+
+  let list = partes.slice();
+  if (obraF) list = list.filter(p => p.idObra === obraF);
+  if (instF) list = list.filter(p => (p.instaladores || []).includes(instF));
+  if (desde) list = list.filter(p => { const f = parseFechaISO(p.fecha); return f && f >= desde; });
+  if (hasta) list = list.filter(p => { const f = parseFechaISO(p.fecha); return f && f <= hasta; });
+  if (q) list = list.filter(p => [p.idObra, p.fecha, p.furgoneta, (p.instaladores||[]).join(' '), p.trabajosRealizados, p.notas, p.registradoPor].some(f => (f||'').toLowerCase().includes(q)));
+
+  const activos = [q, obraF, instF, desdeStr, hastaStr].filter(Boolean).length;
+  const badge = document.getElementById('parte-filtros-count');
+  if (badge) { badge.textContent = activos; badge.style.display = activos > 0 ? '' : 'none'; }
+
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📋</div>${q?'Sin resultados.':'Aún no hay partes.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon">📋</div>${activos ? 'Sin resultados.' : 'Aún no hay partes.'}</div>`;
     return;
   }
   c.innerHTML = list.map(p => `

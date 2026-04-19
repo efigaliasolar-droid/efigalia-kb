@@ -373,7 +373,7 @@
         <div class="home-title">Cálculos rápidos</div>
         <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
       </div>
-      <div class="home-card" onclick="enterAdmin()">
+      <div class="home-card" id="home-card-admin" onclick="enterAdmin()">
         <div class="home-icon">🔒</div>
         <div class="home-title">Administración</div>
         <div class="home-desc">Gestionar furgonetas, instaladores y obras (acceso restringido).</div>
@@ -1242,7 +1242,9 @@ function goHome() {
   document.getElementById('view-home').style.display = 'block';
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
-  adminAutenticado = false;  // re-pedir PIN cuando se vuelva a entrar a Administración
+  adminAutenticado = !!(currentUser && currentUser.rol === 'admin');
+  const adminCard = document.getElementById('home-card-admin');
+  if (adminCard) adminCard.style.display = (currentUser && currentUser.rol === 'admin') ? '' : 'none';
 }
 function enterIncidencias() {
   hideAllViews();

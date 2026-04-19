@@ -131,11 +131,11 @@
 
   .home-intro { font-size: 15px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.55; }
   .home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-  .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px 22px; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; }
+  .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 18px; align-items: center; }
   .home-card:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-2px); }
-  .home-icon { font-size: 34px; margin-bottom: 12px; line-height: 1; }
-  .home-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; color: var(--text); }
-  .home-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+  .home-icon { font-size: 40px; line-height: 1; grid-row: 1 / span 2; align-self: center; margin: 0; }
+  .home-title { font-weight: 600; font-size: 20px; margin-bottom: 4px; color: var(--text); grid-column: 2; align-self: end; line-height: 1.2; }
+  .home-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; grid-column: 2; align-self: start; }
   .logo { cursor: pointer; }
   .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 18px; padding: 9px 16px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; transition: all 0.15s; }
   .back-link:hover { color: var(--accent); border-color: var(--accent); background: var(--surface2); }

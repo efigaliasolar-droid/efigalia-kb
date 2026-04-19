@@ -1082,6 +1082,7 @@
     <button class="anot-tool" data-tool="arrow" onclick="anotSetTool('arrow')" title="Flecha">➡</button>
     <button class="anot-tool" data-tool="circle" onclick="anotSetTool('circle')" title="Círculo">⭕</button>
     <button class="anot-tool" data-tool="rect" onclick="anotSetTool('rect')" title="Rectángulo">▭</button>
+    <button class="anot-tool" data-tool="text" onclick="anotSetTool('text')" title="Texto" style="font-weight:700">T</button>
     <div class="anot-color-list">
       <button class="anot-color active" data-color="#ff3b30" style="background:#ff3b30" onclick="anotSetColor('#ff3b30')"></button>
       <button class="anot-color" data-color="#ffcc00" style="background:#ffcc00" onclick="anotSetColor('#ffcc00')"></button>
@@ -3764,6 +3765,14 @@ function anotPointerDown(e) {
   const rect = e.currentTarget.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  if (anotState.tool === 'text') {
+    const text = prompt('Texto:');
+    if (text && text.trim()) {
+      anotState.shapes.push({ tool: 'text', color: anotState.color, start: {x, y}, text: text.trim() });
+      anotRender();
+    }
+    return;
+  }
   anotState.drawing = true;
   if (anotState.tool === 'pen') {
     anotState.shapes.push({ tool: 'pen', color: anotState.color, points: [{x, y}] });
@@ -3831,6 +3840,15 @@ function anotRender() {
       const w = Math.abs(s.end.x - s.start.x);
       const h = Math.abs(s.end.y - s.start.y);
       ctx.strokeRect(x, y, w, h);
+    } else if (s.tool === 'text') {
+      const fontSize = Math.max(18, Math.floor(Math.min(canvas.width, canvas.height) / 18));
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.textBaseline = 'top';
+      ctx.lineWidth = Math.max(2, fontSize / 8);
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.strokeText(s.text, s.start.x, s.start.y);
+      ctx.fillStyle = s.color;
+      ctx.fillText(s.text, s.start.x, s.start.y);
     }
   }
 }

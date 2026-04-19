@@ -2850,16 +2850,16 @@ function balanceObra(idObra, excludeMovId) {
     if (excludeMovId && m.id === excludeMovId) continue;
     for (const l of (m.lineas || [])) {
       const k = keyOfLinea(l);
-      if (!map[k]) map[k] = { descripcion: l.descripcion, ref: l.ref || '', unidad: l.unidad || 'ud', pending: 0, categoria: '' };
+      if (!map[k]) map[k] = { descripcion: l.descripcion, ref: l.ref || '', unidad: l.unidad || 'ud', salidas: 0, retornos: 0, pending: 0, categoria: '' };
       const qty = parseFloat(l.cantidad) || 0;
-      if (m.tipo === 'salida') map[k].pending += qty;
-      else map[k].pending -= qty;
+      if (m.tipo === 'salida') { map[k].salidas += qty; map[k].pending += qty; }
+      else { map[k].retornos += qty; map[k].pending -= qty; }
     }
   }
-  // Solo pendientes > 0; enriquecer con categoría desde catálogo
+  // Solo items que alguna vez salieron; enriquecer con categoría
   const result = {};
   for (const k in map) {
-    if (map[k].pending > 0) {
+    if (map[k].salidas > 0) {
       const cat = materiales.find(c =>
         (c.ref && map[k].ref && c.ref === map[k].ref) ||
         ((!c.ref || !map[k].ref) && (c.descripcion||'').toLowerCase() === (map[k].descripcion||'').toLowerCase())
@@ -2886,27 +2886,39 @@ function renderRetornoPicker(idObra, excludeMovId) {
   retornoPendientes = Object.values(balance);
   retornoPendientesObra = idObra;
   if (!retornoPendientes.length) {
-    c.innerHTML = `<div class="empty-state" style="padding:18px"><div class="icon">📦</div>No hay material pendiente de retorno en <b>${escapeHtml(idObra)}</b>.</div>`;
+    c.innerHTML = `<div class="empty-state" style="padding:18px"><div class="icon">📦</div>No se ha registrado ninguna salida de material para <b>${escapeHtml(idObra)}</b>.</div>`;
     return;
   }
-  // Agrupar por categoría
+  // Agrupar por categoría y ordenar: pendientes primero, devueltos al final
   const porCat = {};
   retornoPendientes.forEach((it, idx) => {
     const cat = it.categoria || 'SIN CATEGORÍA';
     (porCat[cat] ||= []).push({ it, idx });
   });
   const cats = Object.keys(porCat).sort();
+  // Dentro de cada categoría: pendientes > 0 primero
+  cats.forEach(cat => porCat[cat].sort((a, b) => (b.it.pending > 0 ? 1 : 0) - (a.it.pending > 0 ? 1 : 0)));
   c.innerHTML = cats.map(cat => `
     <details class="cat-group" open>
       <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
       <div class="cat-items">
-        ${porCat[cat].map(({ it, idx }) => `
-          <div class="cat-item">
-            <div class="cat-item-desc">${escapeHtml(it.descripcion || '—')}<small>Pendiente: <b>${it.pending}</b> ${escapeHtml(it.unidad)}${it.ref ? ' · ' + escapeHtml(it.ref) : ''}</small></div>
-            <input type="number" min="0" max="${it.pending}" step="any" class="cat-qty" id="ret-qty-${idx}" placeholder="${escapeHtml(it.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addLineaRetorno(${idx}, this.value||1)}">
-            <button type="button" class="cat-add" onclick="addLineaRetorno(${idx}, document.getElementById('ret-qty-${idx}').value||1)" title="Añadir">+</button>
-          </div>
-        `).join('')}
+        ${porCat[cat].map(({ it, idx }) => {
+          if (it.pending > 0) {
+            return `
+              <div class="cat-item">
+                <div class="cat-item-desc">${escapeHtml(it.descripcion || '—')}<small>Salida ${it.salidas} · Retornado ${it.retornos} · Pendiente <b>${it.pending}</b> ${escapeHtml(it.unidad)}${it.ref ? ' · ' + escapeHtml(it.ref) : ''}</small></div>
+                <input type="number" min="0" max="${it.pending}" step="any" class="cat-qty" id="ret-qty-${idx}" placeholder="${escapeHtml(it.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addLineaRetorno(${idx}, this.value||1)}">
+                <button type="button" class="cat-add" onclick="addLineaRetorno(${idx}, document.getElementById('ret-qty-${idx}').value||1)" title="Añadir">+</button>
+              </div>`;
+          }
+          // Ya devuelto por completo
+          return `
+            <div class="cat-item" style="opacity:0.5">
+              <div class="cat-item-desc" style="text-decoration:line-through">${escapeHtml(it.descripcion || '—')}<small style="text-decoration:none">Salida ${it.salidas} · Retornado ${it.retornos} ${escapeHtml(it.unidad)} · ✓ ya devuelto</small></div>
+              <div></div>
+              <div></div>
+            </div>`;
+        }).join('')}
       </div>
     </details>
   `).join('');

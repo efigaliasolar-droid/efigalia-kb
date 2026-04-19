@@ -263,6 +263,11 @@
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
     <div class="home-grid">
+      <div class="home-card" onclick="enterObra()">
+        <div class="home-icon">🧱</div>
+        <div class="home-title">Obra</div>
+        <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
+      </div>
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon">🛠</div>
         <div class="home-title">Consultas técnicas</div>
@@ -272,11 +277,6 @@
         <div class="home-icon">🧮</div>
         <div class="home-title">Cálculos rápidos</div>
         <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
-      </div>
-      <div class="home-card" onclick="enterObra()">
-        <div class="home-icon">🧱</div>
-        <div class="home-title">Obra</div>
-        <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
       </div>
       <div class="home-card" onclick="enterAdmin()">
         <div class="home-icon">🔒</div>
@@ -949,6 +949,7 @@ function goHome() {
   document.getElementById('view-home').style.display = 'block';
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  adminAutenticado = false;  // re-pedir PIN cuando se vuelva a entrar a Administración
 }
 function enterIncidencias() {
   hideAllViews();
@@ -1045,7 +1046,7 @@ function enterPartes() {
 
 // ── ADMINISTRACIÓN (PIN) ───────────────────────────────
 const ADMIN_PIN = '111111';
-let adminAutenticado = sessionStorage.getItem('efigalia_admin_session') === '1';
+let adminAutenticado = false;
 
 function pedirPin() {
   document.getElementById('pin-modal').style.display = 'flex';
@@ -1059,7 +1060,6 @@ function verificarPin() {
   const pin = document.getElementById('pin-input').value;
   if (pin === ADMIN_PIN) {
     adminAutenticado = true;
-    sessionStorage.setItem('efigalia_admin_session', '1');
     cerrarPinModal();
     mostrarAdmin();
   } else {
@@ -1068,14 +1068,35 @@ function verificarPin() {
   }
 }
 function enterAdmin() {
-  if (!adminAutenticado) { pedirPin(); return; }
-  mostrarAdmin();
+  // PIN siempre cuando entras desde fuera de la zona admin
+  pedirPin();
 }
 function mostrarAdmin() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-admin').style.display = 'block';
 }
+
+async function seedMaestrosSiVacio(tipo, lista) {
+  const flagKey = `efigalia_seeded_${tipo}`;
+  if (localStorage.getItem(flagKey)) return;
+  await sheetsLoad();
+  if (incidents.some(i => i.tipo === tipo)) {
+    localStorage.setItem(flagKey, '1');
+    return;
+  }
+  let ts = Date.now();
+  for (const nombre of lista) {
+    incidents.unshift({
+      id: ts++, tipo, nombre, activa: true,
+      fecha: new Date().toLocaleDateString('es-ES'),
+      tecnico: 'Admin (auto)'
+    });
+  }
+  await sheetsSave();
+  localStorage.setItem(flagKey, '1');
+}
+
 function enterAdminObras() {
   if (!adminAutenticado) { pedirPin(); return; }
   hideAllViews();
@@ -1086,13 +1107,13 @@ function enterAdminFurgonetas() {
   if (!adminAutenticado) { pedirPin(); return; }
   hideAllViews();
   document.getElementById('view-admin-furgonetas').style.display = 'block';
-  sheetsLoad().then(() => renderAdminMaestros('furgoneta'));
+  seedMaestrosSiVacio('furgoneta', FURGONETAS).then(() => renderAdminMaestros('furgoneta'));
 }
 function enterAdminInstaladores() {
   if (!adminAutenticado) { pedirPin(); return; }
   hideAllViews();
   document.getElementById('view-admin-instaladores').style.display = 'block';
-  sheetsLoad().then(() => renderAdminMaestros('instalador'));
+  seedMaestrosSiVacio('instalador', INSTALADORES).then(() => renderAdminMaestros('instalador'));
 }
 
 // ── MAESTROS (obras / furgonetas / instaladores) en /data ──

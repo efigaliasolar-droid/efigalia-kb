@@ -1496,13 +1496,9 @@ function mostrarAdmin() {
 }
 
 async function seedMaestrosSiVacio(tipo, lista) {
-  const flagKey = `efigalia_seeded_${tipo}`;
-  if (localStorage.getItem(flagKey)) return;
   await sheetsLoad();
-  if (incidents.some(i => i.tipo === tipo)) {
-    localStorage.setItem(flagKey, '1');
-    return;
-  }
+  if (incidents.some(i => i.tipo === tipo)) return;   // ya hay datos en el Worker
+  // No hay datos → sembrar desde la lista por defecto
   let ts = Date.now();
   for (const nombre of lista) {
     incidents.unshift({
@@ -1512,7 +1508,6 @@ async function seedMaestrosSiVacio(tipo, lista) {
     });
   }
   await sheetsSave();
-  localStorage.setItem(flagKey, '1');
 }
 
 function enterAdminObras() {
@@ -1840,7 +1835,8 @@ async function eliminarMaestro(id) {
 }
 
 function renderAdminMaestros(tipo) {
-  const cont = document.getElementById(`adm-${tipo}s-list`);
+  const plural = tipo === 'instalador' ? 'instaladores' : `${tipo}s`;
+  const cont = document.getElementById(`adm-${plural}-list`);
   if (!cont) return;
   const list = maestrosDe(tipo);
   if (!list.length) {

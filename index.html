@@ -27,6 +27,8 @@
   .logo { font-family: var(--mono); font-weight: 600; font-size: 20px; color: var(--accent); letter-spacing: 0.08em; padding: 10px 4px; }
   .logo span { color: var(--text-muted); font-weight: 400; }
   .header-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; gap: 2px; }
+  .user-chip:hover { border-color: var(--accent); color: var(--accent); }
   .sync-status { font-family: var(--mono); font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
   .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
   .sync-dot.ok { background: var(--green); }
@@ -40,7 +42,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -337,6 +339,21 @@
 </header>
 
 <main>
+  <div id="view-login">
+    <div class="section-title" style="margin-top:30px">Identifícate</div>
+    <div class="home-intro">Elige tu nombre e introduce tu PIN para continuar.</div>
+    <div class="form-group">
+      <label>¿Quién eres?</label>
+      <select id="login-nombre"></select>
+    </div>
+    <div class="form-group">
+      <label>PIN</label>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-pin" class="pin-input" autocomplete="off" onkeydown="if(event.key==='Enter')hacerLogin()">
+    </div>
+    <button class="btn-primary" onclick="hacerLogin()">Entrar</button>
+    <div class="calc-note" style="margin-top:14px">Si no tienes PIN asignado, pídeselo al administrador. El PIN maestro <b>111111</b> sigue funcionando como acceso de emergencia.</div>
+  </div>
+
   <div id="view-home">
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
@@ -1463,7 +1480,13 @@ function verificarPin() {
   }
 }
 function enterAdmin() {
-  // PIN siempre cuando entras desde fuera de la zona admin
+  // Si el usuario logueado es admin, acceso directo sin re-pedir PIN
+  if (currentUser && currentUser.rol === 'admin') {
+    adminAutenticado = true;
+    mostrarAdmin();
+    return;
+  }
+  // Si no, pedir PIN maestro como fallback
   pedirPin();
 }
 function mostrarAdmin() {
@@ -1824,15 +1847,75 @@ function renderAdminMaestros(tipo) {
     cont.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon">📭</div>Aún no hay registros. Añade el primero arriba.</div>';
     return;
   }
-  cont.innerHTML = list.map(i => `
-    <div class="admin-row">
-      <div class="nombre${i.activa===false?' inactivo':''}">${escapeHtml(i.nombre||'—')}</div>
-      <div class="acciones">
-        <button class="toggle-btn ${i.activa===false?'off':'on'}" onclick="toggleMaestro(${i.id})">${i.activa===false?'INACTIVA':'ACTIVA'}</button>
-        <button class="icon-btn" onclick="eliminarMaestro(${i.id})" title="Eliminar">🗑</button>
+  const isInst = tipo === 'instalador';
+  cont.innerHTML = list.map(i => {
+    const extra = isInst ? `
+        <button class="toggle-btn off" onclick="cambiarPinInstalador(${i.id})" title="Cambiar PIN" style="padding:5px 8px">🔑${i.pinHash ? '' : '<span style="color:var(--red);margin-left:3px">!</span>'}</button>
+        <button class="toggle-btn ${i.rol==='admin'?'on':'off'}" onclick="cambiarRolInstalador(${i.id})" style="padding:5px 8px">${i.rol==='admin'?'ADMIN':'INST'}</button>
+    ` : '';
+    return `
+      <div class="admin-row">
+        <div class="nombre${i.activa===false?' inactivo':''}">${escapeHtml(i.nombre||'—')}</div>
+        <div class="acciones">
+          ${extra}
+          <button class="toggle-btn ${i.activa===false?'off':'on'}" onclick="toggleMaestro(${i.id})">${i.activa===false?'INACTIVA':'ACTIVA'}</button>
+          <button class="icon-btn" onclick="eliminarMaestro(${i.id})" title="Eliminar">🗑</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+// ── AUTENTICACIÓN (hash SHA-256) ───────────────────────
+async function sha256(str) {
+  const buf = new TextEncoder().encode(String(str));
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Punto único de verificación. Cuando movamos auth al Worker, sólo se cambia aquí:
+// devolver fetch(WORKER + '/auth/login', {method:'POST', body: JSON.stringify({nombre, pin})}).then(r=>r.json())
+async function autenticarUsuario(nombre, pinPlano) {
+  await sheetsLoad();
+  // PIN maestro de bootstrap: 111111 concede admin a cualquiera que lo introduzca
+  if (pinPlano === '111111') {
+    return { ok: true, user: { nombre: nombre || 'Admin', rol: 'admin', master: true } };
+  }
+  if (!nombre) return { ok: false, error: 'Selecciona tu nombre' };
+  const user = incidents.find(i => i.tipo === 'instalador' && i.nombre === nombre && i.activa !== false);
+  if (!user) return { ok: false, error: 'Usuario no encontrado o inactivo' };
+  if (!user.pinHash) return { ok: false, error: 'No tienes PIN asignado. Pídeselo al administrador.' };
+  const hash = await sha256(pinPlano);
+  if (user.pinHash !== hash) return { ok: false, error: 'PIN incorrecto' };
+  return { ok: true, user: { nombre: user.nombre, rol: user.rol || 'instalador' } };
+}
+
+async function cambiarPinInstalador(id) {
+  const user = incidents.find(i => i.id === id && i.tipo === 'instalador');
+  if (!user) return;
+  const pin = prompt(`Nuevo PIN para ${user.nombre} (4–6 dígitos, vacío para borrar):`);
+  if (pin === null) return;
+  const clean = pin.trim();
+  if (clean === '') {
+    if (!confirm('¿Quitar PIN? Este usuario no podrá entrar hasta que se le asigne otro.')) return;
+    delete user.pinHash;
+  } else {
+    if (!/^\d{4,6}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–6 dígitos', 'err'); return; }
+    if (clean === '111111') { showToast('⚠ 111111 es el PIN maestro del sistema, elige otro', 'err'); return; }
+    user.pinHash = await sha256(clean);
+  }
+  await sheetsSave();
+  renderAdminMaestros('instalador');
+  showToast('✓ PIN actualizado', 'ok');
+}
+
+async function cambiarRolInstalador(id) {
+  const user = incidents.find(i => i.id === id && i.tipo === 'instalador');
+  if (!user) return;
+  user.rol = user.rol === 'admin' ? 'instalador' : 'admin';
+  await sheetsSave();
+  renderAdminMaestros('instalador');
+  showToast(`✓ ${user.nombre} ahora es ${user.rol}`, 'ok');
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
@@ -3046,7 +3129,8 @@ function fillFurgonetaSelects() {
 function fillRegistradoPorSelects() {
   const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : INSTALADORES;
   document.querySelectorAll('.select-registradopor').forEach(sel => {
-    const cur = sel.value || localStorage.getItem('efigalia_last_user') || '';
+    // Prioridad: valor actual > usuario logueado > último usuario en localStorage
+    const cur = sel.value || (currentUser && currentUser.nombre) || localStorage.getItem('efigalia_last_user') || '';
     sel.innerHTML = '<option value="">— Seleccionar —</option>' +
       lista.map(n => `<option value="${n}">${n}</option>`).join('');
     if (cur && lista.includes(cur)) sel.value = cur;
@@ -4197,9 +4281,79 @@ function editarParte(id) {
 
 // ── INIT ───────────────────────────────────────────────
 
+// ── SESIÓN DE USUARIO ──────────────────────────────────
+let currentUser = null;
+try { currentUser = JSON.parse(sessionStorage.getItem('efigalia_user') || 'null'); } catch(e) {}
+
+function actualizarHeaderUsuario() {
+  const header = document.querySelector('.header-right');
+  if (!header) return;
+  let chip = document.getElementById('user-chip');
+  if (currentUser) {
+    if (!chip) {
+      chip = document.createElement('button');
+      chip.id = 'user-chip';
+      chip.className = 'user-chip';
+      chip.onclick = cerrarSesion;
+      chip.title = 'Cerrar sesión';
+      header.insertBefore(chip, header.firstChild);
+    }
+    chip.innerHTML = `${currentUser.rol === 'admin' ? '👑 ' : '👷 '}${escapeHtml(currentUser.nombre)} <span style="opacity:0.6;margin-left:4px">↪</span>`;
+  } else if (chip) {
+    chip.remove();
+  }
+}
+
+function mostrarLogin() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-login').style.display = 'block';
+  sheetsLoad().then(() => {
+    const sel = document.getElementById('login-nombre');
+    const activos = incidents.filter(i => i.tipo === 'instalador' && i.activa !== false).sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+    sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' + activos.map(a => `<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
+    document.getElementById('login-pin').value = '';
+    actualizarHeaderUsuario();
+  });
+}
+
+async function hacerLogin() {
+  const nombre = document.getElementById('login-nombre').value;
+  const pin = document.getElementById('login-pin').value;
+  if (!pin) { showToast('⚠ Introduce tu PIN', 'err'); return; }
+  const result = await autenticarUsuario(nombre, pin);
+  if (!result.ok) { showToast('⚠ ' + result.error, 'err'); document.getElementById('login-pin').value = ''; return; }
+  currentUser = result.user;
+  sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser));
+  if (currentUser.rol === 'admin') adminAutenticado = true;
+  actualizarHeaderUsuario();
+  goHome();
+}
+
+function cerrarSesion() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  currentUser = null;
+  adminAutenticado = false;
+  sessionStorage.removeItem('efigalia_user');
+  sessionStorage.removeItem('efigalia_admin_session');
+  actualizarHeaderUsuario();
+  mostrarLogin();
+}
+
+function requireLogin() {
+  if (!currentUser) { mostrarLogin(); return false; }
+  return true;
+}
+
 // Limpiar cache local para evitar quota exceeded
 try { localStorage.removeItem('efigalia_kb_v4'); } catch(e) {}
-sheetsLoad();
+
+// Bootstrap: login primero, después home
+(async () => {
+  await sheetsLoad();
+  actualizarHeaderUsuario();
+  if (!currentUser) mostrarLogin();
+})();
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────
 if ('serviceWorker' in navigator) {

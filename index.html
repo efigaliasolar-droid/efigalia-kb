@@ -1390,8 +1390,10 @@ async function guardarIncidencia() {
   btn.textContent = 'Guardando...';
   await sheetsLoad();
 
+  // Si estamos editando, conservar id y fecha originales y mantener archivo previo si no hay nuevo
+  const original = editingId ? incidents.find(i => i.id === editingId) : null;
   const reg = {
-    id: Date.now(),
+    id: editingId || Date.now(),
     tipo,
     idObra: document.getElementById('f-idobra').value.trim() || '-',
     marca,
@@ -1403,17 +1405,24 @@ async function guardarIncidencia() {
     documentacion: document.getElementById('f-doc').value.trim() || '-',
     keywords: document.getElementById('f-keywords').value.trim(),
     tecnico: document.getElementById('f-tecnico').value.trim() || 'Anónimo',
-    fecha: new Date().toLocaleDateString('es-ES'),
-    fotos: fotosUrls,
-    archivoUrl,
-    archivoNombre,
-    contenidoExtraido
+    fecha: original ? original.fecha : new Date().toLocaleDateString('es-ES'),
+    fotos: (fotosUrls.length ? fotosUrls : (original && original.fotos) || []),
+    archivoUrl: archivoUrl || (original && original.archivoUrl) || '',
+    archivoNombre: archivoNombre || (original && original.archivoNombre) || '',
+    contenidoExtraido: contenidoExtraido || (original && original.contenidoExtraido) || ''
   };
 
-  incidents.unshift(reg);
+  if (editingId) {
+    const idx = incidents.findIndex(i => i.id === editingId);
+    if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+  } else {
+    incidents.unshift(reg);
+  }
   await sheetsSave();
+  editingId = null;
 
   btn.disabled = false;
+  document.getElementById('btn-guardar').textContent = 'Guardar y sincronizar';
   ['f-incidencia','f-marca','f-modelo','f-coderror','f-idobra','f-verificaciones','f-solucion','f-doc','f-tecnico','f-keywords'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('foto-previews').innerHTML = '';
   fotoFiles = [];
@@ -1520,8 +1529,56 @@ function openModal(id) {
     ${inc.verificaciones?`<div class="modal-section"><div class="modal-label">Verificaciones</div><div class="modal-value">${inc.verificaciones}</div></div>`:''}
     ${bodyLabel && inc.solucion ? `<div class="modal-section"><div class="modal-label">${bodyLabel}</div><div class="modal-value">${inc.solucion}</div></div>` : ''}
     ${archivo}${doc}${photos}${kw}
-    <div class="modal-section"><div class="modal-label">Obra · Técnico · Fecha</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${inc.idObra||'-'} · ${inc.tecnico} · ${inc.fecha}</div></div>`;
+    <div class="modal-section"><div class="modal-label">Obra · Técnico · Fecha</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${inc.idObra||'-'} · ${inc.tecnico} · ${inc.fecha}</div></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-ghost" style="flex:1" onclick="editarRegistro(${inc.id})">✎ Editar</button>
+      <button class="btn-ghost" style="flex:1;color:var(--red);border-color:var(--red)" onclick="eliminarRegistro(${inc.id})">🗑 Eliminar</button>
+    </div>`;
   document.getElementById('modal-overlay').classList.add('open');
+}
+
+let editingId = null;
+
+function editarRegistro(id) {
+  const inc = incidents.find(i => i.id === id);
+  if (!inc) return;
+  closeModal();
+  // Ir a Registrar
+  enterIncidencias();
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('#tab-bar-incidencias .tab');
+    if (tabs[2]) tabs[2].click();   // Registrar
+    // Setear tipo y prefill
+    const sel = document.getElementById('f-tipo');
+    sel.value = inc.tipo || 'incidencia';
+    onTipoChange();
+    fillObraSelects();
+    document.getElementById('f-incidencia').value = inc.incidencia || '';
+    document.getElementById('f-marca').value = inc.marca || '';
+    document.getElementById('f-modelo').value = (inc.modelo === '-' ? '' : inc.modelo) || '';
+    document.getElementById('f-coderror').value = (inc.codError === '-' ? '' : inc.codError) || '';
+    document.getElementById('f-idobra').value = (inc.idObra === '-' ? '' : inc.idObra) || '';
+    document.getElementById('f-verificaciones').value = inc.verificaciones || '';
+    document.getElementById('f-solucion').value = inc.solucion || '';
+    document.getElementById('f-doc').value = (inc.documentacion === '-' ? '' : inc.documentacion) || '';
+    document.getElementById('f-tecnico').value = (inc.tecnico === 'Anónimo' ? '' : inc.tecnico) || '';
+    document.getElementById('f-keywords').value = inc.keywords || '';
+    editingId = id;
+    document.getElementById('btn-guardar').textContent = 'Actualizar';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 100);
+}
+
+async function eliminarRegistro(id) {
+  if (!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => i.id !== id);
+  await sheetsSave();
+  closeModal();
+  showToast('✓ Eliminado', 'ok');
+  // Refrescar la vista actual si toca
+  if (document.getElementById('view-listado').style.display === 'block') renderListado();
+  if (document.getElementById('view-documentos').style.display === 'block') renderDocumentos();
 }
 function closeModalOutside(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }
 function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }

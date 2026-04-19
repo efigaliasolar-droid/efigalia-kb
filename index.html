@@ -1429,21 +1429,34 @@ function enterPartes() {
 // ── ADMINISTRACIÓN (PIN) ───────────────────────────────
 const ADMIN_PIN = '111111';
 let adminAutenticado = false;
+let pendingAction = null;   // acción a ejecutar tras validar el PIN
 
 function pedirPin() {
   document.getElementById('pin-modal').style.display = 'flex';
   setTimeout(() => { const i = document.getElementById('pin-input'); if (i) { i.value = ''; i.focus(); } }, 80);
 }
+function pedirPinPara(action) {
+  pendingAction = action;
+  pedirPin();
+}
 function cerrarPinModal() {
   document.getElementById('pin-modal').style.display = 'none';
   document.getElementById('pin-input').value = '';
+  pendingAction = null;
 }
 function verificarPin() {
   const pin = document.getElementById('pin-input').value;
   if (pin === ADMIN_PIN) {
     adminAutenticado = true;
-    cerrarPinModal();
-    mostrarAdmin();
+    document.getElementById('pin-modal').style.display = 'none';
+    document.getElementById('pin-input').value = '';
+    if (pendingAction) {
+      const act = pendingAction;
+      pendingAction = null;
+      setTimeout(act, 50);
+    } else {
+      mostrarAdmin();
+    }
   } else {
     showToast('⚠ PIN incorrecto', 'err');
     document.getElementById('pin-input').value = '';
@@ -2402,13 +2415,17 @@ function editarRegistro(id) {
 }
 
 async function eliminarRegistro(id) {
+  if (!adminAutenticado) {
+    showToast('⚠ Eliminar requiere PIN de administración', 'err');
+    pedirPinPara(() => eliminarRegistro(id));
+    return;
+  }
   if (!confirm('¿Eliminar este registro? No se puede deshacer.')) return;
   await sheetsLoad();
   incidents = incidents.filter(i => i.id !== id);
   await sheetsSave();
   closeModal();
   showToast('✓ Eliminado', 'ok');
-  // Refrescar la vista actual si toca
   if (document.getElementById('view-listado').style.display === 'block') renderListado();
   if (document.getElementById('view-documentos').style.display === 'block') renderDocumentos();
 }
@@ -3751,6 +3768,11 @@ function editarMovimiento(id) {
   movForm = { editId: m.id };
 }
 async function eliminarSolicitud(id) {
+  if (!adminAutenticado) {
+    showToast('⚠ Eliminar requiere PIN de administración', 'err');
+    pedirPinPara(() => eliminarSolicitud(id));
+    return;
+  }
   if (!confirm('¿Eliminar la solicitud?')) return;
   await movimientosLoad();
   movimientos = movimientos.filter(m => m.id !== id);

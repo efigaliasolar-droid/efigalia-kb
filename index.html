@@ -76,7 +76,7 @@
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-group { margin-bottom: 16px; }
-  label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; letter-spacing: 0.06em; text-transform: uppercase; font-family: var(--mono); }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: 0; text-transform: none; font-family: var(--sans); }
   input[type=text], textarea.field { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
   input[type=text]:focus, textarea.field:focus { border-color: var(--accent); }
   textarea.field { resize: vertical; min-height: 80px; line-height: 1.5; }
@@ -365,8 +365,8 @@
       </div>
       <div class="home-card" onclick="enterVisitas()">
         <div class="home-icon">📋</div>
-        <div class="home-title">Visitas previas</div>
-        <div class="home-desc">Visita técnica pre-contrato: cubierta, obstáculos, cableado, conexión.</div>
+        <div class="home-title">Visita pre-contrato</div>
+        <div class="home-desc">Visita técnica antes del contrato: cubierta, obstáculos, cableado, conexión.</div>
       </div>
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon">🛠</div>
@@ -977,7 +977,7 @@
   <!-- ═══════════════ VISITAS PREVIAS ═══════════════ -->
   <div id="view-visitas">
     <button class="back-link" onclick="goHome()">← Atrás</button>
-    <div class="section-title">Visitas previas</div>
+    <div class="section-title">Visita pre-contrato</div>
     <div class="action-row" id="visitas-actions"></div>
     <details class="filtros-panel">
       <summary>Filtros<span class="filtros-badge" id="visitas-filtros-count" style="display:none">0</span></summary>
@@ -3870,7 +3870,7 @@ function abrirFormularioVisita(v) {
   rellenarCampoVisita(v && v.campo);
 
   // Título y extras
-  document.getElementById('visita-form-title').textContent = v ? (isAdmin() ? 'Editar visita' : 'Visita previa') : 'Nueva visita';
+  document.getElementById('visita-form-title').textContent = v ? (isAdmin() ? 'Editar visita pre-contrato' : 'Visita pre-contrato') : 'Nueva visita pre-contrato';
   document.getElementById('visita-extra-actions').style.display = (v && isAdmin()) ? '' : 'none';
 
   // Permisos admin-only: cabecera readonly para instalador con visita existente

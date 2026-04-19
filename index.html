@@ -137,8 +137,8 @@
   .home-title { font-weight: 600; font-size: 16px; margin-bottom: 6px; color: var(--text); }
   .home-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
   .logo { cursor: pointer; }
-  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 14px; padding: 4px 0; border: none; background: none; }
-  .back-link:hover { color: var(--accent); }
+  .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 18px; padding: 9px 16px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; transition: all 0.15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); background: var(--surface2); }
 
   @media (max-width: 500px) { .form-row, .home-grid { grid-template-columns: 1fr; } }
   @media (max-width: 640px) {
@@ -197,7 +197,7 @@
   </div>
 
   <div id="view-calculos">
-    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <button class="back-link" onclick="goHome()">← Atrás</button>
     <div class="section-title">Cálculos rápidos</div>
     <div class="home-intro">Herramientas de dimensionado para comprobaciones en obra.</div>
     <div class="home-grid">
@@ -352,7 +352,7 @@
   </div>
 
   <div id="view-cable">
-    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
+    <button class="back-link" onclick="enterCalculos()">← Atrás</button>
     <div class="section-title">Sección de cable AC (cdt máx. 1,5%)</div>
     <div class="form-row">
       <div class="form-group">
@@ -399,7 +399,7 @@
   </div>
 
   <div id="view-protecciones">
-    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
+    <button class="back-link" onclick="enterCalculos()">← Atrás</button>
     <div class="section-title">Calibre de protecciones AC</div>
     <div class="form-row">
       <div class="form-group">
@@ -440,7 +440,7 @@
   </div>
 
   <div id="view-cable-dc">
-    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
+    <button class="back-link" onclick="enterCalculos()">← Atrás</button>
     <div class="section-title">Sección de cable DC (cdt máx. 1,5%)</div>
     <div class="form-row">
       <div class="form-group">
@@ -481,7 +481,7 @@
   </div>
 
   <div id="view-offgrid">
-    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
+    <button class="back-link" onclick="enterCalculos()">← Atrás</button>
     <div class="section-title">Instalación aislada — Victron + BYD</div>
     <div class="form-group">
       <label>Inversor/cargador Victron *</label>

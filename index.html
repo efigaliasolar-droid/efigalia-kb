@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -219,6 +219,20 @@
   .ref-list .ref-item { background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--mono); color: var(--text); }
   .ref-list .ref-item .ref-lbl { color: var(--text-muted); margin-right: 6px; }
 
+  /* ── PIN modal y administración ── */
+  .pin-input { width: 100%; text-align: center; font-size: 28px; letter-spacing: 12px; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--mono); outline: none; }
+  .pin-input:focus { border-color: var(--accent); }
+  .admin-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .admin-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .admin-row .nombre { flex: 1; font-size: 14px; font-weight: 500; }
+  .admin-row .nombre.inactivo { color: var(--text-muted); text-decoration: line-through; }
+  .admin-row .acciones { display: flex; gap: 6px; }
+  .toggle-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .toggle-btn.on { background: var(--green); color: #0f1117; border-color: var(--green); }
+  .toggle-btn.off { background: var(--surface2); color: var(--text-muted); }
+  .icon-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; cursor: pointer; color: var(--text-muted); font-size: 14px; }
+  .icon-btn:hover { color: var(--red); border-color: var(--red); }
+
   /* ── Pill selector (instaladores) ── */
   .pill-selector { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
   .pill { padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); user-select: none; }
@@ -263,6 +277,11 @@
         <div class="home-icon">🧱</div>
         <div class="home-title">Obra</div>
         <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
+      </div>
+      <div class="home-card" onclick="enterAdmin()">
+        <div class="home-icon">🔒</div>
+        <div class="home-title">Administración</div>
+        <div class="home-desc">Gestionar furgonetas, instaladores y obras (acceso restringido).</div>
       </div>
     </div>
   </div>
@@ -745,7 +764,84 @@
   <datalist id="dl-obras"></datalist>
   <datalist id="dl-furgonetas"></datalist>
   <datalist id="dl-instaladores"></datalist>
+
+  <!-- ═══════════════ ADMINISTRACIÓN ═══════════════ -->
+  <div id="view-admin">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Administración</div>
+    <div class="home-intro">Gestiona los maestros que usan los técnicos en obra.</div>
+    <div class="home-grid">
+      <div class="home-card" onclick="enterAdminObras()">
+        <div class="home-icon">🏗</div>
+        <div class="home-title">Obras</div>
+        <div class="home-desc">Crear, editar y activar/desactivar obras.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminFurgonetas()">
+        <div class="home-icon">🚐</div>
+        <div class="home-title">Furgonetas</div>
+        <div class="home-desc">Añadir o quitar furgonetas de la flota.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminInstaladores()">
+        <div class="home-icon">👷</div>
+        <div class="home-title">Instaladores</div>
+        <div class="home-desc">Gestionar la lista de instaladores activos.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-admin-obras">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Obras</div>
+    <div class="form-group">
+      <label>Añadir obra</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="adm-obra-nombre" placeholder="Nombre de la obra (ej: Cafento Vigo)" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none">
+        <button class="btn-primary" style="width:auto;flex:0 0 auto" onclick="addMaestro('obra')">+ Añadir</button>
+      </div>
+    </div>
+    <div class="admin-list" id="adm-obras-list"></div>
+  </div>
+
+  <div id="view-admin-furgonetas">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Furgonetas</div>
+    <div class="form-group">
+      <label>Añadir furgoneta</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="adm-furgoneta-nombre" placeholder="Matrícula + modelo (ej: 1234ABC Ford)" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none">
+        <button class="btn-primary" style="width:auto;flex:0 0 auto" onclick="addMaestro('furgoneta')">+ Añadir</button>
+      </div>
+    </div>
+    <div class="admin-list" id="adm-furgonetas-list"></div>
+    <div class="calc-note">Si la lista está vacía se muestran las furgonetas predefinidas. En cuanto añadas la primera, esta lista pasa a ser la única que ven los técnicos.</div>
+  </div>
+
+  <div id="view-admin-instaladores">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Instaladores</div>
+    <div class="form-group">
+      <label>Añadir instalador</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="adm-instalador-nombre" placeholder="Nombre" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none">
+        <button class="btn-primary" style="width:auto;flex:0 0 auto" onclick="addMaestro('instalador')">+ Añadir</button>
+      </div>
+    </div>
+    <div class="admin-list" id="adm-instaladores-list"></div>
+    <div class="calc-note">Si la lista está vacía se muestran los instaladores predefinidos. En cuanto añadas el primero, esta lista pasa a ser la única que ven los técnicos.</div>
+  </div>
 </main>
+
+<!-- PIN modal -->
+<div class="modal-overlay" id="pin-modal" style="display:none">
+  <div class="modal" style="max-width:320px">
+    <div class="modal-title" style="text-align:center">🔒 PIN de administración</div>
+    <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" id="pin-input" class="pin-input" onkeydown="if(event.key==='Enter')verificarPin()">
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn-secondary" onclick="cerrarPinModal()" style="flex:1;min-width:0">Cancelar</button>
+      <button class="btn-primary" onclick="verificarPin()" style="flex:1;width:auto;min-width:0">Acceder</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
   <div class="modal">
@@ -917,6 +1013,133 @@ function enterPartes() {
   });
 }
 
+// ── ADMINISTRACIÓN (PIN) ───────────────────────────────
+const ADMIN_PIN = '111111';
+let adminAutenticado = sessionStorage.getItem('efigalia_admin_session') === '1';
+
+function pedirPin() {
+  document.getElementById('pin-modal').style.display = 'flex';
+  setTimeout(() => { const i = document.getElementById('pin-input'); if (i) { i.value = ''; i.focus(); } }, 80);
+}
+function cerrarPinModal() {
+  document.getElementById('pin-modal').style.display = 'none';
+  document.getElementById('pin-input').value = '';
+}
+function verificarPin() {
+  const pin = document.getElementById('pin-input').value;
+  if (pin === ADMIN_PIN) {
+    adminAutenticado = true;
+    sessionStorage.setItem('efigalia_admin_session', '1');
+    cerrarPinModal();
+    mostrarAdmin();
+  } else {
+    showToast('⚠ PIN incorrecto', 'err');
+    document.getElementById('pin-input').value = '';
+  }
+}
+function enterAdmin() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  mostrarAdmin();
+}
+function mostrarAdmin() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-admin').style.display = 'block';
+}
+function enterAdminObras() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-obras').style.display = 'block';
+  sheetsLoad().then(() => renderAdminMaestros('obra'));
+}
+function enterAdminFurgonetas() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-furgonetas').style.display = 'block';
+  sheetsLoad().then(() => renderAdminMaestros('furgoneta'));
+}
+function enterAdminInstaladores() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-instaladores').style.display = 'block';
+  sheetsLoad().then(() => renderAdminMaestros('instalador'));
+}
+
+// ── MAESTROS (obras / furgonetas / instaladores) en /data ──
+function maestrosDe(tipo) {
+  return incidents.filter(i => i.tipo === tipo).sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+}
+function maestrosActivos(tipo) {
+  return maestrosDe(tipo).filter(i => i.activa !== false).map(i => i.nombre);
+}
+function obrasActivas() { return maestrosActivos('obra'); }
+function furgonetasActivasAdmin() {
+  const a = maestrosActivos('furgoneta');
+  return a.length ? a : FURGONETAS;
+}
+function instaladoresActivosAdmin() {
+  const a = maestrosActivos('instalador');
+  return a.length ? a : INSTALADORES;
+}
+
+async function addMaestro(tipo) {
+  const inputId = `adm-${tipo}-nombre`;
+  const inp = document.getElementById(inputId);
+  const nombre = inp.value.trim();
+  if (!nombre) { showToast('⚠ Escribe un nombre', 'err'); return; }
+  await sheetsLoad();
+  const yaExiste = incidents.some(i => i.tipo === tipo && (i.nombre||'').toLowerCase() === nombre.toLowerCase());
+  if (yaExiste) { showToast('⚠ Ya existe', 'err'); return; }
+  incidents.unshift({
+    id: Date.now(), tipo, nombre, activa: true,
+    fecha: new Date().toLocaleDateString('es-ES'), tecnico: 'Admin'
+  });
+  await sheetsSave();
+  inp.value = '';
+  renderAdminMaestros(tipo);
+  showToast('✓ Añadido', 'ok');
+}
+
+async function toggleMaestro(id) {
+  await sheetsLoad();
+  const item = incidents.find(i => i.id === id);
+  if (!item) return;
+  item.activa = item.activa === false ? true : false;
+  await sheetsSave();
+  renderAdminMaestros(item.tipo);
+}
+
+async function eliminarMaestro(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await sheetsLoad();
+  const item = incidents.find(i => i.id === id);
+  if (!item) return;
+  const tipo = item.tipo;
+  incidents = incidents.filter(i => i.id !== id);
+  await sheetsSave();
+  renderAdminMaestros(tipo);
+  showToast('✓ Eliminado', 'ok');
+}
+
+function renderAdminMaestros(tipo) {
+  const cont = document.getElementById(`adm-${tipo}s-list`);
+  if (!cont) return;
+  const list = maestrosDe(tipo);
+  if (!list.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon">📭</div>Aún no hay registros. Añade el primero arriba.</div>';
+    return;
+  }
+  cont.innerHTML = list.map(i => `
+    <div class="admin-row">
+      <div class="nombre${i.activa===false?' inactivo':''}">${escapeHtml(i.nombre||'—')}</div>
+      <div class="acciones">
+        <button class="toggle-btn ${i.activa===false?'off':'on'}" onclick="toggleMaestro(${i.id})">${i.activa===false?'INACTIVA':'ACTIVA'}</button>
+        <button class="icon-btn" onclick="eliminarMaestro(${i.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 // ── CONSULTAR IA ───────────────────────────────────────
 async function consultarIA() {
   const query = document.getElementById('query-input').value.trim();
@@ -933,7 +1156,7 @@ async function consultarIA() {
 
   await sheetsLoad();
 
-  const context = incidents.map((inc, i) => {
+  const context = incidents.filter(esRegistroDeUsuario).map((inc, i) => {
     const tipo = inc.tipo || 'incidencia';
     if (tipo === 'documento') {
       const cont = inc.contenidoExtraido ? `\nContenido extraído del PDF:\n${inc.contenidoExtraido}` : '';
@@ -1206,11 +1429,16 @@ async function guardarIncidencia() {
 }
 
 // ── LISTADO ────────────────────────────────────────────
+function esRegistroDeUsuario(inc) {
+  const t = inc.tipo || 'incidencia';
+  return t === 'incidencia' || t === 'nota' || t === 'documento';
+}
+
 function renderListado() {
   const container = document.getElementById('listado-container');
   const q = (document.getElementById('listado-search')?.value || '').toLowerCase();
   const tipoFiltro = document.getElementById('listado-tipo')?.value || '';
-  let list = incidents;
+  let list = incidents.filter(esRegistroDeUsuario);
   if (tipoFiltro) list = list.filter(inc => (inc.tipo || 'incidencia') === tipoFiltro);
   if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.solucion,inc.idObra,inc.codError,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
   if (!list.length) {

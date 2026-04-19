@@ -219,6 +219,25 @@
   .ref-list .ref-item { background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--mono); color: var(--text); }
   .ref-list .ref-item .ref-lbl { color: var(--text-muted); margin-right: 6px; }
 
+  /* ── Catálogo picker por categoría ── */
+  .cat-picker { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; background: var(--surface); overflow: hidden; }
+  .cat-group { border-bottom: 1px solid var(--border); }
+  .cat-group:last-child { border-bottom: none; }
+  .cat-group summary { padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+  .cat-group summary::-webkit-details-marker { display: none; }
+  .cat-group summary::after { content: '▾'; color: var(--text-muted); transition: transform 0.2s; }
+  .cat-group[open] summary { color: var(--accent); background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .cat-group[open] summary::after { transform: rotate(180deg); color: var(--accent); }
+  .cat-items { background: var(--bg); }
+  .cat-item { display: grid; grid-template-columns: 1fr 70px 44px; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px dashed var(--border); }
+  .cat-item:last-child { border-bottom: none; }
+  .cat-item-desc { font-size: 13px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .cat-item-desc small { display: block; color: var(--text-muted); font-family: var(--mono); font-size: 10px; margin-top: 2px; }
+  .cat-qty { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; color: var(--text); font-size: 13px; font-family: var(--mono); text-align: right; outline: none; width: 100%; }
+  .cat-qty:focus { border-color: var(--accent); }
+  .cat-add { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 16px; font-weight: 600; }
+  .cat-add:hover { background: var(--accent2); }
+
   /* ── PIN modal y administración ── */
   .pin-input { width: 100%; text-align: center; font-size: 28px; letter-spacing: 12px; padding: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: var(--mono); outline: none; }
   .pin-input:focus { border-color: var(--accent); }
@@ -673,6 +692,7 @@
           <input type="text" id="mat-search" placeholder="Buscar material por referencia o descripción..." oninput="renderMatSearch()" onfocus="renderMatSearch()" onblur="setTimeout(()=>document.getElementById('mat-results').classList.remove('open'),180)">
           <div class="mat-results" id="mat-results"></div>
         </div>
+        <div class="cat-picker" id="cat-picker"></div>
         <div id="mov-lineas-container"></div>
       </div>
 
@@ -2739,6 +2759,7 @@ function abrirFormMov(tipo, prefill) {
   renderInstaladorPills('mov-instaladores-pills', (prefill && prefill.instaladores) || []);
   movLineas = (prefill && prefill.lineas) ? prefill.lineas.map(l => ({...l})) : [];
   renderMovLineas();
+  renderCatPicker();
   document.getElementById('mat-search').value = '';
   document.getElementById('mat-results').classList.remove('open');
   refrescarDatalists();
@@ -2782,15 +2803,51 @@ function renderMatSearch() {
     </div>`).join('');
   box.classList.add('open');
 }
-function addLineaFromCatalogo(idx) {
+function renderCatPicker() {
+  const c = document.getElementById('cat-picker');
+  if (!c) return;
+  if (!materiales.length) { c.innerHTML = ''; return; }
+  const porCat = {};
+  materiales.forEach((m, i) => {
+    const cat = (m.categoria || 'SIN CATEGORÍA').toUpperCase();
+    (porCat[cat] ||= []).push({ m, idx: i });
+  });
+  const cats = Object.keys(porCat).sort();
+  c.innerHTML = cats.map(cat => `
+    <details class="cat-group">
+      <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
+      <div class="cat-items">
+        ${porCat[cat].map(({ m, idx }) => `
+          <div class="cat-item">
+            <div class="cat-item-desc">${escapeHtml(m.descripcion || '—')}${m.ref ? `<small>${escapeHtml(m.ref)}</small>` : ''}</div>
+            <input type="number" min="0" step="any" class="cat-qty" id="cat-qty-${idx}" placeholder="${escapeHtml(m.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addLineaFromCatalogoQty(${idx}, this.value||1)}">
+            <button type="button" class="cat-add" onclick="addLineaFromCatalogoQty(${idx}, document.getElementById('cat-qty-${idx}').value||1)" title="Añadir">+</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `).join('');
+}
+
+function addLineaFromCatalogo(idx) { addLineaFromCatalogoQty(idx, 1); }
+
+function addLineaFromCatalogoQty(idx, qty) {
   const m = materiales[idx];
   if (!m) return;
-  const existing = movLineas.find(l => l.ref === m.ref);
-  if (existing) { existing.cantidad = (parseFloat(existing.cantidad)||0) + 1; }
-  else { movLineas.push({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: 1 }); }
+  const cantidad = parseFloat(qty) > 0 ? parseFloat(qty) : 1;
+  // Dedupe: por ref si existe, si no por descripción exacta
+  const existing = movLineas.find(l =>
+    (m.ref && l.ref && l.ref === m.ref) ||
+    ((!m.ref || !l.ref) && (l.descripcion||'').trim().toLowerCase() === (m.descripcion||'').trim().toLowerCase())
+  );
+  if (existing) { existing.cantidad = (parseFloat(existing.cantidad)||0) + cantidad; }
+  else { movLineas.push({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad }); }
   document.getElementById('mat-search').value = '';
   document.getElementById('mat-results').classList.remove('open');
   renderMovLineas();
+  // Si viene del picker, resetea el qty-input
+  const qtyInput = document.getElementById(`cat-qty-${idx}`);
+  if (qtyInput) qtyInput.value = '';
 }
 function addLineaLibre(desc) {
   if (!desc) return;

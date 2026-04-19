@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-materiales, #view-partes, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -166,6 +166,10 @@
       <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
       <button class="tab" onclick="switchTab('listado',this)">Listado</button>
     </div>
+    <div class="tab-bar" id="tab-bar-obra" style="display:none">
+      <button class="tab active" onclick="switchTabObra('materiales',this)">Materiales</button>
+      <button class="tab" onclick="switchTabObra('partes',this)">Partes</button>
+    </div>
   </div>
 </header>
 
@@ -179,25 +183,43 @@
         <div class="home-title">Consultas técnicas</div>
         <div class="home-desc">Pregunta a la IA, consulta manuales y documentos, registra incidencias y notas.</div>
       </div>
+      <div class="home-card" onclick="enterCalculos()">
+        <div class="home-icon">🧮</div>
+        <div class="home-title">Cálculos rápidos</div>
+        <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
+      </div>
+      <div class="home-card" onclick="enterObra()">
+        <div class="home-icon">🧱</div>
+        <div class="home-title">Obra</div>
+        <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-calculos">
+    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <div class="section-title">Cálculos rápidos</div>
+    <div class="home-intro">Herramientas de dimensionado para comprobaciones en obra.</div>
+    <div class="home-grid">
       <div class="home-card" onclick="enterCable()">
         <div class="home-icon">⚡</div>
-        <div class="home-title">Cálculo sección cable AC</div>
-        <div class="home-desc">Dimensiona el cable de salida del inversor por intensidad y caída de tensión (1,5 %).</div>
+        <div class="home-title">Sección cable AC</div>
+        <div class="home-desc">Cable de salida del inversor por intensidad y caída de tensión (1,5 %).</div>
+      </div>
+      <div class="home-card" onclick="enterCableDC()">
+        <div class="home-icon">☀</div>
+        <div class="home-title">Sección cable DC</div>
+        <div class="home-desc">Cable de string (panel–inversor) por intensidad y caída de tensión (1,5 %).</div>
       </div>
       <div class="home-card" onclick="enterProtecciones()">
         <div class="home-icon">🛡</div>
         <div class="home-title">Calibre de protecciones</div>
         <div class="home-desc">Magnetotérmico y diferencial para la salida AC del inversor.</div>
       </div>
-      <div class="home-card" onclick="enterCableDC()">
-        <div class="home-icon">☀</div>
-        <div class="home-title">Cálculo sección cable DC</div>
-        <div class="home-desc">Dimensiona el cable de string (panel–inversor) por intensidad y caída de tensión (1,5 %).</div>
-      </div>
       <div class="home-card" onclick="enterOffgrid()">
         <div class="home-icon">🔋</div>
         <div class="home-title">Instalación aislada</div>
-        <div class="home-desc">Victron + BYD: secciones y fusibles DC, y protección AC según manual del fabricante.</div>
+        <div class="home-desc">Victron + BYD: secciones y fusibles DC, y protección AC según manual.</div>
       </div>
     </div>
   </div>
@@ -330,7 +352,7 @@
   </div>
 
   <div id="view-cable">
-    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
     <div class="section-title">Sección de cable AC (cdt máx. 1,5%)</div>
     <div class="form-row">
       <div class="form-group">
@@ -377,7 +399,7 @@
   </div>
 
   <div id="view-protecciones">
-    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
     <div class="section-title">Calibre de protecciones AC</div>
     <div class="form-row">
       <div class="form-group">
@@ -418,7 +440,7 @@
   </div>
 
   <div id="view-cable-dc">
-    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
     <div class="section-title">Sección de cable DC (cdt máx. 1,5%)</div>
     <div class="form-row">
       <div class="form-group">
@@ -459,7 +481,7 @@
   </div>
 
   <div id="view-offgrid">
-    <button class="back-link" onclick="goHome()">← Inicio</button>
+    <button class="back-link" onclick="enterCalculos()">← Cálculos rápidos</button>
     <div class="section-title">Instalación aislada — Victron + BYD</div>
     <div class="form-group">
       <label>Inversor/cargador Victron *</label>
@@ -574,31 +596,43 @@ function goHome() {
   hideAllViews();
   document.getElementById('view-home').style.display = 'block';
   document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
 }
 function enterIncidencias() {
   hideAllViews();
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   document.getElementById('tab-bar-incidencias').style.display = 'flex';
   const firstTab = document.querySelector('#tab-bar-incidencias .tab');
   switchTab('consultar', firstTab);
 }
+function enterCalculos() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  document.getElementById('view-calculos').style.display = 'block';
+}
 function enterCable() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   document.getElementById('view-cable').style.display = 'block';
 }
 function enterProtecciones() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   document.getElementById('view-protecciones').style.display = 'block';
 }
 function enterCableDC() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   document.getElementById('view-cable-dc').style.display = 'block';
 }
 function enterOffgrid() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   document.getElementById('view-offgrid').style.display = 'block';
   populateOffgridSelects();
 }

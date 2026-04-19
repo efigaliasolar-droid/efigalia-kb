@@ -32,7 +32,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-materiales, #view-partes, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -218,6 +218,12 @@
   .ref-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
   .ref-list .ref-item { background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: var(--mono); color: var(--text); }
   .ref-list .ref-item .ref-lbl { color: var(--text-muted); margin-right: 6px; }
+
+  /* ── Pill selector (instaladores) ── */
+  .pill-selector { display: flex; flex-wrap: wrap; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+  .pill { padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); user-select: none; }
+  .pill:hover { border-color: var(--accent); }
+  .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -234,10 +240,6 @@
       <button class="tab" onclick="switchTab('documentos',this)">Documentos</button>
       <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
       <button class="tab" onclick="switchTab('listado',this)">Listado</button>
-    </div>
-    <div class="tab-bar" id="tab-bar-obra" style="display:none">
-      <button class="tab active" onclick="switchTabObra('materiales',this)">Materiales</button>
-      <button class="tab" onclick="switchTabObra('partes',this)">Partes</button>
     </div>
   </div>
 </header>
@@ -289,6 +291,24 @@
         <div class="home-icon">🔋</div>
         <div class="home-title">Instalación aislada</div>
         <div class="home-desc">Victron + BYD: secciones y fusibles DC, y protección AC según manual.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-obra">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Obra</div>
+    <div class="home-intro">Gestión de material y seguimiento diario en obras activas.</div>
+    <div class="home-grid">
+      <div class="home-card" onclick="enterMateriales()">
+        <div class="home-icon">📦</div>
+        <div class="home-title">Materiales</div>
+        <div class="home-desc">Salidas y retornos de material por obra, con furgoneta e instaladores.</div>
+      </div>
+      <div class="home-card" onclick="enterPartes()">
+        <div class="home-icon">📋</div>
+        <div class="home-title">Partes</div>
+        <div class="home-desc">Partes de seguimiento diario con fotos, solicitud de material e incidencias.</div>
       </div>
     </div>
   </div>
@@ -577,11 +597,11 @@
   <!-- ═══════════════ MATERIALES ═══════════════ -->
   <div id="view-materiales">
     <div id="mat-list-section">
-      <button class="back-link" onclick="goHome()">← Atrás</button>
-      <div class="section-title">Salida / entrada de materiales</div>
+      <button class="back-link" onclick="enterObra()">← Atrás</button>
+      <div class="section-title">Salida / retorno de materiales</div>
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormMov('salida')">+ Salida a obra</button>
-        <button class="btn-secondary" onclick="abrirFormMov('entrada')">+ Entrada de obra</button>
+        <button class="btn-secondary" onclick="abrirFormMov('entrada')">+ Retorno de obra</button>
       </div>
       <div class="search-bar">
         <input type="text" id="mov-search" placeholder="Filtrar por obra, furgoneta, fecha..." oninput="renderMovimientos()">
@@ -590,14 +610,12 @@
     </div>
 
     <div id="mat-form-section" style="display:none">
-      <div class="form-section-hdr">
-        <button class="back" onclick="cerrarFormMov()">← Volver</button>
-        <h2 id="mov-form-title">Nueva salida a obra</h2>
-      </div>
+      <button class="back-link" onclick="cerrarFormMov()">← Atrás</button>
+      <div class="section-title" id="mov-form-title">Nueva salida a obra</div>
 
       <div class="tipo-switch">
         <label><input type="radio" name="mov-tipo" value="salida" onchange="onTipoMovChange()"><span>Salida a obra</span></label>
-        <label><input type="radio" name="mov-tipo" value="entrada" onchange="onTipoMovChange()"><span>Entrada de obra</span></label>
+        <label><input type="radio" name="mov-tipo" value="entrada" onchange="onTipoMovChange()"><span>Retorno de obra</span></label>
       </div>
 
       <div class="form-row">
@@ -612,15 +630,13 @@
       </div>
 
       <div class="form-group">
-        <label>Furgoneta</label>
-        <input type="text" id="mov-furgoneta" list="dl-furgonetas" placeholder="Ej: Furgo 1 - 1234ABC">
+        <label>Furgoneta *</label>
+        <select id="mov-furgoneta" class="select-furgoneta"></select>
       </div>
 
       <div class="form-group">
-        <label>Instaladores</label>
-        <div class="chips-input" id="mov-instaladores-chips" onclick="document.getElementById('mov-instaladores-input').focus()">
-          <input type="text" id="mov-instaladores-input" list="dl-instaladores" placeholder="Añadir instalador + Enter">
-        </div>
+        <label>Instaladores *</label>
+        <div class="pill-selector" id="mov-instaladores-pills"></div>
       </div>
 
       <div class="form-group">
@@ -638,8 +654,8 @@
       </div>
 
       <div class="form-group">
-        <label>Registrado por</label>
-        <input type="text" id="mov-registradopor" placeholder="Tu nombre">
+        <label>Registrado por *</label>
+        <select id="mov-registradopor" class="select-registradopor"></select>
       </div>
 
       <button class="btn-primary" id="btn-mov-save" onclick="guardarMovimiento()">Guardar movimiento</button>
@@ -649,7 +665,7 @@
   <!-- ═══════════════ PARTES DE SEGUIMIENTO ═══════════════ -->
   <div id="view-partes">
     <div id="partes-list-section">
-      <button class="back-link" onclick="goHome()">← Atrás</button>
+      <button class="back-link" onclick="enterObra()">← Atrás</button>
       <div class="section-title">Partes de seguimiento diario</div>
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormParte()">+ Nuevo parte de hoy</button>
@@ -661,10 +677,8 @@
     </div>
 
     <div id="partes-form-section" style="display:none">
-      <div class="form-section-hdr">
-        <button class="back" onclick="cerrarFormParte()">← Volver</button>
-        <h2 id="parte-form-title">Nuevo parte de hoy</h2>
-      </div>
+      <button class="back-link" onclick="cerrarFormParte()">← Atrás</button>
+      <div class="section-title" id="parte-form-title">Nuevo parte de hoy</div>
 
       <div class="form-row">
         <div class="form-group">
@@ -678,15 +692,13 @@
       </div>
 
       <div class="form-group">
-        <label>Furgoneta</label>
-        <input type="text" id="parte-furgoneta" list="dl-furgonetas" placeholder="Ej: Furgo 1 - 1234ABC">
+        <label>Furgoneta *</label>
+        <select id="parte-furgoneta" class="select-furgoneta"></select>
       </div>
 
       <div class="form-group">
-        <label>Instaladores</label>
-        <div class="chips-input" id="parte-instaladores-chips" onclick="document.getElementById('parte-instaladores-input').focus()">
-          <input type="text" id="parte-instaladores-input" list="dl-instaladores" placeholder="Añadir instalador + Enter">
-        </div>
+        <label>Instaladores *</label>
+        <div class="pill-selector" id="parte-instaladores-pills"></div>
       </div>
 
       <div class="form-group">
@@ -718,8 +730,8 @@
       </div>
 
       <div class="form-group">
-        <label>Registrado por</label>
-        <input type="text" id="parte-registradopor" placeholder="Tu nombre">
+        <label>Registrado por *</label>
+        <select id="parte-registradopor" class="select-registradopor"></select>
       </div>
 
       <button class="btn-primary" id="btn-parte-save" onclick="guardarParte()">Guardar parte</button>
@@ -870,34 +882,35 @@ function switchTab(tab, el) {
   if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
 }
 
-function enterObra(tab) {
+function enterObra(sub) {
+  // sub opcional: 'materiales' o 'partes'
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
-  document.getElementById('tab-bar-obra').style.display = 'flex';
-  const tabs = document.querySelectorAll('#tab-bar-obra .tab');
-  const target = tab || 'materiales';
-  tabs.forEach(t => t.classList.remove('active'));
-  const btn = Array.from(tabs).find(t => t.textContent.trim().toLowerCase() === target.toLowerCase());
-  if (btn) btn.classList.add('active'); else if (tabs[0]) tabs[0].classList.add('active');
-  switchTabObra(target, btn || tabs[0]);
+  if (sub === 'materiales') return enterMateriales();
+  if (sub === 'partes') return enterPartes();
+  document.getElementById('view-obra').style.display = 'block';
 }
 
-function switchTabObra(tab, el) {
-  document.querySelectorAll('#tab-bar-obra .tab').forEach(t => t.classList.remove('active'));
-  if (el) el.classList.add('active');
+function enterMateriales() {
   hideAllViews();
-  document.getElementById('view-' + tab).style.display = 'block';
-  // Cerrar cualquier formulario abierto al cambiar de tab
-  const ml = document.getElementById('mat-list-section'); if (ml) ml.style.display = 'block';
-  const mf = document.getElementById('mat-form-section'); if (mf) mf.style.display = 'none';
-  const pl = document.getElementById('partes-list-section'); if (pl) pl.style.display = 'block';
-  const pf = document.getElementById('partes-form-section'); if (pf) pf.style.display = 'none';
-  if (tab === 'materiales') {
-    Promise.all([materialesLoad(), movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => { refrescarDatalists(); renderMovimientos(); });
-  }
-  if (tab === 'partes') {
-    Promise.all([movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => { refrescarDatalists(); renderPartes(); });
-  }
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-materiales').style.display = 'block';
+  document.getElementById('mat-list-section').style.display = 'block';
+  document.getElementById('mat-form-section').style.display = 'none';
+  Promise.all([materialesLoad(), movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => {
+    refrescarDatalists(); renderMovimientos();
+  });
+}
+
+function enterPartes() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-partes').style.display = 'block';
+  document.getElementById('partes-list-section').style.display = 'block';
+  document.getElementById('partes-form-section').style.display = 'none';
+  Promise.all([movimientosLoad(), partesLoad(), sheetsLoad()]).then(() => {
+    refrescarDatalists(); renderPartes();
+  });
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
@@ -1869,6 +1882,59 @@ let returnTarget = null;
 let movLineas = [];
 let parteFotoFiles = [];
 
+// ── MAESTROS FIJOS (sólo se eligen, no se añaden desde campo) ──
+const FURGONETAS = [
+  '2458KYR Ford',
+  '0480KBV Mercedes',
+  '9437MBT Renault',
+  '8843MRJ Mercedes',
+  '9845NKV Renault',
+  '6875KGW Berlingo'
+];
+const INSTALADORES = [
+  'Sergio', 'Yoel', 'Yaelky', 'Cecilio', 'Lester',
+  'Luis Eduardo', 'Luis Fernandez', 'Martín', 'Carlos'
+];
+
+function fillFurgonetaSelects() {
+  document.querySelectorAll('.select-furgoneta').forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      FURGONETAS.map(f => `<option value="${f}">${f}</option>`).join('');
+    if (cur && FURGONETAS.includes(cur)) sel.value = cur;
+  });
+}
+function fillRegistradoPorSelects() {
+  document.querySelectorAll('.select-registradopor').forEach(sel => {
+    const cur = sel.value || localStorage.getItem('efigalia_last_user') || '';
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      INSTALADORES.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (cur && INSTALADORES.includes(cur)) sel.value = cur;
+  });
+}
+
+// Pill selector multi (instaladores)
+function renderInstaladorPills(containerId, selected) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c._selected = (selected || []).filter(n => INSTALADORES.includes(n));
+  c.innerHTML = INSTALADORES.map(name =>
+    `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${containerId}','${name.replace(/'/g,"\\'")}')">${name}</button>`
+  ).join('');
+}
+function togglePill(containerId, name) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c._selected = c._selected || [];
+  const i = c._selected.indexOf(name);
+  if (i >= 0) c._selected.splice(i, 1); else c._selected.push(name);
+  renderInstaladorPills(containerId, c._selected);
+}
+function getPills(containerId) {
+  const c = document.getElementById(containerId);
+  return (c && c._selected) ? c._selected.slice() : [];
+}
+
 // ── CARGA Y GUARDADO ───────────────────────────────────
 async function materialesLoad() {
   try {
@@ -2039,13 +2105,15 @@ function abrirFormMov(tipo, prefill) {
   const t = (prefill && prefill.tipo) || tipo || 'salida';
   document.querySelector(`input[name="mov-tipo"][value="${t}"]`).checked = true;
   document.getElementById('mov-form-title').textContent =
-    (prefill && prefill.editId ? 'Editar' : 'Nueva') + (t === 'salida' ? ' salida a obra' : ' entrada de obra');
+    (prefill && prefill.editId ? 'Editar' : 'Nueva') + (t === 'salida' ? ' salida a obra' : ' retorno de obra');
   document.getElementById('mov-fecha').value = (prefill && prefill.fecha) || isoToday();
   document.getElementById('mov-obra').value = (prefill && prefill.idObra) || '';
+  fillFurgonetaSelects();
+  fillRegistradoPorSelects();
   document.getElementById('mov-furgoneta').value = (prefill && prefill.furgoneta) || '';
   document.getElementById('mov-notas').value = (prefill && prefill.notas) || '';
   document.getElementById('mov-registradopor').value = (prefill && prefill.registradoPor) || localStorage.getItem('efigalia_last_user') || '';
-  setupChipsInput('mov-instaladores-chips', 'mov-instaladores-input', (prefill && prefill.instaladores) || []);
+  renderInstaladorPills('mov-instaladores-pills', (prefill && prefill.instaladores) || []);
   movLineas = (prefill && prefill.lineas) ? prefill.lineas.map(l => ({...l})) : [];
   renderMovLineas();
   document.getElementById('mat-search').value = '';
@@ -2062,7 +2130,7 @@ function cerrarFormMov() {
 function onTipoMovChange() {
   const t = document.querySelector('input[name="mov-tipo"]:checked').value;
   document.getElementById('mov-form-title').textContent =
-    'Nueva ' + (t === 'salida' ? 'salida a obra' : 'entrada de obra');
+    'Nueva ' + (t === 'salida' ? 'salida a obra' : 'retorno de obra');
 }
 function isoToday() {
   const d = new Date(), p = n => String(n).padStart(2,'0');
@@ -2139,12 +2207,15 @@ async function guardarMovimiento() {
   const tipo = document.querySelector('input[name="mov-tipo"]:checked').value;
   const fecha = document.getElementById('mov-fecha').value;
   const idObra = document.getElementById('mov-obra').value.trim();
-  const furgoneta = document.getElementById('mov-furgoneta').value.trim();
-  const instaladores = getChips('mov-instaladores-chips');
+  const furgoneta = document.getElementById('mov-furgoneta').value;
+  const instaladores = getPills('mov-instaladores-pills');
   const notas = document.getElementById('mov-notas').value.trim();
-  const registradoPor = document.getElementById('mov-registradopor').value.trim();
+  const registradoPor = document.getElementById('mov-registradopor').value;
 
   if (!fecha || !idObra) { showToast('⚠ Fecha y obra son obligatorias', 'err'); return; }
+  if (!furgoneta) { showToast('⚠ Selecciona la furgoneta', 'err'); return; }
+  if (!instaladores.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
+  if (!registradoPor) { showToast('⚠ Selecciona quién lo registra', 'err'); return; }
   if (!movLineas.length) { showToast('⚠ Añade al menos un material', 'err'); return; }
 
   const btn = document.getElementById('btn-mov-save');
@@ -2196,7 +2267,7 @@ function renderMovimientos() {
     <div class="mov-card" onclick="openMovModal(${m.id})">
       <div class="mov-head">
         <div class="mov-obra">${escapeHtml(m.idObra)}</div>
-        <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? '↗ SALIDA' : '↙ ENTRADA'}</span>
+        <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? '↗ SALIDA' : '↙ RETORNO'}</span>
       </div>
       <div class="mov-meta">
         <span>📅 ${escapeHtml(m.fecha)}</span>
@@ -2215,7 +2286,7 @@ function openMovModal(id) {
   document.getElementById('modal-inner').innerHTML = `
     <div class="modal-title">${escapeHtml(m.idObra)}</div>
     <div class="modal-badges">
-      <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? 'SALIDA' : 'ENTRADA'}</span>
+      <span class="badge ${m.tipo === 'salida' ? 'badge-salida' : 'badge-entrada'}">${m.tipo === 'salida' ? 'SALIDA' : 'RETORNO'}</span>
       <span class="badge badge-marca">${escapeHtml(m.fecha)}</span>
     </div>
     ${m.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(m.furgoneta)}</div></div>` : ''}
@@ -2244,11 +2315,13 @@ function abrirFormParte(prefill) {
     (prefill && prefill.editId ? 'Editar parte' : 'Nuevo parte de hoy');
   document.getElementById('parte-fecha').value = (prefill && prefill.fecha) || isoToday();
   document.getElementById('parte-obra').value = (prefill && prefill.idObra) || '';
+  fillFurgonetaSelects();
+  fillRegistradoPorSelects();
   document.getElementById('parte-furgoneta').value = (prefill && prefill.furgoneta) || '';
   document.getElementById('parte-trabajos').value = (prefill && prefill.trabajosRealizados) || '';
   document.getElementById('parte-notas').value = (prefill && prefill.notas) || '';
   document.getElementById('parte-registradopor').value = (prefill && prefill.registradoPor) || localStorage.getItem('efigalia_last_user') || '';
-  setupChipsInput('parte-instaladores-chips', 'parte-instaladores-input', (prefill && prefill.instaladores) || []);
+  renderInstaladorPills('parte-instaladores-pills', (prefill && prefill.instaladores) || []);
   parteFotoFiles = [];
   document.getElementById('parte-foto-previews').innerHTML = '';
   parteForm = {
@@ -2306,11 +2379,11 @@ function capturarParteForm() {
     editId: parteForm && parteForm.editId,
     fecha: document.getElementById('parte-fecha').value,
     idObra: document.getElementById('parte-obra').value.trim(),
-    furgoneta: document.getElementById('parte-furgoneta').value.trim(),
-    instaladores: getChips('parte-instaladores-chips'),
+    furgoneta: document.getElementById('parte-furgoneta').value,
+    instaladores: getPills('parte-instaladores-pills'),
     trabajosRealizados: document.getElementById('parte-trabajos').value,
     notas: document.getElementById('parte-notas').value,
-    registradoPor: document.getElementById('parte-registradopor').value.trim(),
+    registradoPor: document.getElementById('parte-registradopor').value,
     fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : [],
     incidenciasIds: (parteForm && parteForm.incidenciasIds) ? parteForm.incidenciasIds.slice() : [],
     movimientosIds: (parteForm && parteForm.movimientosIds) ? parteForm.movimientosIds.slice() : []
@@ -2362,6 +2435,9 @@ function handleReturnFromIncidencia(incId) {
 async function guardarParte() {
   const snap = capturarParteForm();
   if (!snap.fecha || !snap.idObra) { showToast('⚠ Fecha y obra son obligatorias', 'err'); return; }
+  if (!snap.furgoneta) { showToast('⚠ Selecciona la furgoneta', 'err'); return; }
+  if (!snap.instaladores.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
+  if (!snap.registradoPor) { showToast('⚠ Selecciona quién lo registra', 'err'); return; }
   if (!snap.trabajosRealizados.trim()) { showToast('⚠ Describe los trabajos realizados', 'err'); return; }
 
   const btn = document.getElementById('btn-parte-save');
@@ -2442,7 +2518,7 @@ function openParteModal(id) {
     : '';
   const mats = (p.movimientosIds||[]).map(id => {
     const m = movimientos.find(x => x.id === id);
-    return m ? `<div class="ref-item">📦 ${m.tipo.toUpperCase()} · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
+    return m ? `<div class="ref-item">📦 ${m.tipo === 'salida' ? 'SALIDA' : 'RETORNO'} · ${escapeHtml(m.fecha)} · ${(m.lineas||[]).length} líneas</div>` : '';
   }).join('');
   const incs = (p.incidenciasIds||[]).map(id => {
     const inc = incidents.find(x => x.id === id);

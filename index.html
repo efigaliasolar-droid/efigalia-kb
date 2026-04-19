@@ -1035,7 +1035,8 @@
         </div>
         <div class="form-group">
           <label>Enlace Google Maps</label>
-          <input type="text" id="v-maps" placeholder="https://...">
+          <input type="text" id="v-maps" placeholder="https://..." oninput="onMapsInputChange()">
+          <a id="v-maps-link" target="_blank" rel="noopener" style="display:none;margin-top:8px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;align-items:center;gap:6px;width:fit-content">🗺 Abrir en Google Maps ↗</a>
         </div>
         <div class="form-group">
           <label>Equipos previstos</label>
@@ -3748,6 +3749,7 @@ function abrirFormularioVisita(v) {
   document.getElementById('v-telefono').value = telefono;
   document.getElementById('v-direccion').value = direccion;
   document.getElementById('v-maps').value = maps;
+  onMapsInputChange();
   document.getElementById('v-equipos').value = equipos;
   document.getElementById('v-obs').value = obs;
   document.getElementById('v-fecha').value = (v && v.fechaPrevista) || '';
@@ -3892,6 +3894,18 @@ function onObsNoExistenChange() {
   const no = document.getElementById('v-obs-no-existen').checked;
   const wrap = document.getElementById('v-obs-wrap');
   if (wrap) wrap.style.display = no ? 'none' : '';
+}
+function onMapsInputChange() {
+  const val = document.getElementById('v-maps').value.trim();
+  const link = document.getElementById('v-maps-link');
+  if (!link) return;
+  if (val && /^https?:\/\//i.test(val)) {
+    link.href = val;
+    link.style.display = 'inline-flex';
+  } else {
+    link.removeAttribute('href');
+    link.style.display = 'none';
+  }
 }
 
 function rellenarCampoVisita(campo) {

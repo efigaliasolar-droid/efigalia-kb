@@ -1596,7 +1596,8 @@ function setSyncStatus(state, label) {
 async function sheetsLoad() {
   setSyncStatus('spin', 'cargando...');
   try {
-    const res = await fetch(WORKER + '/data');
+    // Cache-busting: evita que Cloudflare Edge o el navegador devuelvan una versión antigua
+    const res = await fetch(WORKER + '/data?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' } });
     const text = await res.text();
     const data = JSON.parse(text);
     if (Array.isArray(data) && data.length > 0) {
@@ -1605,9 +1606,11 @@ async function sheetsLoad() {
       incidents = [...BASE_INICIAL];
       await sheetsSave();
     }
+    console.log(`[sheetsLoad] ${incidents.length} registros recibidos del servidor`);
     localStorage.setItem('efigalia_kb_v4', JSON.stringify(incidents));
     setSyncStatus('ok', 'sincronizado');
   } catch(e) {
+    console.error('[sheetsLoad] error', e);
     const stored = localStorage.getItem('efigalia_kb_v4');
     incidents = stored ? JSON.parse(stored) : [...BASE_INICIAL];
     setSyncStatus('err', 'sin conexión');

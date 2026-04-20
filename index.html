@@ -1485,7 +1485,21 @@
         <span id="doc-archivo-label">📄 Toca para seleccionar archivo</span>
       </div>
     </div>
-    <button class="btn-primary" id="btn-doc-save" onclick="guardarDocumento()">Subir documento</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" id="btn-doc-save" onclick="guardarDocumento()" style="flex:1;min-width:0">Subir documento</button>
+      <button class="btn-secondary" onclick="document.getElementById('doc-bulk-input').click()" style="flex:0 0 auto;min-width:0;padding:11px 14px">📁 Varios</button>
+      <input type="file" id="doc-bulk-input" accept=".pdf,image/*" multiple style="display:none" onchange="iniciarBulkDocumentos(event)">
+    </div>
+
+    <div id="bulk-upload-section" style="display:none;margin-top:18px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+      <div class="section-title" style="margin-bottom:6px">Subir varios archivos</div>
+      <div class="calc-note" style="margin-top:0;margin-bottom:12px">He precargado título, marca y modelo a partir del nombre de cada archivo. Revisa y corrige lo que haga falta, y pulsa "Subir todos".</div>
+      <div id="bulk-upload-list"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-secondary" onclick="cancelarBulkDocumentos()" style="flex:1;min-width:0">Cancelar</button>
+        <button class="btn-primary" onclick="subirBulkDocumentos()" style="flex:1;min-width:0;width:auto">Subir todos</button>
+      </div>
+    </div>
 
     <div style="margin-top:22px">
       <div class="section-title">Documentos subidos</div>
@@ -2063,6 +2077,155 @@ async function eliminarDocumento(id) {
   await sheetsSave();
   showToast('✓ Documento eliminado', 'ok');
   renderAdminDocumentos();
+}
+
+// ── BULK UPLOAD DE DOCUMENTOS ──────────────────────────
+let bulkDocFiles = [];
+
+const DOC_BRANDS = [
+  'Huawei','SolarEdge','Sigenergy','Sigen','Victron','BYD','Longi','Pylontech',
+  'Schneider','Chint','Fronius','Sungrow','Jinko','Trina','Growatt','Enphase',
+  'SMA','Janitza','Hitachi','Mitsubishi','Eastron','ABB','Siemens','Lacecal',
+  'Teltonika','RUT241','UWP','Cerbo','Ingeteam','Kostal','Canadian','Goodwe',
+  'Amara','EDP','Iberdrola'
+];
+const DOC_STOPWORDS = new Set(['manual','datasheet','ficha','tecnica','técnica','guia','guía','instructivo','installation','instalacion','instalación','user','usuario','quick','rapida','rápida','start','brochure','catalog','catalogo','catálogo','es','en','v1','v2','v3','v4','v5','de','del','y','uso','instrucciones','spec','specs','rev','pdf']);
+
+function parseDocFilename(filename) {
+  const stem = filename.replace(/\.[^.]+$/, '');
+  const clean = stem.replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const tokens = clean.split(/\s+/);
+  let marca = '', brandIdx = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    const found = DOC_BRANDS.find(b => b.toLowerCase() === t.toLowerCase());
+    if (found) { marca = found; brandIdx = i; break; }
+  }
+  let modelo = '';
+  if (brandIdx >= 0) {
+    const modelTokens = [];
+    for (let i = brandIdx + 1; i < tokens.length; i++) {
+      const low = tokens[i].toLowerCase();
+      if (DOC_STOPWORDS.has(low)) break;
+      modelTokens.push(tokens[i]);
+      if (modelTokens.length >= 3) break;
+    }
+    modelo = modelTokens.join(' ').trim();
+  }
+  return { titulo: clean, marca, modelo };
+}
+
+function iniciarBulkDocumentos(event) {
+  const files = Array.from((event && event.target && event.target.files) || []);
+  if (!files.length) return;
+  bulkDocFiles = files.map(f => {
+    const p = parseDocFilename(f.name);
+    return { file: f, titulo: p.titulo, marca: p.marca, modelo: p.modelo, descripcion: '', keywords: '', status: 'pending' };
+  });
+  if (event && event.target) event.target.value = '';
+  document.getElementById('bulk-upload-section').style.display = 'block';
+  renderBulkDocumentos();
+  document.getElementById('bulk-upload-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderBulkDocumentos() {
+  const c = document.getElementById('bulk-upload-list');
+  if (!c) return;
+  if (!bulkDocFiles.length) { c.innerHTML = ''; return; }
+  const statusBadge = (s) => {
+    const map = { pending: ['Pendiente','off'], uploading: ['Subiendo…','off'], done: ['✓ Subido','on'], error: ['⚠ Error','off'] };
+    const pair = map[s] || ['Pendiente','off'];
+    return `<span class="toggle-btn ${pair[1]}" style="cursor:default">${pair[0]}</span>`;
+  };
+  c.innerHTML = bulkDocFiles.map((f, i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1" title="${escapeHtml(f.file.name)}">📄 ${escapeHtml(f.file.name)}</div>
+        ${statusBadge(f.status)}
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Título *</label>
+        <input type="text" value="${escapeHtml(f.titulo)}" oninput="bulkDocUpdate(${i}, 'titulo', this.value)">
+      </div>
+      <div class="form-row" style="margin-bottom:8px">
+        <div class="form-group" style="margin:0"><label>Marca *</label><input type="text" value="${escapeHtml(f.marca)}" oninput="bulkDocUpdate(${i}, 'marca', this.value)"></div>
+        <div class="form-group" style="margin:0"><label>Modelo</label><input type="text" value="${escapeHtml(f.modelo)}" oninput="bulkDocUpdate(${i}, 'modelo', this.value)"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Descripción</label>
+        <input type="text" value="${escapeHtml(f.descripcion)}" oninput="bulkDocUpdate(${i}, 'descripcion', this.value)" placeholder="Opcional">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Palabras clave</label>
+        <input type="text" value="${escapeHtml(f.keywords)}" oninput="bulkDocUpdate(${i}, 'keywords', this.value)" placeholder="Ej: sobretensión, reset">
+      </div>
+      <button class="btn-ghost" style="margin-top:10px;width:100%" onclick="bulkDocRemove(${i})">Quitar de la lista</button>
+    </div>
+  `).join('');
+}
+
+function bulkDocUpdate(i, key, val) { if (bulkDocFiles[i]) bulkDocFiles[i][key] = val; }
+
+function bulkDocRemove(i) {
+  bulkDocFiles.splice(i, 1);
+  if (!bulkDocFiles.length) cancelarBulkDocumentos();
+  else renderBulkDocumentos();
+}
+
+function cancelarBulkDocumentos() {
+  bulkDocFiles = [];
+  document.getElementById('bulk-upload-section').style.display = 'none';
+  const inp = document.getElementById('doc-bulk-input'); if (inp) inp.value = '';
+}
+
+async function subirBulkDocumentos() {
+  if (!bulkDocFiles.length) return;
+  for (const f of bulkDocFiles) {
+    if (!f.titulo.trim() || !f.marca.trim()) {
+      showToast(`⚠ "${f.file.name}": falta título o marca`, 'err');
+      return;
+    }
+  }
+  await sheetsLoad();
+  for (const f of bulkDocFiles) {
+    if (f.status === 'done') continue;
+    f.status = 'uploading';
+    renderBulkDocumentos();
+    try {
+      let contenidoExtraido = '';
+      if (f.file.type === 'application/pdf') {
+        try { contenidoExtraido = await extractPdfText(f.file); } catch(e) {}
+      }
+      const uploaded = await subirArchivo(f.file);
+      incidents.unshift({
+        id: Date.now() + Math.floor(Math.random()*1000),
+        tipo: 'documento',
+        idObra: '-', marca: f.marca.trim(), modelo: f.modelo.trim() || '-',
+        codError: '-', incidencia: f.titulo.trim(),
+        verificaciones: '', solucion: '',
+        documentacion: f.descripcion.trim() || '-',
+        keywords: f.keywords.trim(),
+        tecnico: (currentUser && currentUser.nombre) || 'Admin',
+        fecha: new Date().toLocaleDateString('es-ES'),
+        fotos: [], archivoUrl: uploaded.url, archivoNombre: uploaded.nombre,
+        contenidoExtraido
+      });
+      f.status = 'done';
+    } catch(e) {
+      f.status = 'error';
+      console.warn('Error subiendo', f.file.name, e);
+    }
+    renderBulkDocumentos();
+  }
+  await sheetsSave();
+  const okCount = bulkDocFiles.filter(f => f.status === 'done').length;
+  const errCount = bulkDocFiles.filter(f => f.status === 'error').length;
+  showToast(`✓ Subidos ${okCount}${errCount ? ' · ' + errCount + ' con error' : ''}`, errCount ? 'err' : 'ok');
+  if (!errCount) {
+    setTimeout(() => { cancelarBulkDocumentos(); renderAdminDocumentos(); }, 1500);
+  } else {
+    renderAdminDocumentos();
+  }
 }
 
 function renderAdminDocumentos() {

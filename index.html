@@ -1618,7 +1618,27 @@ async function sheetsLoad() {
 async function sheetsSave() {
   setSyncStatus('spin', 'guardando...');
   try {
-    // Reducir payload: truncar contenidoExtraido a 4000 chars (suficiente para la IA)
+    // 1) Releer estado del servidor para fusionar (evita machacar cambios concurrentes)
+    let serverIncidents = null;
+    try {
+      const resG = await fetch(WORKER + '/data', { cache: 'no-store' });
+      if (resG.ok) {
+        const data = await resG.json();
+        if (Array.isArray(data)) serverIncidents = data;
+      }
+    } catch(e) { /* offline → seguimos con local */ }
+
+    // 2) Fusión: nuestro estado local tiene prioridad; añadimos los del servidor que no tengamos (id distinto)
+    if (serverIncidents) {
+      const localIds = new Set(incidents.map(i => i && i.id).filter(v => v !== undefined));
+      const preservar = serverIncidents.filter(s => s && s.id !== undefined && !localIds.has(s.id));
+      if (preservar.length) {
+        console.log(`[sheetsSave] fusionando ${preservar.length} registros que había en servidor y no en local`);
+        incidents = [...incidents, ...preservar];
+      }
+    }
+
+    // 3) Reducir payload: truncar contenidoExtraido a 4000 chars
     const payload = incidents.map(i => {
       if (i.tipo === 'documento' && i.contenidoExtraido && i.contenidoExtraido.length > 4000) {
         return { ...i, contenidoExtraido: i.contenidoExtraido.substring(0, 4000) };
@@ -1627,6 +1647,7 @@ async function sheetsSave() {
     });
     const body = JSON.stringify(payload);
     console.log(`[sheetsSave] ${payload.length} registros, payload ${(body.length/1024).toFixed(1)} KB`);
+
     const res = await fetch(WORKER + '/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1637,13 +1658,35 @@ async function sheetsSave() {
       try { detail = await res.text(); } catch(e) {}
       throw new Error(`HTTP ${res.status} ${res.statusText}${detail ? ' · ' + detail.substring(0,120) : ''}`);
     }
-    // Reflejar el recorte también en memoria para mantener coherencia
+    // Reflejar el recorte en memoria
     incidents = payload;
     try {
       const light = incidents.map(i => ({...i, fotos: i.fotos?.map ? i.fotos.map(f => typeof f === 'string' && f.startsWith('data:') ? '' : f) : []}));
       localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
     } catch(e) { localStorage.removeItem('efigalia_kb_v4'); }
     setSyncStatus('ok', 'sincronizado');
+
+    // 4) Verificación diferida: a los 3s releer y comprobar que todos nuestros ids siguen ahí.
+    //    Si no, se reintenta una vez. Esto compensa inconsistencia eventual del Worker.
+    setTimeout(async () => {
+      try {
+        const resV = await fetch(WORKER + '/data', { cache: 'no-store' });
+        if (!resV.ok) return;
+        const serverData = await resV.json();
+        if (!Array.isArray(serverData)) return;
+        const serverIds = new Set(serverData.map(x => x && x.id));
+        const missing = incidents.filter(x => x && x.id !== undefined && !serverIds.has(x.id));
+        if (missing.length) {
+          console.warn(`[sheetsSave] ${missing.length} registros no aparecen en servidor tras guardar. Reintentando...`);
+          await fetch(WORKER + '/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(incidents)
+          });
+        }
+      } catch(e) { /* silent */ }
+    }, 3000);
+
     return true;
   } catch(e) {
     console.error('[sheetsSave] error', e);

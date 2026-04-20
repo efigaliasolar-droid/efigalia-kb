@@ -45,7 +45,7 @@
   #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
-  .section-title { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+  .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
 
   .search-wrap { position: relative; margin-bottom: 20px; }
   .search-wrap textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 50px 14px 16px; color: var(--text); font-family: var(--sans); font-size: 15px; resize: none; outline: none; min-height: 85px; transition: border-color 0.2s; line-height: 1.5; }
@@ -76,7 +76,7 @@
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-group { margin-bottom: 16px; }
-  label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: 0; text-transform: none; font-family: var(--sans); }
+  label { display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; letter-spacing: 0; text-transform: none; font-family: var(--sans); }
   input[type=text], textarea.field { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; transition: border-color 0.2s; }
   input[type=text]:focus, textarea.field:focus { border-color: var(--accent); }
   textarea.field { resize: vertical; min-height: 80px; line-height: 1.5; }
@@ -281,7 +281,7 @@
 
   /* ── Panel de filtros colapsable ── */
   .filtros-panel { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 10px 14px; margin-bottom: 14px; }
-  .filtros-panel summary { cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; padding: 2px 0; }
+  .filtros-panel summary { cursor: pointer; font-family: var(--sans); font-size: 15px; color: var(--text); font-weight: 600; letter-spacing: 0; text-transform: none; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; padding: 4px 0; }
   .filtros-panel summary::-webkit-details-marker { display: none; }
   .filtros-panel summary::after { content: '▾'; color: var(--text-muted); transition: transform 0.2s; }
   .filtros-panel[open] summary::after { transform: rotate(180deg); color: var(--accent); }

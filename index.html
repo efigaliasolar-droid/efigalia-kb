@@ -1618,11 +1618,27 @@ async function sheetsLoad() {
 async function sheetsSave() {
   setSyncStatus('spin', 'guardando...');
   try {
-    await fetch(WORKER + '/data', {
+    // Reducir payload: truncar contenidoExtraido a 4000 chars (suficiente para la IA)
+    const payload = incidents.map(i => {
+      if (i.tipo === 'documento' && i.contenidoExtraido && i.contenidoExtraido.length > 4000) {
+        return { ...i, contenidoExtraido: i.contenidoExtraido.substring(0, 4000) };
+      }
+      return i;
+    });
+    const body = JSON.stringify(payload);
+    console.log(`[sheetsSave] ${payload.length} registros, payload ${(body.length/1024).toFixed(1)} KB`);
+    const res = await fetch(WORKER + '/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(incidents)
+      body
     });
+    if (!res.ok) {
+      let detail = '';
+      try { detail = await res.text(); } catch(e) {}
+      throw new Error(`HTTP ${res.status} ${res.statusText}${detail ? ' · ' + detail.substring(0,120) : ''}`);
+    }
+    // Reflejar el recorte también en memoria para mantener coherencia
+    incidents = payload;
     try {
       const light = incidents.map(i => ({...i, fotos: i.fotos?.map ? i.fotos.map(f => typeof f === 'string' && f.startsWith('data:') ? '' : f) : []}));
       localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
@@ -1630,12 +1646,13 @@ async function sheetsSave() {
     setSyncStatus('ok', 'sincronizado');
     return true;
   } catch(e) {
+    console.error('[sheetsSave] error', e);
     try {
       const light = incidents.map(i => ({...i, fotos: []}));
       localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
     } catch(e2) { localStorage.removeItem('efigalia_kb_v4'); }
     setSyncStatus('err', 'error al guardar');
-    showToast('⚠ Guardado solo en local.', 'err');
+    showToast('⚠ Error al guardar en servidor: ' + (e.message || 'desconocido'), 'err');
     return false;
   }
 }

@@ -3020,7 +3020,7 @@ function renderDocumentos() {
   let list = incidents.filter(inc => inc.tipo === 'documento');
   if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay documentos. Añade uno desde Registrar.'}</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay documentos aún. Súbelos desde Administración → Documentos.'}</div>`;
     return;
   }
   container.innerHTML = '<div class="incidents-grid">' + list.map(inc => `

@@ -1597,7 +1597,8 @@ async function sheetsLoad() {
   setSyncStatus('spin', 'cargando...');
   try {
     // Cache-busting: evita que Cloudflare Edge o el navegador devuelvan una versión antigua
-    const res = await fetch(WORKER + '/data?t=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store, max-age=0', 'Pragma': 'no-cache' } });
+    // cache:'no-store' + query único bypassa navegador y edge sin disparar CORS preflight
+    const res = await fetch(WORKER + '/data?t=' + Date.now(), { cache: 'no-store' });
     const text = await res.text();
     const data = JSON.parse(text);
     if (Array.isArray(data) && data.length > 0) {

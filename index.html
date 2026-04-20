@@ -128,7 +128,8 @@
   .modal-keywords { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
 
   .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 14px; }
-  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-state .icon { font-size: 36px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; }
+  .empty-state .icon svg { width: 48px; height: 48px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--accent); opacity: 0.8; }
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
@@ -160,7 +161,8 @@
   .home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
   .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 18px; align-items: center; }
   .home-card:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-2px); }
-  .home-icon { font-size: 40px; line-height: 1; grid-row: 1 / span 2; align-self: center; margin: 0; }
+  .home-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; color: var(--accent); grid-row: 1 / span 2; align-self: center; margin: 0; flex-shrink: 0; }
+  .home-icon svg { width: 42px; height: 42px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
   .home-title { font-weight: 600; font-size: 20px; margin-bottom: 4px; color: var(--text); grid-column: 2; align-self: end; line-height: 1.2; }
   .home-desc { color: var(--text-muted); font-size: 13px; line-height: 1.5; grid-column: 2; align-self: start; }
   .logo { cursor: pointer; }
@@ -376,27 +378,27 @@
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterObra()">
-        <div class="home-icon">🧱</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M4 20c0-4.5 3.5-8 8-8s8 3.5 8 8"/><path d="M12 12V8"/><path d="M8 8h8"/></svg></div>
         <div class="home-title">Obra</div>
         <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
       </div>
       <div class="home-card" onclick="enterVisitas()">
-        <div class="home-icon">📋</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="home-title">Visita pre-contrato</div>
         <div class="home-desc">Visita técnica antes del contrato: cubierta, obstáculos, cableado, conexión.</div>
       </div>
       <div class="home-card" onclick="enterIncidencias()">
-        <div class="home-icon">🛠</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-14.3 7.3L3 20l.7-3.7A9 9 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7"/><circle cx="12" cy="16.5" r="0.4" fill="currentColor" stroke="none"/></svg></div>
         <div class="home-title">Consultas técnicas</div>
         <div class="home-desc">Pregunta a la IA, consulta manuales y documentos, registra incidencias y notas.</div>
       </div>
       <div class="home-card" onclick="enterCalculos()">
-        <div class="home-icon">🧮</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="17" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></div>
         <div class="home-title">Cálculos rápidos</div>
         <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
       </div>
       <div class="home-card" id="home-card-admin" onclick="enterAdmin()">
-        <div class="home-icon">🔒</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg></div>
         <div class="home-title">Administración</div>
         <div class="home-desc">Gestionar furgonetas, instaladores y obras (acceso restringido).</div>
       </div>
@@ -409,22 +411,22 @@
     <div class="home-intro">Herramientas de dimensionado para comprobaciones en obra.</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterCable()">
-        <div class="home-icon">⚡</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M13 2L4 13h6l-1 9 10-12h-7l1-8z"/></svg></div>
         <div class="home-title">Sección cable AC</div>
         <div class="home-desc">Cable de salida del inversor por intensidad y caída de tensión (1,5 %).</div>
       </div>
       <div class="home-card" onclick="enterCableDC()">
-        <div class="home-icon">☀</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></div>
         <div class="home-title">Sección cable DC</div>
         <div class="home-desc">Cable de string (panel–inversor) por intensidad y caída de tensión (1,5 %).</div>
       </div>
       <div class="home-card" onclick="enterProtecciones()">
-        <div class="home-icon">🛡</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="home-title">Calibre de protecciones</div>
         <div class="home-desc">Magnetotérmico y diferencial para la salida AC del inversor.</div>
       </div>
       <div class="home-card" onclick="enterOffgrid()">
-        <div class="home-icon">🔋</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 10v4"/><path d="M6 11v2M10 11v2M14 11v2"/></svg></div>
         <div class="home-title">Instalación aislada</div>
         <div class="home-desc">Victron + BYD: secciones y fusibles DC, y protección AC según manual.</div>
       </div>
@@ -437,27 +439,27 @@
     <div class="home-intro">Gestión de material y seguimiento diario en obras activas.</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterMateriales()">
-        <div class="home-icon">📦</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
         <div class="home-title">Materiales</div>
         <div class="home-desc">Historial de salidas y retornos de material por obra.</div>
       </div>
       <div class="home-card" onclick="enterPartes()">
-        <div class="home-icon">📋</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M8 11h8M8 15h8M8 18h5"/></svg></div>
         <div class="home-title">Partes Diarios</div>
         <div class="home-desc">Parte de seguimiento diario con fotos por obra.</div>
       </div>
       <div class="home-card" onclick="enterPuestas()">
-        <div class="home-icon">✅</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>
         <div class="home-title">Puesta en marcha</div>
         <div class="home-desc">Checklist final de obra: comprobaciones, medidas y fotografías.</div>
       </div>
       <div class="home-card" onclick="enterSolicitud()">
-        <div class="home-icon">📥</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 15l4 4h10l4-4"/><path d="M3 15V5h18v10"/><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/></svg></div>
         <div class="home-title">Solicitud de material</div>
         <div class="home-desc">Solicitar material para una obra de forma rápida.</div>
       </div>
       <div class="home-card" onclick="enterEstadoObras()">
-        <div class="home-icon">📊</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>
         <div class="home-title">Estado de obras</div>
         <div class="home-desc">Resumen de material pendiente, jornadas y movimientos por obra.</div>
       </div>
@@ -544,7 +546,7 @@
       <label>Fotos (opcional)</label>
       <div class="photo-drop" onclick="document.getElementById('f-fotos').click()">
         <input type="file" id="f-fotos" accept="image/*" multiple onchange="previewFotos(event)">
-        📷 Toca para adjuntar fotos
+        <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Toca para adjuntar fotos
       </div>
       <div class="photo-previews" id="foto-previews"></div>
     </div>
@@ -949,7 +951,7 @@
         <label>Fotos (opcional)</label>
         <div class="photo-drop" onclick="document.getElementById('parte-fotos').click()">
           <input type="file" id="parte-fotos" accept="image/*" multiple onchange="previewParteFotos(event)">
-          📷 Toca para adjuntar fotos
+          <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Toca para adjuntar fotos
         </div>
         <div class="photo-previews" id="parte-foto-previews"></div>
       </div>
@@ -1267,7 +1269,7 @@
           <label>Fotos generales de la cubierta</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cubierta').click()">
             <input type="file" id="vf-cubierta" accept="image/*" multiple onchange="onVisitaFotosChange('cubierta', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cubierta"></div>
         </div>
@@ -1275,7 +1277,7 @@
           <label>Foto detalle del tipo de cubierta</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cubiertaDetalle').click()">
             <input type="file" id="vf-cubiertaDetalle" accept="image/*" multiple onchange="onVisitaFotosChange('cubiertaDetalle', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cubiertaDetalle"></div>
         </div>
@@ -1334,7 +1336,7 @@
             <label>Fotos de los obstáculos</label>
             <div class="photo-drop foto-drop" onclick="document.getElementById('vf-obstaculos').click()">
               <input type="file" id="vf-obstaculos" accept="image/*" multiple onchange="onVisitaFotosChange('obstaculos', event)">
-              📷 Añadir fotos
+              <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
             </div>
             <div class="photo-previews" id="vp-obstaculos"></div>
           </div>
@@ -1352,7 +1354,7 @@
           <label>Foto del acceso a la cubierta</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-acceso').click()">
             <input type="file" id="vf-acceso" accept="image/*" multiple onchange="onVisitaFotosChange('acceso', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-acceso"></div>
         </div>
@@ -1370,7 +1372,7 @@
           <label>Fotos del acopio</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-acopio').click()">
             <input type="file" id="vf-acopio" accept="image/*" multiple onchange="onVisitaFotosChange('acopio', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-acopio"></div>
         </div>
@@ -1385,7 +1387,7 @@
           <label>Fotos del medio de elevación</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-elevacion').click()">
             <input type="file" id="vf-elevacion" accept="image/*" multiple onchange="onVisitaFotosChange('elevacion', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-elevacion"></div>
         </div>
@@ -1400,7 +1402,7 @@
           <label>Foto del plano con ubicación del inversor</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-inversorPlano').click()">
             <input type="file" id="vf-inversorPlano" accept="image/*" multiple onchange="onVisitaFotosChange('inversorPlano', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-inversorPlano"></div>
         </div>
@@ -1408,7 +1410,7 @@
           <label>Fotos de los equipos</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-inversorEquipos').click()">
             <input type="file" id="vf-inversorEquipos" accept="image/*" multiple onchange="onVisitaFotosChange('inversorEquipos', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-inversorEquipos"></div>
         </div>
@@ -1423,7 +1425,7 @@
           <label>Foto del plano con ubicación</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroProteccion').click()">
             <input type="file" id="vf-cuadroProteccion" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroProteccion', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cuadroProteccion"></div>
         </div>
@@ -1442,7 +1444,7 @@
           <label>Foto del interruptor general</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroInterruptor').click()">
             <input type="file" id="vf-cuadroInterruptor" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroInterruptor', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cuadroInterruptor"></div>
         </div>
@@ -1450,7 +1452,7 @@
           <label>Foto del cuadro general</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cuadroGeneral').click()">
             <input type="file" id="vf-cuadroGeneral" accept="image/*" multiple onchange="onVisitaFotosChange('cuadroGeneral', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cuadroGeneral"></div>
         </div>
@@ -1472,7 +1474,7 @@
           <label>Foto entrada del cableado</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cableadoEntrada').click()">
             <input type="file" id="vf-cableadoEntrada" accept="image/*" multiple onchange="onVisitaFotosChange('cableadoEntrada', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cableadoEntrada"></div>
         </div>
@@ -1480,7 +1482,7 @@
           <label>Foto recorrido del cableado</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-cableadoRecorrido').click()">
             <input type="file" id="vf-cableadoRecorrido" accept="image/*" multiple onchange="onVisitaFotosChange('cableadoRecorrido', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-cableadoRecorrido"></div>
         </div>
@@ -1509,7 +1511,7 @@
           <label>Foto del router</label>
           <div class="photo-drop foto-drop" onclick="document.getElementById('vf-router').click()">
             <input type="file" id="vf-router" accept="image/*" multiple onchange="onVisitaFotosChange('router', event)">
-            📷 Añadir fotos
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-router"></div>
         </div>
@@ -1543,27 +1545,27 @@
     <div class="home-intro">Gestiona los maestros que usan los técnicos en obra.</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterAdminObras()">
-        <div class="home-icon">🏗</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2"/></svg></div>
         <div class="home-title">Obras</div>
         <div class="home-desc">Crear, editar y activar/desactivar obras.</div>
       </div>
       <div class="home-card" onclick="enterAdminFurgonetas()">
-        <div class="home-icon">🚐</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 17h1M20 17h1M3 17V7h11v4h4l2 3v3h-2"/><path d="M14 11V7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>
         <div class="home-title">Furgonetas</div>
         <div class="home-desc">Añadir o quitar furgonetas de la flota.</div>
       </div>
       <div class="home-card" onclick="enterAdminInstaladores()">
-        <div class="home-icon">👷</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3"/><path d="M5 20v-1a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v1"/><path d="M8 7a4 4 0 0 1 8 0"/><path d="M5 7h14"/></svg></div>
         <div class="home-title">Instaladores</div>
         <div class="home-desc">Gestionar la lista de instaladores activos.</div>
       </div>
       <div class="home-card" onclick="enterAdminCatalogo()">
-        <div class="home-icon">📚</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M10 6h6M10 10h6"/></svg></div>
         <div class="home-title">Catálogo de materiales</div>
         <div class="home-desc">Importar y gestionar el catálogo de materiales por categoría.</div>
       </div>
       <div class="home-card" onclick="enterAdminDocumentos()">
-        <div class="home-icon">📄</div>
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div>
         <div class="home-title">Documentos</div>
         <div class="home-desc">Subir y gestionar manuales, guías y fichas técnicas.</div>
       </div>
@@ -1940,7 +1942,7 @@ function enterEstadoObras() {
     fillObraSelects();
     const sel = document.getElementById('est-obra');
     if (sel.value) renderEstadoObra();
-    else document.getElementById('est-dashboard').innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon">📊</div>Selecciona una obra arriba para ver su estado.</div>';
+    else document.getElementById('est-dashboard').innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>Selecciona una obra arriba para ver su estado.</div>';
   });
 }
 
@@ -1948,7 +1950,7 @@ function renderEstadoObra() {
   const idObra = document.getElementById('est-obra').value;
   const c = document.getElementById('est-dashboard');
   if (!idObra) {
-    c.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon">📊</div>Selecciona una obra arriba para ver su estado.</div>';
+    c.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>Selecciona una obra arriba para ver su estado.</div>';
     return;
   }
 
@@ -2015,7 +2017,7 @@ function renderEstadoObra() {
       </details>
     `).join('');
   } else {
-    balanceHtml = '<div class="empty-state" style="padding:18px"><div class="icon">📦</div>Sin movimientos de material.</div>';
+    balanceHtml = '<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>Sin movimientos de material.</div>';
   }
 
   c.innerHTML = `
@@ -2034,7 +2036,7 @@ function renderEstadoObra() {
         <div class="mov-head"><div class="mov-obra" style="font-size:13px">${e.titulo}</div><span class="badge badge-marca">${escapeHtml(e.fecha||'—')}</span></div>
         <div class="mov-meta"><span>${escapeHtml(e.quien)}</span></div>
       </div>
-    `).join('') : '<div class="empty-state" style="padding:18px"><div class="icon">📋</div>Sin eventos registrados.</div>'}
+    `).join('') : '<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M8 11h8M8 15h8M8 18h5"/></svg></div>Sin eventos registrados.</div>'}
   `;
 }
 
@@ -2433,7 +2435,7 @@ function renderAdminDocumentos() {
   let list = incidents.filter(i => i.tipo === 'documento');
   if (q) list = list.filter(d => [d.incidencia, d.marca, d.modelo, d.keywords, d.documentacion, d.archivoNombre].some(f => (f||'').toLowerCase().includes(q)));
   if (!list.length) {
-    cont.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon">📭</div>Aún no hay documentos. Sube el primero arriba.</div>';
+    cont.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Aún no hay documentos. Sube el primero arriba.</div>';
     return;
   }
   cont.innerHTML = list.map(d => `
@@ -2519,7 +2521,7 @@ function renderCatalogo() {
     ? materiales.filter(m => [m.categoria, m.ref, m.descripcion].some(f => (f||'').toLowerCase().includes(q)))
     : materiales;
   if (!list.length) {
-    c.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon">📭</div>Sin resultados.</div>';
+    c.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Sin resultados.</div>';
     return;
   }
   // Agrupar por categoría
@@ -2608,7 +2610,7 @@ function renderAdminMaestros(tipo) {
   if (!cont) return;
   const list = maestrosDe(tipo);
   if (!list.length) {
-    cont.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon">📭</div>Aún no hay registros. Añade el primero arriba.</div>';
+    cont.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Aún no hay registros. Añade el primero arriba.</div>';
     return;
   }
   const isInst = tipo === 'instalador';
@@ -3261,7 +3263,7 @@ function renderListado() {
   }
 
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${activos ? 'Sin resultados con los filtros aplicados.' : 'No hay registros.'}</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div>${activos ? 'Sin resultados con los filtros aplicados.' : 'No hay registros.'}</div>`;
     return;
   }
   container.innerHTML = '<div class="incidents-grid">' + list.map(inc => {
@@ -3293,7 +3295,7 @@ function renderDocumentos() {
   let list = incidents.filter(inc => inc.tipo === 'documento');
   if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
   if (!list.length) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">📂</div>${q?'Sin resultados.':'No hay documentos aún. Súbelos desde Administración → Documentos.'}</div>`;
+    container.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div>${q?'Sin resultados.':'No hay documentos aún. Súbelos desde Administración → Documentos.'}</div>`;
     return;
   }
   container.innerHTML = '<div class="incidents-grid">' + list.map(inc => `
@@ -4269,7 +4271,7 @@ function renderVisitas() {
   if (badge) { badge.textContent = activos; badge.style.display = activos > 0 ? '' : 'none'; }
 
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📋</div>${activos ? 'Sin resultados.' : (isAdmin() ? 'Aún no hay visitas. Crea la primera arriba.' : 'No tienes visitas asignadas.')}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M8 11h8M8 15h8M8 18h5"/></svg></div>${activos ? 'Sin resultados.' : (isAdmin() ? 'Aún no hay visitas. Crea la primera arriba.' : 'No tienes visitas asignadas.')}</div>`;
     return;
   }
 
@@ -4965,14 +4967,14 @@ function renderRetornoPicker(idObra, excludeMovId) {
   if (!c) return;
   if (!idObra) {
     retornoPendientes = []; retornoPendientesObra = null;
-    c.innerHTML = '<div class="empty-state" style="padding:18px"><div class="icon">📥</div>Selecciona la obra para ver el material pendiente de retorno.</div>';
+    c.innerHTML = '<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 15l4 4h10l4-4"/><path d="M3 15V5h18v10"/><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/></svg></div>Selecciona la obra para ver el material pendiente de retorno.</div>';
     return;
   }
   const balance = balanceObra(idObra, excludeMovId);
   retornoPendientes = Object.values(balance);
   retornoPendientesObra = idObra;
   if (!retornoPendientes.length) {
-    c.innerHTML = `<div class="empty-state" style="padding:18px"><div class="icon">📦</div>No se ha registrado ninguna salida de material para <b>${escapeHtml(idObra)}</b>.</div>`;
+    c.innerHTML = `<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>No se ha registrado ninguna salida de material para <b>${escapeHtml(idObra)}</b>.</div>`;
     return;
   }
   // Agrupar por categoría y ordenar: pendientes primero, devueltos al final
@@ -5249,7 +5251,7 @@ function renderMovimientos() {
   if (badge) { badge.textContent = activos; badge.style.display = activos > 0 ? '' : 'none'; }
 
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📦</div>${activos ? 'Sin resultados.' : 'Aún no hay movimientos.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay movimientos.'}</div>`;
     return;
   }
   c.innerHTML = list.map(m => {
@@ -5698,7 +5700,7 @@ function renderPartes() {
   if (badge) { badge.textContent = activos; badge.style.display = activos > 0 ? '' : 'none'; }
 
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">📋</div>${activos ? 'Sin resultados.' : 'Aún no hay partes.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M8 11h8M8 15h8M8 18h5"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay partes.'}</div>`;
     return;
   }
   c.innerHTML = list.map(p => `
@@ -5965,7 +5967,7 @@ function renderPuestaFotoGroups() {
         <label>${label}</label>
         <div class="photo-drop" onclick="document.getElementById('pmf-${k}').click()">
           <input type="file" id="pmf-${k}" accept="image/*" multiple onchange="onPuestaFotosChange('${k}', event)">
-          📷 Añadir fotos
+          <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
         </div>
         <div class="photo-previews" id="pmp-${k}"></div>
       </div>
@@ -6225,7 +6227,7 @@ function renderPuestas() {
   if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
 
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon">✅</div>${activos ? 'Sin resultados.' : 'Aún no hay puestas en marcha. Crea la primera con el botón de arriba.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay puestas en marcha. Crea la primera con el botón de arriba.'}</div>`;
     return;
   }
 

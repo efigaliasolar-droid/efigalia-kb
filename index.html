@@ -2497,6 +2497,40 @@ async function cambiarRolInstalador(id) {
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
+function seleccionarRegistrosRelevantes(query, maxN) {
+  maxN = maxN || 20;
+  const pool = incidents.filter(esRegistroDeUsuario);
+  if (pool.length <= maxN) return pool.slice();   // base pequeña: enviar todos
+
+  // Tokenizar la consulta (ignorar puntuación y palabras muy cortas)
+  const tokens = (query || '').toLowerCase()
+    .replace(/[^\wáéíóúñü\s]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 2);
+
+  // Texto buscable por registro (metadatos + solución + contenido extraído)
+  const buildHay = (inc) => [
+    inc.incidencia, inc.marca, inc.modelo, inc.codError, inc.idObra,
+    inc.keywords, inc.solucion, inc.verificaciones, inc.documentacion,
+    inc.archivoNombre, inc.contenidoExtraido
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  const scored = pool.map(inc => {
+    const hay = buildHay(inc);
+    let score = 0;
+    for (const t of tokens) if (hay.includes(t)) score++;
+    return { inc, score, ts: inc.id || 0 };
+  });
+  scored.sort((a, b) => b.score - a.score || b.ts - a.ts);
+
+  // Preferir matches positivos; si hay pocos, completar con los más recientes
+  const withScore = scored.filter(s => s.score > 0).slice(0, maxN);
+  if (withScore.length >= Math.min(5, maxN)) return withScore.map(s => s.inc);
+  const seen = new Set(withScore.map(s => s.inc.id));
+  const resto = scored.filter(s => !seen.has(s.inc.id)).slice(0, maxN - withScore.length);
+  return [...withScore, ...resto].map(s => s.inc);
+}
+
 async function consultarIA() {
   const query = document.getElementById('query-input').value.trim();
   if (!query) return;
@@ -2512,10 +2546,17 @@ async function consultarIA() {
 
   await sheetsLoad();
 
-  const context = incidents.filter(esRegistroDeUsuario).map((inc, i) => {
+  // Pre-filtrar por relevancia: mandamos a la IA sólo los registros más probables para la consulta,
+  // para que la base de conocimiento pueda crecer sin saturar el contexto ni disparar el coste.
+  const relevantes = seleccionarRegistrosRelevantes(query, 20);
+  const totalUsuario = incidents.filter(esRegistroDeUsuario).length;
+
+  const MAX_CONT_CHARS = 4000;  // truncado por documento en el contexto de la IA
+  const context = relevantes.map((inc, i) => {
     const tipo = inc.tipo || 'incidencia';
     if (tipo === 'documento') {
-      const cont = inc.contenidoExtraido ? `\nContenido extraído del PDF:\n${inc.contenidoExtraido}` : '';
+      const raw = inc.contenidoExtraido || '';
+      const cont = raw ? `\nContenido extraído del PDF:\n${raw.substring(0, MAX_CONT_CHARS)}${raw.length > MAX_CONT_CHARS ? '…[truncado]' : ''}` : '';
       return `DOCUMENTO [${i+1}] Marca:${inc.marca} | Modelo:${inc.modelo}\nTítulo: ${inc.incidencia}\nArchivo: ${inc.archivoNombre || '-'}\nDescripción: ${inc.documentacion||'-'}\nKeywords: ${inc.keywords}${inc.archivoUrl?`\nEnlace: ${inc.archivoUrl}`:''}${cont}`;
     }
     if (tipo === 'nota') {
@@ -2528,7 +2569,7 @@ async function consultarIA() {
 
 Ayudas a técnicos en campo con cualquier duda: incidencias, procedimientos, configuraciones, dimensionado, conexionado, consulta de manuales y referencias, y cualquier pregunta del trabajo diario.
 
-BASE DE CONOCIMIENTO INTERNA (${incidents.length} registros, divididos en INCIDENCIA / NOTA / DOCUMENTO):
+BASE DE CONOCIMIENTO INTERNA (te paso ${relevantes.length} registros pre-filtrados por relevancia con la consulta, de un total de ${totalUsuario} en la base, divididos en INCIDENCIA / NOTA / DOCUMENTO):
 ${context}
 
 IMPORTANTE sobre los DOCUMENTOS:

@@ -350,8 +350,7 @@
     <div class="tab-bar" id="tab-bar-incidencias" style="display:none">
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
       <button class="tab" onclick="switchTab('documentos',this)">Documentos</button>
-      <button class="tab" onclick="switchTab('registrar',this)">Registrar</button>
-      <button class="tab" onclick="switchTab('listado',this)">Listado</button>
+      <button class="tab" onclick="switchTab('listado',this)">Registros</button>
     </div>
   </div>
 </header>
@@ -481,8 +480,8 @@
   </div>
 
   <div id="view-registrar">
-    <button class="back-link" onclick="goHome()">← Atrás</button>
-    <div class="section-title">Registrar</div>
+    <button class="back-link" onclick="volverAListado()">← Atrás</button>
+    <div class="section-title">Nuevo registro</div>
     <div class="form-group">
       <label>Tipo de registro *</label>
       <select id="f-tipo" onchange="onTipoChange()">
@@ -549,7 +548,10 @@
 
   <div id="view-listado">
     <button class="back-link" onclick="goHome()">← Atrás</button>
-    <div class="section-title">Listado</div>
+    <div class="section-title">Registros</div>
+    <div class="action-row">
+      <button class="btn-primary" onclick="abrirFormRegistro()">+ Nuevo registro</button>
+    </div>
     <details class="filtros-panel" open>
       <summary>Filtros<span class="filtros-badge" id="listado-filtros-count" style="display:none">0</span></summary>
       <div class="filtros-body">
@@ -564,7 +566,6 @@
               <option value="">Todos</option>
               <option value="incidencia">Incidencias</option>
               <option value="nota">Notas técnicas</option>
-              <option value="documento">Documentos</option>
             </select>
           </div>
           <div class="form-group">
@@ -1748,10 +1749,27 @@ function switchTab(tab, el) {
   document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'flex';
   document.getElementById('view-' + tab).style.display = 'block';
   if (tab === 'listado') sheetsLoad().then(renderListado);
   if (tab === 'documentos') sheetsLoad().then(renderDocumentos);
-  if (tab === 'registrar') sheetsLoad().then(() => { fillObraSelects(); restaurarDraftRegistrar(); });
+}
+
+function abrirFormRegistro() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-registrar').style.display = 'block';
+  sheetsLoad().then(() => { fillObraSelects(); restaurarDraftRegistrar(); });
+}
+
+function volverAListado() {
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'flex';
+  document.querySelectorAll('#tab-bar-incidencias .tab').forEach(t => t.classList.remove('active'));
+  const tabs = document.querySelectorAll('#tab-bar-incidencias .tab');
+  if (tabs.length) tabs[tabs.length - 1].classList.add('active');
+  document.getElementById('view-listado').style.display = 'block';
+  sheetsLoad().then(renderListado);
 }
 
 function enterObra(sub) {
@@ -2953,6 +2971,7 @@ async function guardarIncidencia() {
   fotoFiles = [];
   onTipoChange();  // restablecer etiquetas/visibilidades según tipo seleccionado
   showToast(tipo === 'nota' ? '✓ Nota guardada' : '✓ Incidencia guardada', 'ok');
+  volverAListado();
 }
 
 // ── LISTADO ────────────────────────────────────────────
@@ -3011,7 +3030,7 @@ function renderListado() {
   const desde = desdeStr ? new Date(desdeStr) : null;
   const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
 
-  let list = incidents.filter(esRegistroDeUsuario);
+  let list = incidents.filter(esRegistroDeUsuario).filter(inc => (inc.tipo || 'incidencia') !== 'documento');
   if (tipoFiltro)    list = list.filter(inc => (inc.tipo || 'incidencia') === tipoFiltro);
   if (obraFiltro)    list = list.filter(inc => inc.idObra === obraFiltro);
   if (tecnicoFiltro) list = list.filter(inc => inc.tecnico === tecnicoFiltro);
@@ -3131,11 +3150,9 @@ function editarRegistro(id) {
     setTimeout(() => editarDocumento(id), 200);
     return;
   }
-  // Ir a Registrar
-  enterIncidencias();
+  // Ir al formulario de registro
+  abrirFormRegistro();
   setTimeout(() => {
-    const tabs = document.querySelectorAll('#tab-bar-incidencias .tab');
-    if (tabs[2]) tabs[2].click();   // Registrar
     // Setear tipo y prefill
     const sel = document.getElementById('f-tipo');
     sel.value = inc.tipo || 'incidencia';

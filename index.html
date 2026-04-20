@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -445,6 +445,11 @@
         <div class="home-icon">📋</div>
         <div class="home-title">Partes Diarios</div>
         <div class="home-desc">Parte de seguimiento diario con fotos por obra.</div>
+      </div>
+      <div class="home-card" onclick="enterPuestas()">
+        <div class="home-icon">✅</div>
+        <div class="home-title">Puesta en marcha</div>
+        <div class="home-desc">Checklist final de obra: comprobaciones, medidas y fotografías.</div>
       </div>
       <div class="home-card" onclick="enterSolicitud()">
         <div class="home-icon">📥</div>
@@ -960,6 +965,140 @@
       </div>
 
       <button class="btn-primary" id="btn-parte-save" onclick="guardarParte()">Guardar parte</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PUESTA EN MARCHA ═══════════════ -->
+  <div id="view-puestas">
+    <div id="puestas-list-section">
+      <button class="back-link" onclick="enterObra()">← Atrás</button>
+      <div class="section-title">Puestas en marcha</div>
+      <div class="action-row">
+        <button class="btn-primary" onclick="abrirFormPuesta()">+ Nueva puesta en marcha</button>
+      </div>
+      <details class="filtros-panel">
+        <summary>Filtros<span class="filtros-badge" id="puesta-filtros-count" style="display:none">0</span></summary>
+        <div class="filtros-body">
+          <div class="form-group">
+            <label>Buscar</label>
+            <input type="text" id="puesta-search" placeholder="Obra, técnico, observaciones..." oninput="renderPuestas()">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Obra</label>
+              <select id="puesta-obra-filtro" onchange="renderPuestas()"></select>
+            </div>
+            <div class="form-group">
+              <label>Técnico</label>
+              <select id="puesta-tecnico-filtro" onchange="renderPuestas()"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="puesta-desde" onchange="renderPuestas()">
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="puesta-hasta" onchange="renderPuestas()">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="limpiarFiltrosPuestas()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+        </div>
+      </details>
+      <div id="puestas-container"></div>
+    </div>
+
+    <div id="puestas-form-section" style="display:none">
+      <button class="back-link" onclick="cerrarFormPuesta()">← Atrás</button>
+      <div class="section-title" id="puesta-form-title">Nueva puesta en marcha</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="pm-fecha">
+        </div>
+        <div class="form-group">
+          <label>Obra *</label>
+          <select id="pm-obra" class="select-obra"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Técnico *</label>
+        <input type="text" id="pm-tecnico" placeholder="Nombre del técnico">
+      </div>
+
+      <details class="filtros-panel" open>
+        <summary>Comprobaciones eléctricas</summary>
+        <div class="filtros-body" id="pm-checks-container"></div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Medidas</summary>
+        <div class="filtros-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Calibre fusibles CC (A)</label>
+              <input type="number" step="any" inputmode="decimal" id="pm-calibre-fusibles">
+            </div>
+            <div class="form-group">
+              <label>Calibre toroidales consumo (A)</label>
+              <input type="number" step="any" inputmode="decimal" id="pm-calibre-toroidales">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Tensiones en strings (Vdc)</label>
+            <div id="pm-strings-container" style="display:flex;flex-direction:column;gap:6px"></div>
+            <button class="btn-ghost" type="button" onclick="agregarStringPuesta()" style="margin-top:6px">+ Añadir string</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Monitorización y red</summary>
+        <div class="filtros-body">
+          <div class="form-group">
+            <label>Conexión a internet</label>
+            <select id="pm-internet">
+              <option value="">— Seleccionar —</option>
+              <option value="wifi">WiFi</option>
+              <option value="cable">Cable</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Fotografías · Números de serie</summary>
+        <div class="filtros-body" id="pm-fotos-serie"></div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Fotografías · Cuadros y protecciones</summary>
+        <div class="filtros-body" id="pm-fotos-cuadros"></div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Fotografías · Equipos</summary>
+        <div class="filtros-body" id="pm-fotos-equipos"></div>
+      </details>
+
+      <details class="filtros-panel">
+        <summary>Fotografías · Generales</summary>
+        <div class="filtros-body" id="pm-fotos-generales"></div>
+      </details>
+
+      <div class="form-group">
+        <label>Observaciones</label>
+        <textarea class="field" id="pm-observaciones" placeholder="Incidencias durante la puesta en marcha, pendientes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Modificaciones respecto a documentación de obra</label>
+        <textarea class="field" id="pm-modificaciones" placeholder="Cambios de esquema, equipos sustituidos, reubicaciones..."></textarea>
+      </div>
+
+      <button class="btn-primary" id="btn-pm-save" onclick="guardarPuesta()">Guardar puesta en marcha</button>
     </div>
   </div>
 
@@ -5592,6 +5731,408 @@ function cerrarSesion() {
 function requireLogin() {
   if (!currentUser) { mostrarLogin(); return false; }
   return true;
+}
+
+// ── PUESTA EN MARCHA ──────────────────────────────────
+const PM_CHECKS = [
+  ['conexion_estructura',   'Conexión conductor protección estructura'],
+  ['apriete_tornillos',     'Apriete final de tornillos en protecciones'],
+  ['sellado_perforaciones', 'Sellado de perforaciones / obra civil'],
+  ['etiquetado_cuadro',     'Etiquetado de protecciones cuadro'],
+  ['polaridad_strings',     'Comprobación polaridad strings'],
+  ['tierra_bandeja',        'Puesta a tierra bandeja metálica'],
+  ['pegatina_riesgo',       'Pegatina riesgo eléctrico']
+];
+
+const PM_FOTOS_GRUPOS = {
+  'pm-fotos-serie': [
+    ['paneles_serie',       'Números de serie paneles (packing list)'],
+    ['inversores_serie',    'Números de serie inversores'],
+    ['baterias_serie',      'Números de serie baterías'],
+    ['medida_serie',        'Número de serie equipo medida'],
+    ['antivertido_serie',   'Número de serie antivertido / dongle']
+  ],
+  'pm-fotos-cuadros': [
+    ['protecciones_dc',     'Protecciones cuadro DC'],
+    ['protecciones_ac',     'Protecciones cuadro AC'],
+    ['cuadro_consumo',      'Cuadro consumo + protección FV'],
+    ['cuadro_medidor',      'Cuadro medidor / tarjeta EDP'],
+    ['contador_distrib',    'Contador distribuidora (con CGP visible)'],
+    ['pegatina_toroidales', 'Pegatina toroidales FV y consumo']
+  ],
+  'pm-fotos-equipos': [
+    ['placa_inversor',      'Inversor (placa características)'],
+    ['pegatina_baterias',   'Pegatina baterías'],
+    ['modelo_toroidales',   'Modelo toroidales'],
+    ['pegatina_paneles',    'Pegatina modelo paneles']
+  ],
+  'pm-fotos-generales': [
+    ['vision_paneles',      'Visión general paneles colocados'],
+    ['vision_equipos',      'Visión general equipos instalados'],
+    ['distancia_cuadro',    'Distancia cuadro consumo ↔ inversor']
+  ]
+};
+
+let puestaFotoFiles = {};      // key -> File[]
+let puestaFotoUrls = {};       // key -> string[] (URLs R2 ya subidas)
+let puestaEditando = null;     // id de la puesta en edición, null si nueva
+
+function enterPuestas() {
+  if (!requireLogin()) return;
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-puestas').style.display = 'block';
+  document.getElementById('puestas-list-section').style.display = 'block';
+  document.getElementById('puestas-form-section').style.display = 'none';
+  sheetsLoad().then(() => {
+    fillObraSelects();
+    renderPuestas();
+  });
+}
+
+function cerrarFormPuesta() {
+  document.getElementById('puestas-form-section').style.display = 'none';
+  document.getElementById('puestas-list-section').style.display = 'block';
+  renderPuestas();
+}
+
+function abrirFormPuesta(id) {
+  puestaEditando = id || null;
+  puestaFotoFiles = {};
+  puestaFotoUrls = {};
+  document.getElementById('puestas-list-section').style.display = 'none';
+  document.getElementById('puestas-form-section').style.display = 'block';
+  document.getElementById('puesta-form-title').textContent = id ? 'Editar puesta en marcha' : 'Nueva puesta en marcha';
+  renderPuestaChecks();
+  renderPuestaFotoGroups();
+  fillObraSelects();
+
+  // Resetear strings
+  document.getElementById('pm-strings-container').innerHTML = '';
+  agregarStringPuesta(); agregarStringPuesta(); agregarStringPuesta();
+
+  if (id) {
+    const p = incidents.find(i => i.id === id && (i.tipo || '') === 'puesta');
+    if (!p) return;
+    // cabecera
+    document.getElementById('pm-fecha').value = p.fechaISO || fechaISOdeEs(p.fecha) || '';
+    document.getElementById('pm-obra').value = p.idObra || '';
+    document.getElementById('pm-tecnico').value = p.tecnico || '';
+    // checks
+    const checks = p.checks || {};
+    PM_CHECKS.forEach(([k]) => {
+      const el = document.getElementById('pm-chk-' + k);
+      if (el) el.checked = !!checks[k];
+    });
+    // medidas
+    const m = p.medidas || {};
+    document.getElementById('pm-calibre-fusibles').value = m.calibre_fusibles_cc ?? '';
+    document.getElementById('pm-calibre-toroidales').value = m.calibre_toroidales_consumo ?? '';
+    const strings = Array.isArray(m.strings_vdc) ? m.strings_vdc : [];
+    document.getElementById('pm-strings-container').innerHTML = '';
+    if (strings.length === 0) { agregarStringPuesta(); agregarStringPuesta(); agregarStringPuesta(); }
+    else strings.forEach(v => agregarStringPuesta(v));
+    // internet
+    document.getElementById('pm-internet').value = p.conexion_internet || '';
+    // fotos
+    const fotos = p.fotos || {};
+    Object.values(PM_FOTOS_GRUPOS).flat().forEach(([k]) => {
+      puestaFotoUrls[k] = Array.isArray(fotos[k]) ? fotos[k].slice() : [];
+      renderPuestaFotosGroup(k);
+    });
+    // texto
+    document.getElementById('pm-observaciones').value = p.observaciones || '';
+    document.getElementById('pm-modificaciones').value = p.modificaciones || '';
+  } else {
+    // valores por defecto
+    document.getElementById('pm-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('pm-obra').value = '';
+    document.getElementById('pm-tecnico').value = (currentUser && currentUser.nombre) || '';
+    PM_CHECKS.forEach(([k]) => { const el = document.getElementById('pm-chk-' + k); if (el) el.checked = false; });
+    document.getElementById('pm-calibre-fusibles').value = '';
+    document.getElementById('pm-calibre-toroidales').value = '';
+    document.getElementById('pm-internet').value = '';
+    document.getElementById('pm-observaciones').value = '';
+    document.getElementById('pm-modificaciones').value = '';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderPuestaChecks() {
+  const c = document.getElementById('pm-checks-container');
+  c.innerHTML = PM_CHECKS.map(([k, label]) => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:6px;cursor:pointer">
+      <input type="checkbox" id="pm-chk-${k}" style="width:18px;height:18px;accent-color:var(--accent)">
+      <span style="font-weight:500;font-size:14px">${label}</span>
+    </label>
+  `).join('');
+}
+
+function renderPuestaFotoGroups() {
+  Object.entries(PM_FOTOS_GRUPOS).forEach(([containerId, grupos]) => {
+    const c = document.getElementById(containerId);
+    c.innerHTML = grupos.map(([k, label]) => `
+      <div class="form-group foto-group" data-foto-key="${k}">
+        <label>${label}</label>
+        <div class="photo-drop" onclick="document.getElementById('pmf-${k}').click()">
+          <input type="file" id="pmf-${k}" accept="image/*" multiple onchange="onPuestaFotosChange('${k}', event)">
+          📷 Añadir fotos
+        </div>
+        <div class="photo-previews" id="pmp-${k}"></div>
+      </div>
+    `).join('');
+    grupos.forEach(([k]) => {
+      puestaFotoFiles[k] = puestaFotoFiles[k] || [];
+      puestaFotoUrls[k] = puestaFotoUrls[k] || [];
+      renderPuestaFotosGroup(k);
+    });
+  });
+}
+
+function onPuestaFotosChange(key, event) {
+  const files = Array.from((event && event.target && event.target.files) || []);
+  if (!files.length) return;
+  puestaFotoFiles[key] = (puestaFotoFiles[key] || []).concat(files);
+  if (event && event.target) event.target.value = '';
+  renderPuestaFotosGroup(key);
+}
+
+function renderPuestaFotosGroup(key) {
+  const cont = document.getElementById('pmp-' + key);
+  if (!cont) return;
+  cont.innerHTML = '';
+  const urls = puestaFotoUrls[key] || [];
+  urls.forEach((url, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = url;
+    img.onclick = () => window.open(url, '_blank');
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn-anot';
+    btnDel.title = 'Quitar';
+    btnDel.textContent = '✕';
+    btnDel.onclick = (e) => {
+      e.stopPropagation();
+      if (!confirm('¿Quitar esta foto?')) return;
+      puestaFotoUrls[key].splice(idx, 1);
+      renderPuestaFotosGroup(key);
+    };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  });
+  const nuevos = puestaFotoFiles[key] || [];
+  nuevos.forEach((file, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    wrap.appendChild(img);
+    const btnAnot = document.createElement('button');
+    btnAnot.type = 'button';
+    btnAnot.className = 'btn-anot';
+    btnAnot.title = 'Anotar';
+    btnAnot.textContent = '✎';
+    btnAnot.onclick = () => openAnotador(file, (nf) => { puestaFotoFiles[key][idx] = nf; renderPuestaFotosGroup(key); });
+    wrap.appendChild(btnAnot);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'btn-anot';
+    btnDel.title = 'Quitar';
+    btnDel.textContent = '✕';
+    btnDel.style.right = '36px';
+    btnDel.onclick = (e) => {
+      e.stopPropagation();
+      puestaFotoFiles[key].splice(idx, 1);
+      renderPuestaFotosGroup(key);
+    };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  });
+}
+
+function agregarStringPuesta(valor) {
+  const c = document.getElementById('pm-strings-container');
+  const n = c.children.length + 1;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:70px 1fr 40px;gap:8px;align-items:center';
+  row.innerHTML = `
+    <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">String ${n}</div>
+    <input type="number" step="any" inputmode="decimal" class="pm-string-v" placeholder="Vdc" value="${valor != null ? valor : ''}">
+    <button type="button" class="icon-btn" onclick="this.parentElement.remove();reindexarStringsPuesta()" title="Quitar">✕</button>
+  `;
+  c.appendChild(row);
+}
+
+function reindexarStringsPuesta() {
+  const rows = document.querySelectorAll('#pm-strings-container > div');
+  rows.forEach((r, i) => {
+    const lbl = r.firstElementChild;
+    if (lbl) lbl.textContent = 'String ' + (i + 1);
+  });
+}
+
+function fechaISOdeEs(esFecha) {
+  const m = (esFecha || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return '';
+  return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+}
+
+async function subirTodasFotosPuesta() {
+  const resultado = {};
+  for (const [k, urlsExistentes] of Object.entries(puestaFotoUrls)) resultado[k] = urlsExistentes.slice();
+  for (const [k, archivos] of Object.entries(puestaFotoFiles)) {
+    if (!archivos || !archivos.length) continue;
+    try {
+      const nuevos = await Promise.all(archivos.map(f => subirFoto(f)));
+      resultado[k] = (resultado[k] || []).concat(nuevos.filter(u => !!u));
+    } catch(e) {
+      showToast('⚠ Error subiendo fotos de ' + k, 'err');
+    }
+  }
+  return resultado;
+}
+
+async function guardarPuesta() {
+  const fechaISO = document.getElementById('pm-fecha').value;
+  const idObra = document.getElementById('pm-obra').value.trim();
+  const tecnico = document.getElementById('pm-tecnico').value.trim();
+  if (!fechaISO) { showToast('⚠ Indica la fecha', 'err'); return; }
+  if (!idObra)   { showToast('⚠ Selecciona una obra', 'err'); return; }
+  if (!tecnico)  { showToast('⚠ Rellena el técnico', 'err'); return; }
+
+  const btn = document.getElementById('btn-pm-save');
+  btn.disabled = true; btn.textContent = 'Subiendo fotos...';
+
+  const fotos = await subirTodasFotosPuesta();
+
+  btn.textContent = 'Guardando...';
+  await sheetsLoad();
+
+  const checks = {};
+  PM_CHECKS.forEach(([k]) => { checks[k] = !!document.getElementById('pm-chk-' + k).checked; });
+
+  const strings_vdc = Array.from(document.querySelectorAll('.pm-string-v'))
+    .map(i => parseFloat(i.value))
+    .filter(v => !isNaN(v));
+
+  const calibre_fusibles_cc = parseFloat(document.getElementById('pm-calibre-fusibles').value);
+  const calibre_toroidales_consumo = parseFloat(document.getElementById('pm-calibre-toroidales').value);
+
+  const [y, m, d] = fechaISO.split('-');
+  const fechaEs = `${parseInt(d,10)}/${parseInt(m,10)}/${y}`;
+
+  const reg = {
+    id: puestaEditando || Date.now(),
+    tipo: 'puesta',
+    idObra,
+    fecha: fechaEs,
+    fechaISO,
+    fechaTs: new Date(fechaISO).getTime(),
+    tecnico,
+    checks,
+    medidas: {
+      calibre_fusibles_cc: isNaN(calibre_fusibles_cc) ? null : calibre_fusibles_cc,
+      calibre_toroidales_consumo: isNaN(calibre_toroidales_consumo) ? null : calibre_toroidales_consumo,
+      strings_vdc
+    },
+    conexion_internet: document.getElementById('pm-internet').value,
+    fotos,
+    observaciones: document.getElementById('pm-observaciones').value.trim(),
+    modificaciones: document.getElementById('pm-modificaciones').value.trim(),
+    creadoPor: (currentUser && currentUser.nombre) || 'Anónimo',
+    creadoTs: Date.now()
+  };
+
+  const idx = incidents.findIndex(i => i.id === reg.id && (i.tipo || '') === 'puesta');
+  if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+
+  await sheetsSave();
+
+  btn.disabled = false; btn.textContent = 'Guardar puesta en marcha';
+  puestaEditando = null;
+  puestaFotoFiles = {};
+  puestaFotoUrls = {};
+  showToast('✓ Puesta en marcha guardada', 'ok');
+  cerrarFormPuesta();
+}
+
+function fillPuestasFilterSelects() {
+  const puestas = incidents.filter(i => (i.tipo || '') === 'puesta');
+  const obras = [...new Set(puestas.map(p => p.idObra).filter(Boolean))].sort();
+  const tecnicos = [...new Set(puestas.map(p => p.tecnico).filter(Boolean))].sort();
+  const obraSel = document.getElementById('puesta-obra-filtro');
+  const tecSel = document.getElementById('puesta-tecnico-filtro');
+  if (obraSel) {
+    const cur = obraSel.value;
+    obraSel.innerHTML = '<option value="">Todas</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    obraSel.value = cur;
+  }
+  if (tecSel) {
+    const cur = tecSel.value;
+    tecSel.innerHTML = '<option value="">Todos</option>' + tecnicos.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    tecSel.value = cur;
+  }
+}
+
+function limpiarFiltrosPuestas() {
+  ['puesta-search','puesta-obra-filtro','puesta-tecnico-filtro','puesta-desde','puesta-hasta'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderPuestas();
+}
+
+function renderPuestas() {
+  fillPuestasFilterSelects();
+  const c = document.getElementById('puestas-container');
+  const q = (document.getElementById('puesta-search')?.value || '').toLowerCase().trim();
+  const obraF = document.getElementById('puesta-obra-filtro')?.value || '';
+  const tecF = document.getElementById('puesta-tecnico-filtro')?.value || '';
+  const desdeStr = document.getElementById('puesta-desde')?.value || '';
+  const hastaStr = document.getElementById('puesta-hasta')?.value || '';
+  const desde = desdeStr ? new Date(desdeStr) : null;
+  const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
+
+  let list = incidents.filter(i => (i.tipo || '') === 'puesta');
+  if (obraF) list = list.filter(p => p.idObra === obraF);
+  if (tecF)  list = list.filter(p => p.tecnico === tecF);
+  if (desde) list = list.filter(p => p.fechaTs && p.fechaTs >= desde.getTime());
+  if (hasta) list = list.filter(p => p.fechaTs && p.fechaTs <= hasta.getTime());
+  if (q) list = list.filter(p => {
+    const t = [p.idObra, p.tecnico, p.observaciones, p.modificaciones].filter(Boolean).join(' ').toLowerCase();
+    return t.includes(q);
+  });
+  list.sort((a,b) => (b.fechaTs || b.creadoTs || 0) - (a.fechaTs || a.creadoTs || 0));
+
+  const totalFotoSlots = Object.values(PM_FOTOS_GRUPOS).flat().length;
+  const activos = [obraF, tecF, desdeStr, hastaStr, q].filter(Boolean).length;
+  const badge = document.getElementById('puesta-filtros-count');
+  if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
+
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state"><div class="icon">✅</div>${activos ? 'Sin resultados.' : 'Aún no hay puestas en marcha. Crea la primera con el botón de arriba.'}</div>`;
+    return;
+  }
+
+  c.innerHTML = list.map(p => {
+    const totalFotos = Object.values(p.fotos || {}).reduce((s, arr) => s + (Array.isArray(arr) ? arr.length : 0), 0);
+    const gruposConFoto = Object.values(p.fotos || {}).filter(arr => Array.isArray(arr) && arr.length).length;
+    return `
+      <div class="parte-card" onclick="abrirFormPuesta(${p.id})">
+        <div class="mov-head">
+          <div class="mov-obra">${escapeHtml(p.idObra || '—')}</div>
+          <span class="badge badge-marca">${escapeHtml(p.fecha || '—')}</span>
+        </div>
+        <div class="mov-meta">
+          <span>👷 ${escapeHtml(p.tecnico || '—')}</span>
+          <span>📷 ${totalFotos} foto(s) · ${gruposConFoto}/${totalFotoSlots} grupos</span>
+          ${p.observaciones ? `<span>📝 ${escapeHtml(p.observaciones.substring(0,60))}${p.observaciones.length>60?'…':''}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // Limpiar cache local para evitar quota exceeded

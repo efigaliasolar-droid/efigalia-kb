@@ -1025,7 +1025,7 @@
       </div>
       <div class="form-group">
         <label>Técnico *</label>
-        <input type="text" id="pm-tecnico" placeholder="Nombre del técnico">
+        <select id="pm-tecnico"></select>
       </div>
 
       <details class="filtros-panel" open>
@@ -2833,7 +2833,8 @@ function previewArchivo(event) {
 const DRAFT_KEYS = {
   registrar: 'efigalia_draft_registrar',
   movimiento: 'efigalia_draft_mov',
-  parte: 'efigalia_draft_parte'
+  parte: 'efigalia_draft_parte',
+  puesta: 'efigalia_draft_puesta'
 };
 
 function saveDraft(key, data) {
@@ -2934,6 +2935,69 @@ function restaurarDraftParte() {
   return true;
 }
 
+function capturarPuestaForm() {
+  const checks = {};
+  PM_CHECKS.forEach(([k]) => { const el = document.getElementById('pm-chk-' + k); if (el) checks[k] = !!el.checked; });
+  const strings_vdc = Array.from(document.querySelectorAll('.pm-string-v'))
+    .map(i => parseFloat(i.value))
+    .filter(v => !isNaN(v));
+  return {
+    fechaISO: document.getElementById('pm-fecha')?.value || '',
+    idObra: document.getElementById('pm-obra')?.value || '',
+    tecnico: document.getElementById('pm-tecnico')?.value || '',
+    checks,
+    calibre_fusibles_cc: document.getElementById('pm-calibre-fusibles')?.value || '',
+    calibre_toroidales_consumo: document.getElementById('pm-calibre-toroidales')?.value || '',
+    strings_vdc,
+    conexion_internet: document.getElementById('pm-internet')?.value || '',
+    observaciones: document.getElementById('pm-observaciones')?.value || '',
+    modificaciones: document.getElementById('pm-modificaciones')?.value || '',
+    fotoUrls: { ...puestaFotoUrls }   // solo URLs ya subidas; los File pendientes se pierden
+  };
+}
+
+function tieneContenidoPuesta(d) {
+  if (!d) return false;
+  if (d.idObra || d.tecnico || d.observaciones || d.modificaciones) return true;
+  if (d.calibre_fusibles_cc || d.calibre_toroidales_consumo || d.conexion_internet) return true;
+  if ((d.strings_vdc || []).length) return true;
+  if (d.checks && Object.values(d.checks).some(Boolean)) return true;
+  if (d.fotoUrls && Object.values(d.fotoUrls).some(arr => (arr || []).length)) return true;
+  return false;
+}
+
+function autoSavePuesta() {
+  if (puestaEditando) return;   // no guardamos borrador en edición
+  const d = capturarPuestaForm();
+  if (tieneContenidoPuesta(d)) saveDraft(DRAFT_KEYS.puesta, d);
+}
+
+function restaurarDraftPuesta() {
+  const d = loadDraft(DRAFT_KEYS.puesta);
+  if (!tieneContenidoPuesta(d)) return false;
+  if (!confirm('Hay una puesta en marcha sin guardar. ¿Recuperarla?')) { clearDraft(DRAFT_KEYS.puesta); return false; }
+  document.getElementById('pm-fecha').value = d.fechaISO || new Date().toISOString().split('T')[0];
+  fillObraSelects();
+  document.getElementById('pm-obra').value = d.idObra || '';
+  fillPuestaTecnicoSelect(d.tecnico);
+  PM_CHECKS.forEach(([k]) => { const el = document.getElementById('pm-chk-' + k); if (el) el.checked = !!(d.checks && d.checks[k]); });
+  document.getElementById('pm-calibre-fusibles').value = d.calibre_fusibles_cc || '';
+  document.getElementById('pm-calibre-toroidales').value = d.calibre_toroidales_consumo || '';
+  const strings = Array.isArray(d.strings_vdc) ? d.strings_vdc : [];
+  document.getElementById('pm-strings-container').innerHTML = '';
+  if (strings.length === 0) { agregarStringPuesta(); agregarStringPuesta(); agregarStringPuesta(); }
+  else strings.forEach(v => agregarStringPuesta(v));
+  document.getElementById('pm-internet').value = d.conexion_internet || '';
+  document.getElementById('pm-observaciones').value = d.observaciones || '';
+  document.getElementById('pm-modificaciones').value = d.modificaciones || '';
+  const fotoUrls = d.fotoUrls || {};
+  Object.values(PM_FOTOS_GRUPOS).flat().forEach(([k]) => {
+    puestaFotoUrls[k] = Array.isArray(fotoUrls[k]) ? fotoUrls[k].slice() : [];
+    renderPuestaFotosGroup(k);
+  });
+  return true;
+}
+
 // Listener genérico (debounced) que llama a la función de guardado del formulario activo
 let draftTimer = null;
 function scheduleDraftSave(fn) {
@@ -2952,6 +3016,16 @@ document.addEventListener('input', (e) => {
     if (el.id.startsWith('mov-') || el.id === 'mat-search') scheduleDraftSave(autoSaveMov);
   } else if (document.getElementById('partes-form-section')?.style.display === 'block') {
     if (el.id.startsWith('parte-')) scheduleDraftSave(autoSaveParte);
+  } else if (document.getElementById('puestas-form-section')?.style.display === 'block') {
+    if (el.id.startsWith('pm-') || el.classList.contains('pm-string-v')) scheduleDraftSave(autoSavePuesta);
+  }
+});
+
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (!el || !el.id) return;
+  if (document.getElementById('puestas-form-section')?.style.display === 'block') {
+    if (el.id.startsWith('pm-') || el.id.startsWith('pm-chk-')) scheduleDraftSave(autoSavePuesta);
   }
 });
 
@@ -5790,6 +5864,19 @@ function enterPuestas() {
   });
 }
 
+function fillPuestaTecnicoSelect(valor) {
+  const sel = document.getElementById('pm-tecnico');
+  if (!sel) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    // preservar valor antiguo aunque ya no esté activo
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (inactivo)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
 function cerrarFormPuesta() {
   document.getElementById('puestas-form-section').style.display = 'none';
   document.getElementById('puestas-list-section').style.display = 'block';
@@ -5817,7 +5904,7 @@ function abrirFormPuesta(id) {
     // cabecera
     document.getElementById('pm-fecha').value = p.fechaISO || fechaISOdeEs(p.fecha) || '';
     document.getElementById('pm-obra').value = p.idObra || '';
-    document.getElementById('pm-tecnico').value = p.tecnico || '';
+    fillPuestaTecnicoSelect(p.tecnico);
     // checks
     const checks = p.checks || {};
     PM_CHECKS.forEach(([k]) => {
@@ -5847,13 +5934,15 @@ function abrirFormPuesta(id) {
     // valores por defecto
     document.getElementById('pm-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('pm-obra').value = '';
-    document.getElementById('pm-tecnico').value = (currentUser && currentUser.nombre) || '';
+    fillPuestaTecnicoSelect((currentUser && currentUser.nombre) || '');
     PM_CHECKS.forEach(([k]) => { const el = document.getElementById('pm-chk-' + k); if (el) el.checked = false; });
     document.getElementById('pm-calibre-fusibles').value = '';
     document.getElementById('pm-calibre-toroidales').value = '';
     document.getElementById('pm-internet').value = '';
     document.getElementById('pm-observaciones').value = '';
     document.getElementById('pm-modificaciones').value = '';
+    // Intentar recuperar borrador pendiente
+    restaurarDraftPuesta();
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -5895,6 +5984,29 @@ function onPuestaFotosChange(key, event) {
   puestaFotoFiles[key] = (puestaFotoFiles[key] || []).concat(files);
   if (event && event.target) event.target.value = '';
   renderPuestaFotosGroup(key);
+  // Subida en segundo plano: a medida que terminan, URLs se añaden y guardamos borrador
+  subirFotosPuestaEnSegundoPlano(key);
+}
+
+async function subirFotosPuestaEnSegundoPlano(key) {
+  const pendientes = (puestaFotoFiles[key] || []).slice();
+  if (!pendientes.length) return;
+  for (let i = 0; i < pendientes.length; i++) {
+    const file = pendientes[i];
+    try {
+      const url = await subirFoto(file);
+      if (!url) continue;
+      // Añadir a URLs y quitar del array de File si sigue ahí
+      puestaFotoUrls[key] = puestaFotoUrls[key] || [];
+      puestaFotoUrls[key].push(url);
+      const idxFile = (puestaFotoFiles[key] || []).indexOf(file);
+      if (idxFile >= 0) puestaFotoFiles[key].splice(idxFile, 1);
+      renderPuestaFotosGroup(key);
+      scheduleDraftSave(autoSavePuesta);
+    } catch(e) {
+      // se reintentará al pulsar guardar
+    }
+  }
 }
 
 function renderPuestaFotosGroup(key) {
@@ -6055,6 +6167,7 @@ async function guardarPuesta() {
   puestaEditando = null;
   puestaFotoFiles = {};
   puestaFotoUrls = {};
+  clearDraft(DRAFT_KEYS.puesta);
   showToast('✓ Puesta en marcha guardada', 'ok');
   cerrarFormPuesta();
 }

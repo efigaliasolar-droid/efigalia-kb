@@ -18,7 +18,24 @@
     --bg: #0f1117; --surface: #181c27; --surface2: #1e2333; --border: #2a3045;
     --accent: #2171c7; --accent2: #155994; --text: #e8eaf0; --text-muted: #7a8099;
     --green: #3ecf8e; --red: #e05454;
+    --badge-marca-bg: #1a2233; --badge-marca-fg: #7ab4e8;
+    --badge-modelo-bg: #1e2220; --badge-modelo-fg: #7ae8a4;
+    --badge-error-bg: #2b2218;
+    --on-green: #0f1117;
+    --overlay: rgba(0,0,0,0.75);
+    --shadow: 0 8px 24px rgba(0,0,0,0.4);
     --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #f5f6f8; --surface: #ffffff; --surface2: #eef1f5; --border: #c8cdd8;
+    --accent: #1560a8; --accent2: #0d4a83; --text: #0f1117; --text-muted: #5b6275;
+    --green: #1f8a5e; --red: #c63d3d;
+    --badge-marca-bg: #e3edf8; --badge-marca-fg: #1560a8;
+    --badge-modelo-bg: #e0f3e8; --badge-modelo-fg: #1f7a4a;
+    --badge-error-bg: #fbecd6;
+    --on-green: #ffffff;
+    --overlay: rgba(15,17,23,0.55);
+    --shadow: 0 8px 24px rgba(15,17,23,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
@@ -68,9 +85,9 @@
   .card-title { font-weight: 600; font-size: 14px; line-height: 1.4; }
   .card-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
   .badge { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
-  .badge-marca { background: #1a2233; color: #7ab4e8; }
-  .badge-modelo { background: #1e2220; color: #7ae8a4; }
-  .badge-error { background: #2b2218; color: var(--accent); }
+  .badge-marca { background: var(--badge-marca-bg); color: var(--badge-marca-fg); }
+  .badge-modelo { background: var(--badge-modelo-bg); color: var(--badge-modelo-fg); }
+  .badge-error { background: var(--badge-error-bg); color: var(--accent); }
   .card-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
   .card-meta { margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--text-muted); }
 
@@ -96,7 +113,7 @@
   .search-bar input:focus { border-color: var(--accent); }
   .search-bar input::placeholder { color: var(--text-muted); }
 
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: var(--overlay); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; max-width: 580px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 24px; }
   .modal-close { float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; line-height: 1; }
@@ -115,7 +132,7 @@
 
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.ok { background: var(--green); color: #0f1117; }
+  .toast.ok { background: var(--green); color: var(--on-green); }
   .toast.err { background: var(--red); color: #fff; }
 
   .typing { display: inline-flex; gap: 4px; align-items: center; }
@@ -183,7 +200,7 @@
   .mat-search-wrap { position: relative; margin-bottom: 10px; }
   .mat-search-wrap input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 14px; outline: none; }
   .mat-search-wrap input:focus { border-color: var(--accent); }
-  .mat-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 220px; overflow-y: auto; z-index: 50; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  .mat-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 220px; overflow-y: auto; z-index: 50; display: none; box-shadow: var(--shadow); }
   .mat-results.open { display: block; }
   .mat-result { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
   .mat-result:last-child { border-bottom: none; }
@@ -212,8 +229,8 @@
   .mov-card:hover, .parte-card:hover { border-color: var(--accent); background: var(--surface2); }
   .mov-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 10px; }
   .mov-obra { font-weight: 600; font-size: 14px; }
-  .badge-salida { background: #2b2218; color: var(--accent); }
-  .badge-entrada { background: #1e2220; color: var(--green); }
+  .badge-salida { background: var(--badge-error-bg); color: var(--accent); }
+  .badge-entrada { background: var(--badge-modelo-bg); color: var(--green); }
   .mov-meta { font-family: var(--mono); font-size: 10px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 10px; }
   .mov-meta span { white-space: nowrap; }
 
@@ -257,7 +274,7 @@
   .admin-row .nombre.inactivo { color: var(--text-muted); text-decoration: line-through; }
   .admin-row .acciones { display: flex; gap: 6px; }
   .toggle-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
-  .toggle-btn.on { background: var(--green); color: #0f1117; border-color: var(--green); }
+  .toggle-btn.on { background: var(--green); color: var(--on-green); border-color: var(--green); }
   .toggle-btn.off { background: var(--surface2); color: var(--text-muted); }
   .icon-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; cursor: pointer; color: var(--text-muted); font-size: 14px; }
   .icon-btn:hover { color: var(--red); border-color: var(--red); }
@@ -329,6 +346,7 @@
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-label">–</span>
     </div>
+    <button class="user-chip" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema" style="padding:5px 8px">🌙</button>
     <div class="tab-bar" id="tab-bar-incidencias" style="display:none">
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
       <button class="tab" onclick="switchTab('documentos',this)">Documentos</button>
@@ -4028,9 +4046,9 @@ function renderVisitas() {
   c.innerHTML = list.map(v => {
     const estado = v.estado || 'pendiente';
     const badges = {
-      pendiente: '<span class="badge" style="background:#2b2218;color:var(--accent)">⏳ PENDIENTE</span>',
-      completada: '<span class="badge" style="background:#1e2220;color:#7ae8a4">✓ COMPLETADA</span>',
-      cancelada: '<span class="badge" style="background:#2b1818;color:var(--red)">✗ CANCELADA</span>'
+      pendiente: '<span class="badge badge-error">⏳ PENDIENTE</span>',
+      completada: '<span class="badge badge-modelo">✓ COMPLETADA</span>',
+      cancelada: '<span class="badge" style="background:var(--badge-error-bg);color:var(--red)">✗ CANCELADA</span>'
     }[estado] || '';
     const cliente = v.cliente_nombre || (v.cliente ? `${v.cliente.nombre || ''} ${v.cliente.apellidos || ''}`.trim() : '');
     const titulo = v.titulo || (v.proyecto && v.proyecto.titulo) || cliente || '—';
@@ -5561,6 +5579,23 @@ function requireLogin() {
 
 // Limpiar cache local para evitar quota exceeded
 try { localStorage.removeItem('efigalia_kb_v4'); } catch(e) {}
+
+// ── TEMA (claro / oscuro) ──────────────────────────────
+function applyTheme(theme) {
+  const t = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = t === 'light' ? '☀️' : '🌙';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'light' ? '#ffffff' : '#0f1117');
+}
+function toggleTheme() {
+  const actual = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const nuevo = actual === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('efigalia_theme', nuevo); } catch(e) {}
+  applyTheme(nuevo);
+}
+try { applyTheme(localStorage.getItem('efigalia_theme') || 'dark'); } catch(e) { applyTheme('dark'); }
 
 // Bootstrap: login primero, después home
 (async () => {

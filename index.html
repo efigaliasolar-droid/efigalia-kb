@@ -1954,7 +1954,12 @@ async function subirFoto(file) {
     method: 'POST',
     body: formData
   });
-  const data = await res.json();
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}${t ? ' · ' + t.substring(0, 140) : ''}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!data.url) throw new Error('Respuesta sin url · ' + JSON.stringify(data).substring(0, 140));
   return data.url;
 }
 
@@ -6525,15 +6530,16 @@ async function subirDocObra(event) {
   if (btnDrop) { btnDrop.style.opacity = '0.5'; btnDrop.style.pointerEvents = 'none'; }
 
   await sheetsLoad();
-  let okCount = 0, errCount = 0;
+  let okCount = 0;
+  const errores = [];
   for (const file of files) {
+    console.log(`[subirDocObra] subiendo ${file.name} (${(file.size/1024).toFixed(1)} KB · ${file.type || 'sin tipo'})`);
     showToast(`Subiendo ${file.name}…`);
     try {
       const url = await subirFoto(file);
-      if (!url) throw new Error('sin URL');
       let contenido = '';
       if (/\.pdf$/i.test(file.name) && typeof extractPdfText === 'function') {
-        try { contenido = await extractPdfText(file); } catch(e) {}
+        try { contenido = await extractPdfText(file); } catch(e) { console.warn('[extractPdfText]', e); }
       }
       incidents.unshift({
         id: Date.now() + Math.floor(Math.random() * 1000),
@@ -6549,17 +6555,22 @@ async function subirDocObra(event) {
       });
       okCount++;
     } catch(e) {
-      errCount++;
+      const msg = (e && e.message) || 'error';
+      errores.push(`${file.name}: ${msg}`);
       console.error('[subirDocObra]', file.name, e);
     }
   }
-  await sheetsSave();
+  try {
+    await sheetsSave();
+  } catch(e) {
+    errores.push('No se pudo guardar la lista: ' + ((e && e.message) || ''));
+  }
   renderDocsObra();
   if (btnDrop) { btnDrop.style.opacity = ''; btnDrop.style.pointerEvents = ''; }
 
-  if (okCount && !errCount) showToast(`✓ ${okCount} documento(s) subido(s)`, 'ok');
-  else if (okCount && errCount) showToast(`⚠ ${okCount} subidos, ${errCount} con error`, 'err');
-  else showToast('⚠ Error al subir los archivos', 'err');
+  if (okCount && !errores.length) showToast(`✓ ${okCount} documento(s) subido(s)`, 'ok');
+  else if (okCount && errores.length) showToast(`⚠ ${okCount} ok · Error: ${errores[0]}`, 'err');
+  else                                showToast(`⚠ Error: ${errores[0] || 'desconocido'}`, 'err');
 }
 
 async function eliminarDocObra(id) {

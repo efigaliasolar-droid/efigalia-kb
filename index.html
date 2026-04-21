@@ -1692,8 +1692,8 @@
         <div class="form-group">
           <label>Subir documento (PDF o imagen)</label>
           <div class="photo-drop" onclick="document.getElementById('fo-doc-input').click()">
-            <input type="file" id="fo-doc-input" accept=".pdf,image/*" style="display:none" onchange="subirDocObra(event)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Añadir documento
+            <input type="file" id="fo-doc-input" accept=".pdf,image/*" multiple onchange="subirDocObra(event)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Añadir documentos
           </div>
         </div>
         <div id="fo-docs-list"></div>
@@ -2143,7 +2143,25 @@ function renderEstadoObra() {
     balanceHtml = '<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>Sin movimientos de material.</div>';
   }
 
+  // Datos "ficha" (contacto, dirección) de la obra si está guardada
+  const obraRec = incidents.find(i => i.tipo === 'obra' && i.nombre === idObra);
+  const fichaBtn = obraRec
+    ? `<button class="btn-secondary" style="width:100%;margin-bottom:14px" onclick="abrirFichaObra(${obraRec.id}, 'estado')">Ver / editar ficha completa</button>`
+    : `<div class="calc-note" style="margin-bottom:14px">Esta obra no está dada de alta en Administración → Obras, por lo que no tiene ficha asociada.</div>`;
+
+  const resumenFicha = obraRec ? `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+      ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(obraRec.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+      ${obraRec.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.clienteNombre)}${obraRec.telefono ? ` · <a href="tel:${escapeHtml(obraRec.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.telefono)}</a>` : ''}${obraRec.email ? ` · <a href="mailto:${escapeHtml(obraRec.email)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.email)}</a>` : ''}</div></div>` : ''}
+      ${obraRec.contactoNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Contacto en obra</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.contactoNombre)}${obraRec.contactoTelefono ? ` · <a href="tel:${escapeHtml(obraRec.contactoTelefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.contactoTelefono)}</a>` : ''}</div></div>` : ''}
+      ${obraRec.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obraRec.contactoObs)}</div>` : ''}
+      ${!obraRec.direccion && !obraRec.clienteNombre && !obraRec.contactoNombre ? `<div style="color:var(--text-muted);font-size:13px">Ficha sin rellenar. Usa el botón para añadir contacto, dirección y documentos.</div>` : ''}
+    </div>
+  ` : '';
+
   c.innerHTML = `
+    ${fichaBtn}
+    ${resumenFicha}
     <div class="stat-grid">
       <div class="stat-card"><div class="lbl">Items pendientes</div><div class="val">${itemsPendientes}</div><div class="sub">de ${items.length} que salieron</div></div>
       <div class="stat-card"><div class="lbl">Partes</div><div class="val">${totalPartes}</div>${primera||ultima?`<div class="sub">${primera===ultima?primera||'':`${primera} → ${ultima}`}</div>`:''}</div>
@@ -6496,41 +6514,52 @@ async function guardarFichaObra() {
 
 // Documentación asociada a la obra (tipo='documento' + idObraAsociada=nombreObra)
 async function subirDocObra(event) {
-  const file = (event && event.target && event.target.files && event.target.files[0]) || null;
-  if (!file) return;
-  event.target.value = '';
+  const files = Array.from((event && event.target && event.target.files) || []);
+  if (!files.length) return;
+  if (event && event.target) event.target.value = '';
+
   const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
-  if (!obra) return;
+  if (!obra) { showToast('⚠ Abre primero la ficha de una obra', 'err'); return; }
 
   const btnDrop = document.querySelector('#view-ficha-obra .photo-drop');
-  if (btnDrop) btnDrop.style.opacity = '0.5';
-  try {
-    const url = await subirFoto(file);
-    let contenido = '';
-    if (/\.pdf$/i.test(file.name) && typeof extractPdfText === 'function') {
-      try { contenido = await extractPdfText(file); } catch(e) {}
+  if (btnDrop) { btnDrop.style.opacity = '0.5'; btnDrop.style.pointerEvents = 'none'; }
+
+  await sheetsLoad();
+  let okCount = 0, errCount = 0;
+  for (const file of files) {
+    showToast(`Subiendo ${file.name}…`);
+    try {
+      const url = await subirFoto(file);
+      if (!url) throw new Error('sin URL');
+      let contenido = '';
+      if (/\.pdf$/i.test(file.name) && typeof extractPdfText === 'function') {
+        try { contenido = await extractPdfText(file); } catch(e) {}
+      }
+      incidents.unshift({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        tipo: 'documento',
+        nombre: file.name,
+        archivoUrl: url,
+        archivoNombre: file.name,
+        contenidoExtraido: contenido ? contenido.substring(0, 4000) : '',
+        idObraAsociada: obra.nombre,
+        fecha: new Date().toLocaleDateString('es-ES'),
+        fechaTs: Date.now(),
+        subidoPor: (currentUser && currentUser.nombre) || 'Admin'
+      });
+      okCount++;
+    } catch(e) {
+      errCount++;
+      console.error('[subirDocObra]', file.name, e);
     }
-    await sheetsLoad();
-    incidents.unshift({
-      id: Date.now(),
-      tipo: 'documento',
-      nombre: file.name,
-      archivoUrl: url,
-      archivoNombre: file.name,
-      contenidoExtraido: contenido ? contenido.substring(0, 4000) : '',
-      idObraAsociada: obra.nombre,
-      fecha: new Date().toLocaleDateString('es-ES'),
-      fechaTs: Date.now(),
-      subidoPor: (currentUser && currentUser.nombre) || 'Admin'
-    });
-    await sheetsSave();
-    renderDocsObra();
-    showToast('✓ Documento subido', 'ok');
-  } catch(e) {
-    showToast('⚠ Error al subir: ' + (e.message || ''), 'err');
-  } finally {
-    if (btnDrop) btnDrop.style.opacity = '';
   }
+  await sheetsSave();
+  renderDocsObra();
+  if (btnDrop) { btnDrop.style.opacity = ''; btnDrop.style.pointerEvents = ''; }
+
+  if (okCount && !errCount) showToast(`✓ ${okCount} documento(s) subido(s)`, 'ok');
+  else if (okCount && errCount) showToast(`⚠ ${okCount} subidos, ${errCount} con error`, 'err');
+  else showToast('⚠ Error al subir los archivos', 'err');
 }
 
 async function eliminarDocObra(id) {

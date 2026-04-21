@@ -6527,10 +6527,10 @@ async function subirDocObra(event) {
   if (!obra) { showToast('⚠ Abre primero la ficha de una obra', 'err'); return; }
 
   const btnDrop = document.querySelector('#view-ficha-obra .photo-drop');
-  if (btnDrop) { btnDrop.style.opacity = '0.5'; btnDrop.style.pointerEvents = 'none'; }
+  if (btnDrop) btnDrop.style.opacity = '0.5';
 
-  await sheetsLoad();
-  let okCount = 0;
+  // 1) Subir a R2 primero (usando los nombres/hash locales, sin tocar incidents)
+  const nuevos = [];
   const errores = [];
   for (const file of files) {
     console.log(`[subirDocObra] subiendo ${file.name} (${(file.size/1024).toFixed(1)} KB · ${file.type || 'sin tipo'})`);
@@ -6541,7 +6541,7 @@ async function subirDocObra(event) {
       if (/\.pdf$/i.test(file.name) && typeof extractPdfText === 'function') {
         try { contenido = await extractPdfText(file); } catch(e) { console.warn('[extractPdfText]', e); }
       }
-      incidents.unshift({
+      nuevos.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
         tipo: 'documento',
         nombre: file.name,
@@ -6553,24 +6553,30 @@ async function subirDocObra(event) {
         fechaTs: Date.now(),
         subidoPor: (currentUser && currentUser.nombre) || 'Admin'
       });
-      okCount++;
     } catch(e) {
       const msg = (e && e.message) || 'error';
       errores.push(`${file.name}: ${msg}`);
       console.error('[subirDocObra]', file.name, e);
     }
   }
-  try {
-    await sheetsSave();
-  } catch(e) {
-    errores.push('No se pudo guardar la lista: ' + ((e && e.message) || ''));
-  }
-  renderDocsObra();
-  if (btnDrop) { btnDrop.style.opacity = ''; btnDrop.style.pointerEvents = ''; }
 
-  if (okCount && !errores.length) showToast(`✓ ${okCount} documento(s) subido(s)`, 'ok');
-  else if (okCount && errores.length) showToast(`⚠ ${okCount} ok · Error: ${errores[0]}`, 'err');
-  else                                showToast(`⚠ Error: ${errores[0] || 'desconocido'}`, 'err');
+  // 2) Refrescar incidents y persistir sólo si hubo subidas ok
+  if (nuevos.length) {
+    try {
+      await sheetsLoad();
+      incidents = nuevos.concat(incidents);
+      await sheetsSave();
+    } catch(e) {
+      errores.push('No se pudo guardar la lista: ' + ((e && e.message) || ''));
+    }
+  }
+
+  renderDocsObra();
+  if (btnDrop) btnDrop.style.opacity = '';
+
+  if (nuevos.length && !errores.length) showToast(`✓ ${nuevos.length} documento(s) subido(s)`, 'ok');
+  else if (nuevos.length && errores.length) showToast(`⚠ ${nuevos.length} ok · Error: ${errores[0]}`, 'err');
+  else                                      showToast(`⚠ Error: ${errores[0] || 'desconocido'}`, 'err');
 }
 
 async function eliminarDocObra(id) {

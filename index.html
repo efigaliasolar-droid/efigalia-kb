@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -1585,6 +1585,129 @@
     <div class="admin-list" id="adm-obras-list"></div>
   </div>
 
+  <div id="view-ficha-obra">
+    <button class="back-link" onclick="volverDesdeFichaObra()">← Atrás</button>
+    <div class="section-title" id="ficha-obra-titulo">Ficha de obra</div>
+
+    <details class="filtros-panel" open>
+      <summary>Datos básicos</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="fo-nombre">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="fo-estado">
+              <option value="activa">Activa</option>
+              <option value="pausada">Pausada</option>
+              <option value="finalizada">Finalizada</option>
+              <option value="garantia">En garantía</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha prevista inicio</label>
+            <input type="date" id="fo-fecha-prevista">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Ubicación</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Dirección</label>
+          <input type="text" id="fo-direccion" placeholder="Calle, nº, localidad...">
+        </div>
+        <div class="form-group">
+          <label>Enlace Google Maps</label>
+          <input type="text" id="fo-maps" placeholder="https://..." oninput="onFichaMapsChange()">
+          <a id="fo-maps-link" target="_blank" rel="noopener" style="display:none;margin-top:8px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;align-items:center;gap:6px;width:fit-content">Abrir en Google Maps ↗</a>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitud</label>
+            <input type="number" step="any" id="fo-lat" placeholder="ej: 42.4325">
+          </div>
+          <div class="form-group">
+            <label>Longitud</label>
+            <input type="number" step="any" id="fo-lng" placeholder="ej: -8.6456">
+          </div>
+        </div>
+        <div class="calc-note" style="margin-top:0">
+          Pega el enlace completo de Google Maps (no el corto "maps.app.goo.gl"). Si no consigue extraer lat/lng, escríbelas a mano.
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Contacto</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente</label>
+            <input type="text" id="fo-cliente" placeholder="Nombre o razón social">
+          </div>
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="fo-cliente-tipo">
+              <option value="">—</option>
+              <option value="persona">Persona</option>
+              <option value="empresa">Empresa</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="text" id="fo-telefono" inputmode="tel">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="text" id="fo-email" inputmode="email">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Persona contacto en obra (si distinto)</label>
+            <input type="text" id="fo-contacto-nombre">
+          </div>
+          <div class="form-group">
+            <label>Teléfono contacto obra</label>
+            <input type="text" id="fo-contacto-tel" inputmode="tel">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Observaciones de contacto</label>
+          <textarea class="field" id="fo-contacto-obs" placeholder="Horarios, acceso, preferencias..."></textarea>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Documentación <span id="fo-docs-count" style="color:var(--text-muted);font-weight:normal;font-size:12px;margin-left:8px"></span></summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Subir documento (PDF o imagen)</label>
+          <div class="photo-drop" onclick="document.getElementById('fo-doc-input').click()">
+            <input type="file" id="fo-doc-input" accept=".pdf,image/*" style="display:none" onchange="subirDocObra(event)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Añadir documento
+          </div>
+        </div>
+        <div id="fo-docs-list"></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>Actividad</summary>
+      <div class="filtros-body" id="fo-actividad"></div>
+    </details>
+
+    <button class="btn-primary" id="btn-fo-save" onclick="guardarFichaObra()" style="margin-top:8px">Guardar cambios</button>
+  </div>
+
   <div id="view-admin-furgonetas">
     <button class="back-link" onclick="enterAdmin()">← Atrás</button>
     <div class="section-title">Furgonetas</div>
@@ -2432,7 +2555,7 @@ function renderAdminDocumentos() {
   const cont = document.getElementById('adm-doc-list');
   if (!cont) return;
   const q = (document.getElementById('adm-doc-search')?.value || '').toLowerCase();
-  let list = incidents.filter(i => i.tipo === 'documento');
+  let list = incidents.filter(i => i.tipo === 'documento' && !i.idObraAsociada);
   if (q) list = list.filter(d => [d.incidencia, d.marca, d.modelo, d.keywords, d.documentacion, d.archivoNombre].some(f => (f||'').toLowerCase().includes(q)));
   if (!list.length) {
     cont.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Aún no hay documentos. Sube el primero arriba.</div>';
@@ -2614,6 +2737,7 @@ function renderAdminMaestros(tipo) {
     return;
   }
   const isInst = tipo === 'instalador';
+  const isObra = tipo === 'obra';
   cont.innerHTML = list.map(i => {
     const pinDisplay = i.pin
       ? `<span style="font-family:var(--mono);background:var(--surface2);padding:3px 7px;border-radius:4px;font-size:12px;letter-spacing:1px">${escapeHtml(i.pin)}</span>`
@@ -2623,11 +2747,13 @@ function renderAdminMaestros(tipo) {
         ${pinDisplay}
         <button class="toggle-btn ${i.rol==='admin'?'on':'off'}" onclick="cambiarRolInstalador(${i.id})" style="padding:5px 8px">${i.rol==='admin'?'ADMIN':'INST'}</button>
     ` : '';
+    const fichaBtn = isObra ? `<button class="toggle-btn off" onclick="abrirFichaObra(${i.id})" title="Ver ficha" style="padding:5px 10px">Ficha</button>` : '';
     return `
       <div class="admin-row">
         <div class="nombre${i.activa===false?' inactivo':''}">${escapeHtml(i.nombre||'—')}</div>
         <div class="acciones">
           ${extra}
+          ${fichaBtn}
           <button class="toggle-btn ${i.activa===false?'off':'on'}" onclick="toggleMaestro(${i.id})">${i.activa===false?'INACTIVA':'ACTIVA'}</button>
           <button class="icon-btn" onclick="eliminarMaestro(${i.id})" title="Eliminar">🗑</button>
         </div>
@@ -3292,7 +3418,7 @@ function renderListado() {
 function renderDocumentos() {
   const container = document.getElementById('doc-container');
   const q = (document.getElementById('doc-search')?.value || '').toLowerCase();
-  let list = incidents.filter(inc => inc.tipo === 'documento');
+  let list = incidents.filter(inc => inc.tipo === 'documento' && !inc.idObraAsociada);
   if (q) list = list.filter(inc => [inc.incidencia,inc.marca,inc.modelo,inc.keywords,inc.archivoNombre].some(f=>(f||'').toLowerCase().includes(q)));
   if (!list.length) {
     container.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></div>${q?'Sin resultados.':'No hay documentos aún. Súbelos desde Administración → Documentos.'}</div>`;
@@ -6248,6 +6374,221 @@ function renderPuestas() {
       </div>
     `;
   }).join('');
+}
+
+// ── FICHA DE OBRA ─────────────────────────────────────
+let fichaObraId = null;
+let fichaObraOrigen = 'admin';   // 'admin' | 'estado' | 'mapa' — para el botón Atrás
+
+function extraerLatLngGoogleMaps(url) {
+  if (!url) return null;
+  const u = String(url);
+  // @lat,lng,zoom  (formato clásico)
+  let m = u.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // ?q=lat,lng  o  ?ll=lat,lng
+  m = u.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  // !3dlat!4dlng
+  m = u.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  return null;
+}
+
+function onFichaMapsChange() {
+  const val = document.getElementById('fo-maps').value.trim();
+  const link = document.getElementById('fo-maps-link');
+  if (val && /^https?:\/\//i.test(val)) {
+    link.href = val;
+    link.style.display = 'inline-flex';
+  } else {
+    link.removeAttribute('href');
+    link.style.display = 'none';
+  }
+  const coords = extraerLatLngGoogleMaps(val);
+  if (coords) {
+    document.getElementById('fo-lat').value = coords.lat;
+    document.getElementById('fo-lng').value = coords.lng;
+  }
+}
+
+function abrirFichaObra(id, origen) {
+  if (!requireLogin()) return;
+  fichaObraId = id;
+  fichaObraOrigen = origen || 'admin';
+  sheetsLoad().then(() => {
+    const obra = incidents.find(i => i.id === id && i.tipo === 'obra');
+    if (!obra) { showToast('⚠ Obra no encontrada', 'err'); return; }
+    hideAllViews();
+    document.getElementById('view-ficha-obra').style.display = 'block';
+    document.getElementById('ficha-obra-titulo').textContent = 'Ficha · ' + (obra.nombre || '');
+    // Datos básicos
+    document.getElementById('fo-nombre').value = obra.nombre || '';
+    document.getElementById('fo-estado').value = obra.estadoObra || 'activa';
+    document.getElementById('fo-fecha-prevista').value = obra.fechaInicioPrevista || '';
+    // Ubicación
+    document.getElementById('fo-direccion').value = obra.direccion || '';
+    document.getElementById('fo-maps').value = obra.mapsUrl || '';
+    document.getElementById('fo-lat').value = obra.lat ?? '';
+    document.getElementById('fo-lng').value = obra.lng ?? '';
+    onFichaMapsChange();
+    // Contacto
+    document.getElementById('fo-cliente').value = obra.clienteNombre || '';
+    document.getElementById('fo-cliente-tipo').value = obra.clienteTipo || '';
+    document.getElementById('fo-telefono').value = obra.telefono || '';
+    document.getElementById('fo-email').value = obra.email || '';
+    document.getElementById('fo-contacto-nombre').value = obra.contactoNombre || '';
+    document.getElementById('fo-contacto-tel').value = obra.contactoTelefono || '';
+    document.getElementById('fo-contacto-obs').value = obra.contactoObs || '';
+    // Documentación y actividad
+    renderDocsObra();
+    renderActividadObra();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function volverDesdeFichaObra() {
+  if (fichaObraOrigen === 'estado')    enterEstadoObras();
+  else if (fichaObraOrigen === 'mapa') goHome();   // placeholder hasta que exista el mapa
+  else                                 enterAdminObras();
+}
+
+async function guardarFichaObra() {
+  if (fichaObraId == null) return;
+  await sheetsLoad();
+  const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
+  if (!obra) { showToast('⚠ Obra no encontrada', 'err'); return; }
+
+  const nuevoNombre = document.getElementById('fo-nombre').value.trim();
+  if (!nuevoNombre) { showToast('⚠ El nombre es obligatorio', 'err'); return; }
+
+  // Si cambia el nombre, avisar (los registros existentes quedarían huérfanos)
+  if (nuevoNombre !== obra.nombre) {
+    if (!confirm(`Estás cambiando el nombre de la obra. Los partes / movimientos / puestas / visitas que usaban "${obra.nombre}" no se renombrarán automáticamente. ¿Continuar?`)) return;
+  }
+
+  const latVal = parseFloat(document.getElementById('fo-lat').value);
+  const lngVal = parseFloat(document.getElementById('fo-lng').value);
+
+  Object.assign(obra, {
+    nombre: nuevoNombre,
+    estadoObra: document.getElementById('fo-estado').value,
+    fechaInicioPrevista: document.getElementById('fo-fecha-prevista').value,
+    direccion: document.getElementById('fo-direccion').value.trim(),
+    mapsUrl: document.getElementById('fo-maps').value.trim(),
+    lat: isNaN(latVal) ? null : latVal,
+    lng: isNaN(lngVal) ? null : lngVal,
+    clienteNombre: document.getElementById('fo-cliente').value.trim(),
+    clienteTipo: document.getElementById('fo-cliente-tipo').value,
+    telefono: document.getElementById('fo-telefono').value.trim(),
+    email: document.getElementById('fo-email').value.trim(),
+    contactoNombre: document.getElementById('fo-contacto-nombre').value.trim(),
+    contactoTelefono: document.getElementById('fo-contacto-tel').value.trim(),
+    contactoObs: document.getElementById('fo-contacto-obs').value.trim(),
+    modificadoPor: (currentUser && currentUser.nombre) || 'Admin',
+    modificadoTs: Date.now()
+  });
+
+  await sheetsSave();
+  document.getElementById('ficha-obra-titulo').textContent = 'Ficha · ' + nuevoNombre;
+  showToast('✓ Ficha guardada', 'ok');
+}
+
+// Documentación asociada a la obra (tipo='documento' + idObraAsociada=nombreObra)
+async function subirDocObra(event) {
+  const file = (event && event.target && event.target.files && event.target.files[0]) || null;
+  if (!file) return;
+  event.target.value = '';
+  const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
+  if (!obra) return;
+
+  const btnDrop = document.querySelector('#view-ficha-obra .photo-drop');
+  if (btnDrop) btnDrop.style.opacity = '0.5';
+  try {
+    const url = await subirFoto(file);
+    let contenido = '';
+    if (/\.pdf$/i.test(file.name) && typeof extractPdfText === 'function') {
+      try { contenido = await extractPdfText(file); } catch(e) {}
+    }
+    await sheetsLoad();
+    incidents.unshift({
+      id: Date.now(),
+      tipo: 'documento',
+      nombre: file.name,
+      archivoUrl: url,
+      archivoNombre: file.name,
+      contenidoExtraido: contenido ? contenido.substring(0, 4000) : '',
+      idObraAsociada: obra.nombre,
+      fecha: new Date().toLocaleDateString('es-ES'),
+      fechaTs: Date.now(),
+      subidoPor: (currentUser && currentUser.nombre) || 'Admin'
+    });
+    await sheetsSave();
+    renderDocsObra();
+    showToast('✓ Documento subido', 'ok');
+  } catch(e) {
+    showToast('⚠ Error al subir: ' + (e.message || ''), 'err');
+  } finally {
+    if (btnDrop) btnDrop.style.opacity = '';
+  }
+}
+
+async function eliminarDocObra(id) {
+  if (!confirm('¿Eliminar este documento?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => i.id !== id);
+  await sheetsSave();
+  renderDocsObra();
+  showToast('✓ Eliminado', 'ok');
+}
+
+function renderDocsObra() {
+  const cont = document.getElementById('fo-docs-list');
+  const countEl = document.getElementById('fo-docs-count');
+  if (!cont || fichaObraId == null) return;
+  const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
+  if (!obra) return;
+  const docs = incidents.filter(i => i.tipo === 'documento' && i.idObraAsociada === obra.nombre)
+    .sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0));
+  if (countEl) countEl.textContent = docs.length ? `(${docs.length})` : '';
+  if (!docs.length) {
+    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Aún no hay documentos asociados a esta obra.</div>';
+    return;
+  }
+  cont.innerHTML = docs.map(d => `
+    <div class="admin-row" style="margin-bottom:6px">
+      <a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
+      <div class="acciones">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">${escapeHtml(d.fecha || '')}</span>
+        <button class="icon-btn" onclick="eliminarDocObra(${d.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderActividadObra() {
+  const cont = document.getElementById('fo-actividad');
+  if (!cont || fichaObraId == null) return;
+  const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
+  if (!obra) return;
+  const nombre = obra.nombre;
+
+  const partesObra   = (Array.isArray(partes) ? partes : []).filter(p => p.idObra === nombre);
+  const movsObra     = (Array.isArray(movimientos) ? movimientos : []).filter(m => m.idObra === nombre);
+  const puestasObra  = incidents.filter(i => i.tipo === 'puesta' && i.idObra === nombre);
+  const visitasObra  = (Array.isArray(visitas) ? visitas : []).filter(v => (v.idObra === nombre) || (v.obra === nombre) || ((v.titulo||'').includes(nombre)));
+
+  const ultFechaPartes = partesObra.map(p => p.fecha).filter(Boolean).sort().pop();
+  const ultPuesta = puestasObra.sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0))[0];
+
+  cont.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="lbl">Partes</div><div class="val">${partesObra.length}</div><div class="sub">${ultFechaPartes ? 'Último: ' + ultFechaPartes : '—'}</div></div>
+      <div class="stat-card"><div class="lbl">Movimientos</div><div class="val">${movsObra.length}</div></div>
+      <div class="stat-card"><div class="lbl">Puestas en marcha</div><div class="val">${puestasObra.length}</div><div class="sub">${ultPuesta ? 'Último: ' + ultPuesta.fecha : '—'}</div></div>
+      <div class="stat-card"><div class="lbl">Visitas</div><div class="val">${visitasObra.length}</div></div>
+    </div>
+  `;
 }
 
 // Limpiar cache local para evitar quota exceeded

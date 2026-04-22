@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -382,7 +382,12 @@
         <div class="home-title">Obra</div>
         <div class="home-desc">Materiales (salidas/entradas por obra) y partes de seguimiento diario.</div>
       </div>
-      <div class="home-card" onclick="enterVisitas()">
+      <div class="home-card" id="home-card-mantenimientos" onclick="enterMantenimientos()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+        <div class="home-title">Mantenimientos</div>
+        <div class="home-desc">Mantenimientos preventivos y correctivos de obras ya realizadas.</div>
+      </div>
+      <div class="home-card" id="home-card-visitas" onclick="enterVisitas()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="home-title">Visita pre-contrato</div>
         <div class="home-desc">Visita técnica antes del contrato: cubierta, obstáculos, cableado, conexión.</div>
@@ -1634,6 +1639,141 @@
     </div>
   </div>
 
+  <!-- ═══════════════ MANTENIMIENTOS ═══════════════ -->
+  <div id="view-mantenimientos">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Mantenimientos</div>
+    <div class="action-row">
+      <button class="btn-primary" id="btn-mnt-nuevo" onclick="abrirMantenimiento()">+ Nuevo mantenimiento</button>
+    </div>
+    <details class="filtros-panel">
+      <summary>Filtros<span class="filtros-badge" id="mnt-filtros-count" style="display:none">0</span></summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Buscar</label>
+          <input type="text" id="mnt-search" placeholder="Obra, trabajos, observaciones..." oninput="renderMantenimientos()">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Obra</label>
+            <select id="mnt-obra-filtro" onchange="renderMantenimientos()"></select>
+          </div>
+          <div class="form-group">
+            <label>Operario</label>
+            <select id="mnt-operario-filtro" onchange="renderMantenimientos()"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo</label>
+            <select id="mnt-tipo-filtro" onchange="renderMantenimientos()">
+              <option value="">Todos</option>
+              <option value="preventivo">Preventivo</option>
+              <option value="correctivo">Correctivo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="mnt-estado-filtro" onchange="renderMantenimientos()">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="completado">Completado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-secondary" onclick="limpiarFiltrosMantenimientos()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+      </div>
+    </details>
+    <div id="mnt-container"></div>
+  </div>
+
+  <div id="view-mantenimiento">
+    <button class="back-link" onclick="enterMantenimientos()">← Atrás</button>
+    <div class="section-title" id="mnt-form-title">Nuevo mantenimiento</div>
+
+    <!-- Cabecera (admin) -->
+    <details class="filtros-panel" open id="mnt-sec-admin">
+      <summary>Datos del mantenimiento</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Tipo *</label>
+          <div class="tipo-switch">
+            <label><input type="radio" name="mnt-tipo" value="preventivo" checked>Preventivo</label>
+            <label><input type="radio" name="mnt-tipo" value="correctivo">Correctivo</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Obra *</label>
+            <select id="mnt-obra"></select>
+          </div>
+          <div class="form-group">
+            <label>Fecha prevista *</label>
+            <input type="date" id="mnt-fecha-prevista">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Operario asignado *</label>
+          <select id="mnt-operario"></select>
+        </div>
+        <div class="form-group">
+          <label>Trabajos previstos</label>
+          <textarea class="field" id="mnt-trabajos-previstos" placeholder="Lista de tareas a realizar..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Equipos a intervenir</label>
+          <textarea class="field" id="mnt-equipos" placeholder="Inversor modelo X, baterías Y, cuadro Z..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Observaciones para el operario</label>
+          <textarea class="field" id="mnt-obs-admin" placeholder="Acceso, horarios, avisos..."></textarea>
+        </div>
+      </div>
+    </details>
+
+    <!-- Datos de la obra (cargados de la ficha, readonly) -->
+    <details class="filtros-panel" id="mnt-sec-obra">
+      <summary>Información de la obra</summary>
+      <div class="filtros-body" id="mnt-obra-info"></div>
+    </details>
+
+    <!-- Bloque de campo (operario) -->
+    <details class="filtros-panel" open id="mnt-sec-campo">
+      <summary>Trabajos realizados</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Trabajos realizados</label>
+          <textarea class="field" id="mnt-trabajos-realizados" placeholder="Describe lo que se ha hecho..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Material utilizado</label>
+          <textarea class="field" id="mnt-material" placeholder="Texto libre: referencias, cantidades..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Observaciones técnicas</label>
+          <textarea class="field" id="mnt-obs-campo" placeholder="Anomalías detectadas, recomendaciones..."></textarea>
+        </div>
+        <div class="form-group foto-group" data-foto-key="mnt">
+          <label>Fotos</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('mnt-fotos').click()">
+            <input type="file" id="mnt-fotos" accept="image/*" multiple onchange="onMantenimientoFotosChange(event)">
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
+          </div>
+          <div class="photo-previews" id="mnt-fotos-preview"></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="action-row">
+      <button class="btn-primary" id="btn-mnt-save" onclick="guardarMantenimiento()" style="flex:1">Guardar</button>
+      <button class="btn-secondary" id="btn-mnt-completar" onclick="completarMantenimiento()" style="flex:1;display:none">Marcar completado</button>
+    </div>
+    <div id="mnt-extra-actions" style="margin-top:10px;display:none">
+      <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarMantenimiento()">🗑 Eliminar mantenimiento</button>
+    </div>
+  </div>
+
   <!-- ═══════════════ ADMINISTRACIÓN ═══════════════ -->
   <div id="view-admin">
     <button class="back-link" onclick="goHome()">← Atrás</button>
@@ -2069,8 +2209,17 @@ function goHome() {
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
   adminAutenticado = !!(currentUser && currentUser.rol === 'admin');
+  const esAdmin = !!(currentUser && currentUser.rol === 'admin');
   const adminCard = document.getElementById('home-card-admin');
-  if (adminCard) adminCard.style.display = (currentUser && currentUser.rol === 'admin') ? '' : 'none';
+  if (adminCard) adminCard.style.display = esAdmin ? '' : 'none';
+  // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
+  const nombre = currentUser?.nombre || '';
+  const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
+  const tieneMnt = esAdmin || (nombre && incidents.some(i => i.tipo === 'mantenimiento' && i.operarioAsignado === nombre));
+  const cardVisitas = document.getElementById('home-card-visitas');
+  if (cardVisitas) cardVisitas.style.display = tieneVisitas ? '' : 'none';
+  const cardMnt = document.getElementById('home-card-mantenimientos');
+  if (cardMnt) cardMnt.style.display = tieneMnt ? '' : 'none';
 }
 function enterIncidencias() {
   hideAllViews();
@@ -6036,6 +6185,7 @@ async function hacerLogin() {
   sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser));
   if (currentUser.rol === 'admin') adminAutenticado = true;
   actualizarHeaderUsuario();
+  try { await visitasLoad(); } catch(e) {}
   goHome();
 }
 
@@ -7128,6 +7278,362 @@ function renderRepostajes() {
   `).join('');
 }
 
+// ── MANTENIMIENTOS ─────────────────────────────────────
+let mntEditando = null;
+let mntFotosFiles = [];
+let mntFotosUrls = [];
+
+function enterMantenimientos() {
+  if (!requireLogin()) return;
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  document.getElementById('view-mantenimientos').style.display = 'block';
+  // Solo admin puede crear
+  document.getElementById('btn-mnt-nuevo').style.display = isAdmin() ? '' : 'none';
+  sheetsLoad().then(() => renderMantenimientos());
+}
+
+function fillMntOperarioSelect(selId, valor, incluirTodos) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  const head = incluirTodos ? '<option value="">Todos</option>' : '<option value="">— Seleccionar —</option>';
+  sel.innerHTML = head + lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (inactivo)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function fillMntObraSelect(valor) {
+  // Para mantenimientos se permiten también obras inactivas (trabajos ya realizados)
+  const sel = document.getElementById('mnt-obra');
+  if (!sel) return;
+  const obras = incidents.filter(i => i.tipo === 'obra').sort((a,b) => {
+    // activas primero, luego inactivas
+    if (!!a.activa === !!b.activa) return (a.nombre||'').localeCompare(b.nombre||'');
+    return (a.activa === false ? 1 : -1);
+  });
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    obras.map(o => `<option value="${escapeHtml(o.nombre)}">${escapeHtml(o.nombre)}${o.activa === false ? ' (inactiva)' : ''}</option>`).join('');
+  if (valor && !obras.some(o => o.nombre === valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (anterior)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function abrirMantenimiento(id) {
+  if (!requireLogin()) return;
+  mntEditando = id || null;
+  mntFotosFiles = [];
+  mntFotosUrls = [];
+  hideAllViews();
+  document.getElementById('view-mantenimiento').style.display = 'block';
+  document.getElementById('mnt-form-title').textContent = id ? 'Mantenimiento' : 'Nuevo mantenimiento';
+
+  fillMntObraSelect('');
+  fillMntOperarioSelect('mnt-operario', '', false);
+
+  // Defaults / carga
+  let m = null;
+  if (id) {
+    m = incidents.find(i => i.id === id && i.tipo === 'mantenimiento');
+    if (!m) { showToast('⚠ No encontrado', 'err'); enterMantenimientos(); return; }
+  }
+
+  // Tipo
+  document.querySelectorAll('input[name="mnt-tipo"]').forEach(r => r.checked = (r.value === (m?.tipoMantenimiento || 'preventivo')));
+  // Obra + fecha + operario
+  fillMntObraSelect(m?.idObra || '');
+  document.getElementById('mnt-fecha-prevista').value = m?.fechaPrevistaISO || '';
+  fillMntOperarioSelect('mnt-operario', m?.operarioAsignado || '', false);
+  // Bloques admin
+  document.getElementById('mnt-trabajos-previstos').value = m?.trabajosPrevistos || '';
+  document.getElementById('mnt-equipos').value = m?.equipos || '';
+  document.getElementById('mnt-obs-admin').value = m?.observacionesAdmin || '';
+  // Bloques campo
+  document.getElementById('mnt-trabajos-realizados').value = m?.trabajosRealizados || '';
+  document.getElementById('mnt-material').value = m?.materialUtilizado || '';
+  document.getElementById('mnt-obs-campo').value = m?.observacionesCampo || '';
+  mntFotosUrls = Array.isArray(m?.fotos) ? m.fotos.slice() : [];
+  renderMntFotos();
+
+  aplicarPermisosMantenimiento(m);
+  onMntObraChange();
+  // Escuchar cambios de obra
+  document.getElementById('mnt-obra').onchange = onMntObraChange;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function aplicarPermisosMantenimiento(m) {
+  const editable = isAdmin() || !m || (m.operarioAsignado === (currentUser?.nombre || ''));
+  const esAdminEditando = isAdmin();
+
+  // Admin edita todo; operario solo el bloque de campo
+  ['mnt-obra','mnt-fecha-prevista','mnt-operario','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (esAdminEditando) {
+      el.readOnly = false; el.disabled = false;
+    } else {
+      el.disabled = true;
+    }
+  });
+  document.querySelectorAll('input[name="mnt-tipo"]').forEach(r => { r.disabled = !esAdminEditando; });
+
+  // Campo (trabajos realizados): admin + operario asignado pueden editar; otros readonly
+  const camposEditableFlag = editable;
+  ['mnt-trabajos-realizados','mnt-material','mnt-obs-campo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.readOnly = !camposEditableFlag; }
+  });
+  const dropMnt = document.querySelector('#view-mantenimiento .photo-drop');
+  if (dropMnt) dropMnt.style.display = camposEditableFlag ? '' : 'none';
+
+  // Botones
+  document.getElementById('btn-mnt-save').style.display = camposEditableFlag ? '' : 'none';
+  const completarBtn = document.getElementById('btn-mnt-completar');
+  completarBtn.style.display = (camposEditableFlag && m && m.estado !== 'completado') ? '' : 'none';
+  document.getElementById('mnt-extra-actions').style.display = (esAdminEditando && m) ? 'block' : 'none';
+}
+
+function onMntObraChange() {
+  const nombre = document.getElementById('mnt-obra').value.trim();
+  const cont = document.getElementById('mnt-obra-info');
+  if (!cont) return;
+  if (!nombre || nombre === '-') { cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Selecciona una obra para ver sus datos.</div>'; return; }
+  const obra = incidents.find(i => i.tipo === 'obra' && i.nombre === nombre);
+  if (!obra) { cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Obra no encontrada en Administración.</div>'; return; }
+  const docs = incidents.filter(i => i.tipo === 'documento' && i.idObraAsociada === nombre)
+    .sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0));
+  cont.innerHTML = `
+    ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(obra.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+    ${obra.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.clienteNombre)}${obra.telefono ? ` · <a href="tel:${escapeHtml(obra.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.telefono)}</a>` : ''}</div></div>` : ''}
+    ${obra.contactoNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Contacto en obra</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.contactoNombre)}${obra.contactoTelefono ? ` · <a href="tel:${escapeHtml(obra.contactoTelefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.contactoTelefono)}</a>` : ''}</div></div>` : ''}
+    ${obra.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obra.contactoObs)}</div>` : ''}
+    ${docs.length ? `
+      <div style="margin-top:10px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Documentación</div>
+        ${docs.map(d => `<a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
+      </div>
+    ` : ''}
+    ${!obra.direccion && !obra.clienteNombre && !obra.contactoNombre && !docs.length ? '<div style="color:var(--text-muted);font-size:13px">Ficha de obra sin rellenar. Edítala desde Administración → Obras → Ficha.</div>' : ''}
+  `;
+}
+
+function onMantenimientoFotosChange(event) {
+  const files = Array.from((event && event.target && event.target.files) || []);
+  if (!files.length) return;
+  if (event && event.target) event.target.value = '';
+  mntFotosFiles = mntFotosFiles.concat(files);
+  renderMntFotos();
+}
+
+function renderMntFotos() {
+  const cont = document.getElementById('mnt-fotos-preview');
+  if (!cont) return;
+  cont.innerHTML = '';
+  mntFotosUrls.forEach((url, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img'); img.src = url; img.onclick = () => window.open(url, '_blank');
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕';
+    btnDel.onclick = (e) => { e.stopPropagation(); if (!confirm('¿Quitar esta foto?')) return; mntFotosUrls.splice(idx, 1); renderMntFotos(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  });
+  mntFotosFiles.forEach((file, idx) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img'); img.src = URL.createObjectURL(file);
+    wrap.appendChild(img);
+    const btnAnot = document.createElement('button');
+    btnAnot.type = 'button'; btnAnot.className = 'btn-anot'; btnAnot.title = 'Anotar'; btnAnot.textContent = '✎';
+    btnAnot.onclick = () => openAnotador(file, (nf) => { mntFotosFiles[idx] = nf; renderMntFotos(); });
+    wrap.appendChild(btnAnot);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕'; btnDel.style.right = '36px';
+    btnDel.onclick = (e) => { e.stopPropagation(); mntFotosFiles.splice(idx, 1); renderMntFotos(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  });
+}
+
+async function subirFotosMantenimiento() {
+  const urls = mntFotosUrls.slice();
+  for (const f of mntFotosFiles) {
+    try { const u = await subirFoto(f); if (u) urls.push(u); }
+    catch(e) { console.warn('[mnt foto]', e); }
+  }
+  return urls;
+}
+
+async function guardarMantenimiento(marcandoCompletado) {
+  const existente = mntEditando ? incidents.find(i => i.id === mntEditando && i.tipo === 'mantenimiento') : null;
+
+  const idObra = document.getElementById('mnt-obra').value.trim();
+  const fechaPrevistaISO = document.getElementById('mnt-fecha-prevista').value;
+  const operario = document.getElementById('mnt-operario').value.trim();
+  const tipoM = (document.querySelector('input[name="mnt-tipo"]:checked')||{}).value || 'preventivo';
+
+  if (isAdmin()) {
+    if (!idObra) { showToast('⚠ Selecciona una obra', 'err'); return; }
+    if (!fechaPrevistaISO) { showToast('⚠ Indica la fecha prevista', 'err'); return; }
+    if (!operario) { showToast('⚠ Asigna un operario', 'err'); return; }
+  }
+
+  const btn = document.getElementById('btn-mnt-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Subiendo fotos...'; }
+  const fotos = await subirFotosMantenimiento();
+  if (btn) btn.textContent = 'Guardando...';
+  await sheetsLoad();
+
+  const base = existente || {
+    id: Date.now(),
+    tipo: 'mantenimiento',
+    estado: 'pendiente',
+    creadoPor: currentUser?.nombre || 'Admin',
+    creadoTs: Date.now()
+  };
+
+  const camposAdmin = isAdmin() ? {
+    tipoMantenimiento: tipoM,
+    idObra,
+    fechaPrevistaISO,
+    fechaPrevista: fechaPrevistaISO ? (() => { const [y,m,d] = fechaPrevistaISO.split('-'); return `${+d}/${+m}/${y}`; })() : '',
+    operarioAsignado: operario,
+    trabajosPrevistos: document.getElementById('mnt-trabajos-previstos').value.trim(),
+    equipos: document.getElementById('mnt-equipos').value.trim(),
+    observacionesAdmin: document.getElementById('mnt-obs-admin').value.trim()
+  } : {};
+
+  const camposCampo = {
+    trabajosRealizados: document.getElementById('mnt-trabajos-realizados').value.trim(),
+    materialUtilizado: document.getElementById('mnt-material').value.trim(),
+    observacionesCampo: document.getElementById('mnt-obs-campo').value.trim(),
+    fotos
+  };
+
+  const reg = Object.assign({}, base, camposAdmin, camposCampo, {
+    modificadoPor: currentUser?.nombre || '',
+    modificadoTs: Date.now()
+  });
+
+  if (marcandoCompletado) {
+    reg.estado = 'completado';
+    reg.fechaRealTs = Date.now();
+    reg.fechaReal = new Date().toLocaleDateString('es-ES');
+    reg.completadoPor = currentUser?.nombre || '';
+  }
+
+  const idx = incidents.findIndex(i => i.id === reg.id && i.tipo === 'mantenimiento');
+  if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+  await sheetsSave();
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  mntEditando = null;
+  mntFotosFiles = [];
+  mntFotosUrls = [];
+  showToast(marcandoCompletado ? '✓ Marcado como completado' : '✓ Mantenimiento guardado', 'ok');
+  enterMantenimientos();
+}
+
+async function completarMantenimiento() {
+  if (!confirm('¿Marcar este mantenimiento como completado?')) return;
+  await guardarMantenimiento(true);
+}
+
+async function eliminarMantenimiento() {
+  if (!isAdmin()) return;
+  if (mntEditando == null) return;
+  if (!confirm('¿Eliminar este mantenimiento?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === mntEditando && i.tipo === 'mantenimiento'));
+  await sheetsSave();
+  mntEditando = null;
+  showToast('✓ Eliminado', 'ok');
+  enterMantenimientos();
+}
+
+function fillFiltrosMantenimientos() {
+  const list = incidents.filter(i => i.tipo === 'mantenimiento');
+  const obras = [...new Set(list.map(m => m.idObra).filter(Boolean))].sort();
+  const obraSel = document.getElementById('mnt-obra-filtro');
+  if (obraSel) {
+    const cur = obraSel.value;
+    obraSel.innerHTML = '<option value="">Todas</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    obraSel.value = cur;
+  }
+  fillMntOperarioSelect('mnt-operario-filtro', document.getElementById('mnt-operario-filtro')?.value || '', true);
+}
+
+function limpiarFiltrosMantenimientos() {
+  ['mnt-search','mnt-obra-filtro','mnt-operario-filtro','mnt-tipo-filtro','mnt-estado-filtro'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderMantenimientos();
+}
+
+function renderMantenimientos() {
+  fillFiltrosMantenimientos();
+  const c = document.getElementById('mnt-container');
+  const q = (document.getElementById('mnt-search')?.value || '').toLowerCase().trim();
+  const obraF = document.getElementById('mnt-obra-filtro')?.value || '';
+  const opF = document.getElementById('mnt-operario-filtro')?.value || '';
+  const tipoF = document.getElementById('mnt-tipo-filtro')?.value || '';
+  const estadoF = document.getElementById('mnt-estado-filtro')?.value || '';
+
+  let list = incidents.filter(i => i.tipo === 'mantenimiento');
+  // Los instaladores solo ven los suyos
+  if (!isAdmin()) {
+    const yo = currentUser?.nombre || '';
+    list = list.filter(m => m.operarioAsignado === yo);
+  }
+  if (obraF)  list = list.filter(m => m.idObra === obraF);
+  if (opF)    list = list.filter(m => m.operarioAsignado === opF);
+  if (tipoF)  list = list.filter(m => (m.tipoMantenimiento || '') === tipoF);
+  if (estadoF) list = list.filter(m => (m.estado || '') === estadoF);
+  if (q) list = list.filter(m => [m.idObra, m.trabajosPrevistos, m.trabajosRealizados, m.equipos, m.observacionesAdmin, m.observacionesCampo, m.operarioAsignado].filter(Boolean).join(' ').toLowerCase().includes(q));
+  list.sort((a,b) => (b.fechaRealTs || b.modificadoTs || b.creadoTs || 0) - (a.fechaRealTs || a.modificadoTs || a.creadoTs || 0));
+
+  const activos = [obraF, opF, tipoF, estadoF, q].filter(Boolean).length;
+  const badge = document.getElementById('mnt-filtros-count');
+  if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
+
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>${activos ? 'Sin resultados.' : (isAdmin() ? 'Aún no hay mantenimientos. Crea el primero arriba.' : 'No tienes mantenimientos asignados.')}</div>`;
+    return;
+  }
+
+  c.innerHTML = list.map(m => {
+    const tipoBadge = (m.tipoMantenimiento === 'correctivo')
+      ? '<span class="badge badge-error">CORRECTIVO</span>'
+      : '<span class="badge badge-modelo">PREVENTIVO</span>';
+    const estadoBadge = (m.estado === 'completado')
+      ? '<span class="badge badge-modelo">✓ COMPLETADO</span>'
+      : (m.estado === 'cancelado')
+      ? '<span class="badge" style="background:var(--badge-error-bg);color:var(--red)">✗ CANCELADO</span>'
+      : '<span class="badge badge-error">⏳ PENDIENTE</span>';
+    return `
+      <div class="parte-card" onclick="abrirMantenimiento(${m.id})">
+        <div class="mov-head">
+          <div class="mov-obra">${escapeHtml(m.idObra || '—')}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${tipoBadge}${estadoBadge}</div>
+        </div>
+        <div class="mov-meta">
+          <span>📅 ${escapeHtml(m.fechaPrevista || '—')}</span>
+          <span>👷 ${escapeHtml(m.operarioAsignado || '—')}</span>
+          ${(m.fotos||[]).length ? `<span>📷 ${m.fotos.length}</span>` : ''}
+        </div>
+        ${m.trabajosPrevistos ? `<div class="card-desc" style="margin-top:6px">${escapeHtml(m.trabajosPrevistos.substring(0,120))}${m.trabajosPrevistos.length>120?'…':''}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
 // Limpiar cache local para evitar quota exceeded
 try { localStorage.removeItem('efigalia_kb_v4'); } catch(e) {}
 
@@ -7151,9 +7657,10 @@ try { applyTheme(localStorage.getItem('efigalia_theme') || 'dark'); } catch(e) {
 // Bootstrap: login primero, después home
 (async () => {
   await sheetsLoad();
+  try { await visitasLoad(); } catch(e) {}
   actualizarHeaderUsuario();
   if (!currentUser) mostrarLogin();
-  else goHome();   // refresca visibilidad de la card admin según el rol del usuario cacheado
+  else goHome();   // refresca visibilidad de las cards según el rol del usuario cacheado
 })();
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────

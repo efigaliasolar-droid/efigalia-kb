@@ -367,8 +367,12 @@
   .plan-cell:hover { background: var(--surface2); }
   .plan-cell.hoy { background: rgba(33,113,199,0.06); }
   .plan-pill { display: block; background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 6px; margin-bottom: 3px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+  .plan-pill.visita       { background: #1f8a5e; }
+  .plan-pill.mantenimiento{ background: #c97a1f; }
+  .plan-pill.correctivo   { background: #c63d3d; }
   .plan-pill .obr { font-weight: 600; }
   .plan-pill .fur { font-family: var(--mono); font-size: 10px; opacity: 0.85; }
+  .plan-pill .hora { font-family: var(--mono); font-size: 10px; opacity: 0.9; }
 </style>
 </head>
 <body>
@@ -1267,6 +1271,10 @@
           </div>
         </div>
         <div class="form-group">
+          <label>Hora prevista</label>
+          <input type="time" id="v-hora" placeholder="Opcional">
+        </div>
+        <div class="form-group">
           <label>Observaciones para el operario</label>
           <textarea class="field" id="v-obs" placeholder="Ej: ir con escalera extra, puerta lateral, preguntar por Luis..."></textarea>
         </div>
@@ -1835,9 +1843,15 @@
             <input type="date" id="mnt-fecha-prevista">
           </div>
         </div>
-        <div class="form-group">
-          <label>Operario asignado *</label>
-          <select id="mnt-operario"></select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Operario asignado *</label>
+            <select id="mnt-operario"></select>
+          </div>
+          <div class="form-group">
+            <label>Hora prevista</label>
+            <input type="time" id="mnt-hora" placeholder="Opcional">
+          </div>
         </div>
         <div class="form-group">
           <label>Trabajos previstos</label>
@@ -1902,7 +1916,7 @@
     <button class="back-link" onclick="goHome()">← Atrás</button>
     <div class="section-title">Planificación semanal</div>
     <div class="action-row" style="margin-bottom:12px">
-      <button class="btn-primary" onclick="abrirModalAsignacionNueva()">+ Nueva asignación</button>
+      <button class="btn-primary" onclick="abrirSelectorTipoPlan()">+ Nueva...</button>
     </div>
     <div class="plan-nav">
       <button class="btn-ghost" onclick="cambiarSemanaPlan(-1)">◀ Anterior</button>
@@ -1914,6 +1928,19 @@
     </div>
     <div class="plan-grid" id="plan-grid"></div>
     <div class="calc-note" style="margin-top:14px">Toca cualquier celda para crear una asignación ese día, o toca una pastilla existente para editarla.</div>
+  </div>
+
+  <!-- Selector de tipo de trabajo (desde Planificación) -->
+  <div class="modal-overlay" id="plan-tipo-modal">
+    <div class="modal" style="max-width:360px">
+      <button class="modal-close" onclick="cerrarSelectorTipoPlan()">✕</button>
+      <div class="modal-title">¿Qué quieres asignar?</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <button class="btn-primary" onclick="crearDesdePlan('obra')" style="background:#2171c7">Obra (día(s) completos)</button>
+        <button class="btn-primary" onclick="crearDesdePlan('visita')" style="background:#1f8a5e">Visita pre-contrato</button>
+        <button class="btn-primary" onclick="crearDesdePlan('mantenimiento')" style="background:#c97a1f">Mantenimiento</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de asignación -->
@@ -4983,6 +5010,7 @@ function abrirFormularioVisita(v) {
   document.getElementById('v-equipos').value = equipos;
   document.getElementById('v-obs').value = obs;
   document.getElementById('v-fecha').value = (v && v.fechaPrevista) || '';
+  document.getElementById('v-hora').value = (v && v.horaPrevista) || '';
 
   // Rellenar bloque de campo
   rellenarCampoVisita(v && v.campo);
@@ -5058,6 +5086,7 @@ function leerFormularioVisita() {
     observaciones: txt('v-obs'),
     operarioAsignado: document.getElementById('v-operario').value,
     fechaPrevista: document.getElementById('v-fecha').value,
+    horaPrevista: document.getElementById('v-hora').value,
     campo: {
       contacto: {
         tipo: document.getElementById('v-contacto-tipo').value,
@@ -7808,6 +7837,7 @@ function abrirMantenimiento(id) {
   fillMntObraSelect(m?.idObra || '');
   document.getElementById('mnt-fecha-prevista').value = m?.fechaPrevistaISO || '';
   fillMntOperarioSelect('mnt-operario', m?.operarioAsignado || '', false);
+  document.getElementById('mnt-hora').value = m?.horaPrevista || '';
   // Bloques admin
   document.getElementById('mnt-trabajos-previstos').value = m?.trabajosPrevistos || '';
   document.getElementById('mnt-equipos').value = m?.equipos || '';
@@ -7831,7 +7861,7 @@ function aplicarPermisosMantenimiento(m) {
   const esAdminEditando = isAdmin();
 
   // Admin edita todo; operario solo el bloque de campo
-  ['mnt-obra','mnt-fecha-prevista','mnt-operario','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
+  ['mnt-obra','mnt-fecha-prevista','mnt-hora','mnt-operario','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (esAdminEditando) {
@@ -7964,6 +7994,7 @@ async function guardarMantenimiento(marcandoCompletado) {
     idObra,
     fechaPrevistaISO,
     fechaPrevista: fechaPrevistaISO ? (() => { const [y,m,d] = fechaPrevistaISO.split('-'); return `${+d}/${+m}/${y}`; })() : '',
+    horaPrevista: document.getElementById('mnt-hora').value || '',
     operarioAsignado: operario,
     trabajosPrevistos: document.getElementById('mnt-trabajos-previstos').value.trim(),
     equipos: document.getElementById('mnt-equipos').value.trim(),
@@ -8356,6 +8387,41 @@ function asignacionesEnFecha(fechaISO) {
     && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO);
 }
 
+// Agrega items de los 3 tipos (obra / visita / mantenimiento) para una persona+fecha
+function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
+  const items = [];
+  // Obras (asignaciones)
+  incidents.forEach(i => {
+    if (i.tipo === 'asignacion'
+        && (i.instaladores || []).includes(nombrePersona)
+        && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO) {
+      items.push({ kind: 'obra', id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta, hora: '' });
+    }
+  });
+  // Visitas (fechaPrevista ISO date)
+  (Array.isArray(visitas) ? visitas : []).forEach(v => {
+    if (v.operarioAsignado === nombrePersona && v.fechaPrevista === fechaISO) {
+      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: '', hora: v.horaPrevista || '' });
+    }
+  });
+  // Mantenimientos
+  incidents.forEach(i => {
+    if (i.tipo === 'mantenimiento'
+        && i.operarioAsignado === nombrePersona
+        && i.fechaPrevistaISO === fechaISO) {
+      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: '', hora: i.horaPrevista || '' });
+    }
+  });
+  // Ordenar: primero con hora (asc), luego sin hora (obras van al final)
+  items.sort((a, b) => {
+    if (a.hora && b.hora) return a.hora.localeCompare(b.hora);
+    if (a.hora) return -1;
+    if (b.hora) return 1;
+    return 0;
+  });
+  return items;
+}
+
 function enterPlanificacion() {
   if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
   hideAllViews();
@@ -8390,14 +8456,23 @@ function renderPlanificacion() {
   const rows = instaladores.map(nom => {
     const cells = dias.map(fecha => {
       const esHoy = fecha === hoy;
-      const asigs = asignacionesEnFechaParaPersona(fecha, nom);
-      const pills = asigs.map(a => `
-        <div class="plan-pill" onclick="event.stopPropagation();abrirModalAsignacion(${a.id})">
-          <div class="obr">${escapeHtml(a.idObra || '—')}</div>
-          ${a.furgoneta ? `<div class="fur">${escapeHtml(a.furgoneta)}</div>` : ''}
-        </div>
-      `).join('');
-      return `<td class="plan-cell ${esHoy?'hoy':''}" onclick="abrirModalAsignacionNueva('${fecha}','${escapeAttr(nom)}')">${pills}</td>`;
+      const items = itemsPlanificacionPersonaFecha(fecha, nom);
+      const pills = items.map(it => {
+        const cls = it.kind;  // 'obra' | 'visita' | 'mantenimiento' | 'correctivo'
+        const onclick = it.kind === 'obra'
+          ? `abrirModalAsignacion(${it.id})`
+          : it.kind === 'visita'
+          ? `abrirVisita(${it.id})`
+          : `abrirMantenimiento(${it.id})`;
+        return `
+          <div class="plan-pill ${cls}" onclick="event.stopPropagation();${onclick}">
+            ${it.hora ? `<div class="hora">${escapeHtml(it.hora)}</div>` : ''}
+            <div class="obr">${escapeHtml(it.obra || '—')}</div>
+            ${it.furgoneta ? `<div class="fur">${escapeHtml(it.furgoneta)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+      return `<td class="plan-cell ${esHoy?'hoy':''}" onclick="abrirSelectorTipoPlan('${fecha}','${escapeAttr(nom)}')">${pills}</td>`;
     }).join('');
     return `<tr><td class="col-nom">${escapeHtml(nom)}</td>${cells}</tr>`;
   }).join('');
@@ -8409,6 +8484,38 @@ function renderPlanificacion() {
 }
 
 function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
+
+// ── Selector de tipo (desde Planificación) ─────────────
+let planCtx = { fecha: null, persona: null };
+
+function abrirSelectorTipoPlan(fechaISO, persona) {
+  planCtx = { fecha: fechaISO || hoyISO(), persona: persona || '' };
+  document.getElementById('plan-tipo-modal').classList.add('open');
+}
+function cerrarSelectorTipoPlan() {
+  document.getElementById('plan-tipo-modal').classList.remove('open');
+}
+
+function crearDesdePlan(kind) {
+  const { fecha, persona } = planCtx;
+  cerrarSelectorTipoPlan();
+  if (kind === 'obra') {
+    abrirModalAsignacionNueva(fecha, persona);
+  } else if (kind === 'visita') {
+    // Navegar al formulario de nueva visita con fecha + operario prellenados
+    visitaEnEdicion = null;
+    abrirFormularioVisita({ fechaPrevista: fecha, operarioAsignado: persona });
+  } else if (kind === 'mantenimiento') {
+    abrirMantenimiento();
+    setTimeout(() => {
+      if (fecha) document.getElementById('mnt-fecha-prevista').value = fecha;
+      if (persona) {
+        const sel = document.getElementById('mnt-operario');
+        if (sel && [...sel.options].some(o => o.value === persona)) sel.value = persona;
+      }
+    }, 100);
+  }
+}
 
 function abrirModalAsignacionNueva(fechaISO, nombrePrefill) {
   asigEnEdicion = null;
@@ -8574,6 +8681,28 @@ async function eliminarAsignacion() {
 }
 
 // ── MI DÍA (home para instaladores) ────────────────────
+function proximosItemsParaPersona(nombre, hoyISOstr, limite) {
+  const out = [];
+  // Asignaciones de obra que empiezan tras hoy
+  incidents.forEach(i => {
+    if (i.tipo === 'asignacion' && (i.instaladores || []).includes(nombre) && i.fechaDesdeISO > hoyISOstr) {
+      out.push({ kind: 'obra', fecha: i.fechaDesdeISO, fechaHasta: i.fechaHastaISO, obra: i.idObra, furgoneta: i.furgoneta, hora: '', id: i.id });
+    }
+  });
+  (Array.isArray(visitas) ? visitas : []).forEach(v => {
+    if (v.operarioAsignado === nombre && v.fechaPrevista > hoyISOstr) {
+      out.push({ kind: 'visita', fecha: v.fechaPrevista, obra: v.titulo || v.cliente_nombre || '—', hora: v.horaPrevista || '', id: v.id });
+    }
+  });
+  incidents.forEach(i => {
+    if (i.tipo === 'mantenimiento' && i.operarioAsignado === nombre && i.fechaPrevistaISO > hoyISOstr) {
+      out.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', fecha: i.fechaPrevistaISO, obra: i.idObra, hora: i.horaPrevista || '', id: i.id });
+    }
+  });
+  out.sort((a,b) => (a.fecha + (a.hora || '99:99')).localeCompare(b.fecha + (b.hora || '99:99')));
+  return out.slice(0, limite || 5);
+}
+
 function renderMiDia() {
   const banner = document.getElementById('mi-dia-banner');
   if (!banner) return;
@@ -8582,48 +8711,78 @@ function renderMiDia() {
   if (!nombre || isAdmin()) { banner.style.display = 'none'; return; }
 
   const hoy = hoyISO();
-  const hoyAsigs = asignacionesEnFechaParaPersona(hoy, nombre);
-  // Próximas 7 asignaciones futuras (excluyendo hoy)
-  const proximas = incidents
-    .filter(i => i.tipo === 'asignacion' && (i.instaladores || []).includes(nombre) && i.fechaDesdeISO > hoy)
-    .sort((a,b) => a.fechaDesdeISO.localeCompare(b.fechaDesdeISO))
-    .slice(0, 5);
+  const itemsHoy = itemsPlanificacionPersonaFecha(hoy, nombre);
+  const proximas = proximosItemsParaPersona(nombre, hoy, 5);
 
-  if (!hoyAsigs.length && !proximas.length) { banner.style.display = 'none'; return; }
+  if (!itemsHoy.length && !proximas.length) { banner.style.display = 'none'; return; }
 
   let html = `<h3>Mi día · ${fechaIsoToEs(hoy)}</h3>`;
-  if (hoyAsigs.length) {
-    html += hoyAsigs.map(a => {
-      const otros = (a.instaladores || []).filter(n => n !== nombre);
-      const obra = incidents.find(o => o.tipo === 'obra' && o.nombre === a.idObra);
-      return `
-        <div class="mi-dia-card">
-          <div class="obra">${escapeHtml(a.idObra || '—')}</div>
-          <div class="meta">
-            ${otros.length ? `<span>👷 Con ${escapeHtml(otros.join(', '))}</span>` : '<span>👷 Solo</span>'}
-            ${a.furgoneta ? `<span>🚐 ${escapeHtml(a.furgoneta)}</span>` : ''}
-            <span>📅 Hasta ${fechaIsoToEs(a.fechaHastaISO)}</span>
+  if (itemsHoy.length) {
+    html += itemsHoy.map(it => {
+      const d = it.data;
+      if (it.kind === 'obra') {
+        const otros = (d.instaladores || []).filter(n => n !== nombre);
+        const obra = incidents.find(o => o.tipo === 'obra' && o.nombre === d.idObra);
+        return `
+          <div class="mi-dia-card" style="border-left:3px solid #2171c7">
+            <div class="obra">🏗 ${escapeHtml(d.idObra || '—')}</div>
+            <div class="meta">
+              ${otros.length ? `<span>👷 Con ${escapeHtml(otros.join(', '))}</span>` : '<span>👷 Solo</span>'}
+              ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
+              <span>📅 Hasta ${fechaIsoToEs(d.fechaHastaISO)}</span>
+            </div>
+            ${d.notas ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${escapeHtml(d.notas)}</div>` : ''}
+            <div class="acciones">
+              ${obra ? `<button class="btn-ghost" onclick="abrirFichaObra(${obra.id}, 'estado')">Ver ficha obra</button>` : ''}
+              <button class="btn-ghost" onclick="enterPartes()">Nuevo parte</button>
+            </div>
           </div>
-          ${a.notas ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${escapeHtml(a.notas)}</div>` : ''}
+        `;
+      }
+      if (it.kind === 'visita') {
+        return `
+          <div class="mi-dia-card" style="border-left:3px solid #1f8a5e">
+            <div class="obra">📋 Visita · ${escapeHtml(d.titulo || d.cliente_nombre || '—')}</div>
+            <div class="meta">
+              ${it.hora ? `<span>🕒 ${escapeHtml(it.hora)}</span>` : ''}
+              ${d.direccion ? `<span>📍 ${escapeHtml(d.direccion)}</span>` : ''}
+              ${d.telefono ? `<span>📞 ${escapeHtml(d.telefono)}</span>` : ''}
+            </div>
+            <div class="acciones">
+              <button class="btn-ghost" onclick="abrirVisita(${d.id})">Abrir visita</button>
+              ${d.urlMaps ? `<a class="btn-ghost" href="${escapeHtml(d.urlMaps)}" target="_blank" rel="noopener" style="text-decoration:none">Maps ↗</a>` : ''}
+            </div>
+          </div>
+        `;
+      }
+      // mantenimiento / correctivo
+      const tipoEtq = d.tipoMantenimiento === 'correctivo' ? 'Correctivo' : 'Preventivo';
+      const color = d.tipoMantenimiento === 'correctivo' ? '#c63d3d' : '#c97a1f';
+      return `
+        <div class="mi-dia-card" style="border-left:3px solid ${color}">
+          <div class="obra">🔧 ${escapeHtml(tipoEtq)} · ${escapeHtml(d.idObra || '—')}</div>
+          <div class="meta">
+            ${it.hora ? `<span>🕒 ${escapeHtml(it.hora)}</span>` : ''}
+            ${d.equipos ? `<span>🛠 ${escapeHtml((d.equipos||'').substring(0,60))}</span>` : ''}
+          </div>
           <div class="acciones">
-            ${obra ? `<button class="btn-ghost" onclick="abrirFichaObra(${obra.id}, 'estado')">Ver ficha obra</button>` : ''}
-            <button class="btn-ghost" onclick="enterPartes()">Nuevo parte</button>
+            <button class="btn-ghost" onclick="abrirMantenimiento(${d.id})">Abrir mantenimiento</button>
           </div>
         </div>
       `;
     }).join('');
   } else {
-    html += `<div class="mi-dia-card"><div class="obra">Hoy sin asignación</div><div class="meta">El administrador aún no te ha asignado obra para hoy.</div></div>`;
+    html += `<div class="mi-dia-card"><div class="obra">Hoy sin asignación</div><div class="meta">El administrador aún no te ha asignado trabajo para hoy.</div></div>`;
   }
   if (proximas.length) {
     html += `<div class="mi-dia-proximos">
       <div class="lbl">Próximos días</div>
-      ${proximas.map(a => `
-        <div class="mi-dia-proximo">
-          <span class="f">${fechaIsoToEs(a.fechaDesdeISO)}${a.fechaDesdeISO !== a.fechaHastaISO ? ' → ' + fechaIsoToEs(a.fechaHastaISO) : ''}</span>
-          <span class="o">${escapeHtml(a.idObra || '—')}${a.furgoneta ? ' · ' + escapeHtml(a.furgoneta) : ''}</span>
-        </div>
-      `).join('')}
+      ${proximas.map(it => {
+        const icon = it.kind === 'obra' ? '🏗' : (it.kind === 'visita' ? '📋' : (it.kind === 'correctivo' ? '🔧' : '🔧'));
+        const rango = (it.kind === 'obra' && it.fecha !== it.fechaHasta) ? ` → ${fechaIsoToEs(it.fechaHasta)}` : '';
+        const extra = [it.hora, it.obra, it.furgoneta].filter(Boolean).join(' · ');
+        return `<div class="mi-dia-proximo"><span class="f">${fechaIsoToEs(it.fecha)}${rango}</span><span class="o">${icon} ${escapeHtml(extra)}</span></div>`;
+      }).join('')}
     </div>`;
   }
 

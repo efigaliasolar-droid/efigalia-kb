@@ -394,8 +394,8 @@
       </div>
       <div class="home-card" onclick="enterRepostajes()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/><path d="M17 12v3"/></svg></div>
-        <div class="home-title">Repostajes</div>
-        <div class="home-desc">Registrar carga de combustible por furgoneta con kilómetros y ticket.</div>
+        <div class="home-title">Repostajes y tickets</div>
+        <div class="home-desc">Carga de combustible y tickets o facturas pagadas por instaladores.</div>
       </div>
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-14.3 7.3L3 20l.7-3.7A9 9 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7"/><circle cx="12" cy="16.5" r="0.4" fill="currentColor" stroke="none"/></svg></div>
@@ -1552,9 +1552,12 @@
   <div id="view-repostajes">
     <div id="repostajes-list-section">
       <button class="back-link" onclick="goHome()">← Atrás</button>
-      <div class="section-title">Repostajes</div>
+      <div class="section-title">Repostajes y tickets</div>
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormRepostaje()">+ Nuevo repostaje</button>
+        <button class="btn-primary" onclick="abrirFormTicket()">+ Nuevo ticket</button>
+      </div>
+      <div class="action-row" style="margin-top:-4px">
         <button class="btn-secondary" id="btn-rep-export" onclick="exportarRepostajesCSV()" style="display:none">Exportar CSV</button>
       </div>
       <div id="rep-config-row" style="display:none;margin-bottom:14px"></div>
@@ -1565,6 +1568,24 @@
       <details class="filtros-panel">
         <summary>Filtros<span class="filtros-badge" id="rep-filtros-count" style="display:none">0</span></summary>
         <div class="filtros-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo</label>
+              <select id="rep-tipo-filtro" onchange="renderRepostajes()">
+                <option value="">Todos</option>
+                <option value="repostaje">Repostajes</option>
+                <option value="ticket">Tickets</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Forma de pago</label>
+              <select id="rep-pago-filtro" onchange="renderRepostajes()">
+                <option value="">Todas</option>
+                <option value="tarjeta">Tarjeta empresa</option>
+                <option value="efectivo">Efectivo propio</option>
+              </select>
+            </div>
+          </div>
           <div class="form-row">
             <div class="form-group">
               <label>Furgoneta</label>
@@ -1635,6 +1656,66 @@
       <button class="btn-primary" id="btn-rep-save" onclick="guardarRepostaje()">Guardar repostaje</button>
       <div id="rep-extra-actions" style="margin-top:10px;display:none">
         <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarRepostaje()">🗑 Eliminar repostaje</button>
+      </div>
+    </div>
+
+    <div id="tickets-form-section" style="display:none">
+      <button class="back-link" onclick="cerrarFormTicket()">← Atrás</button>
+      <div class="section-title" id="ticket-form-title">Nuevo ticket</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="tkt-fecha">
+        </div>
+        <div class="form-group">
+          <label>Categoría *</label>
+          <select id="tkt-categoria">
+            <option value="">— Seleccionar —</option>
+            <option value="comidas">Comidas</option>
+            <option value="material">Material</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Concepto / descripción *</label>
+        <input type="text" id="tkt-concepto" placeholder="Ej: comida con cliente · tornillería ferretería Pepe">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Importe € *</label>
+          <input type="number" step="any" inputmode="decimal" id="tkt-importe" placeholder="Ej: 24.50">
+        </div>
+        <div class="form-group">
+          <label>Forma de pago *</label>
+          <select id="tkt-pago">
+            <option value="">— Seleccionar —</option>
+            <option value="tarjeta">Tarjeta empresa</option>
+            <option value="efectivo">Efectivo propio</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Quién paga *</label>
+        <select id="tkt-persona"></select>
+      </div>
+      <div class="form-group">
+        <label>Foto del ticket *</label>
+        <div class="photo-drop" onclick="document.getElementById('tkt-foto-input').click()">
+          <input type="file" id="tkt-foto-input" accept="image/*" onchange="onTicketFotoChange(event)">
+          <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Adjuntar ticket
+        </div>
+        <div class="photo-previews" id="tkt-foto-preview"></div>
+      </div>
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea class="field" id="tkt-notas" placeholder="Proveedor, motivo, observaciones..."></textarea>
+      </div>
+
+      <button class="btn-primary" id="btn-tkt-save" onclick="guardarTicket()">Guardar ticket</button>
+      <div id="tkt-extra-actions" style="margin-top:10px;display:none">
+        <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarTicket()">🗑 Eliminar ticket</button>
       </div>
     </div>
   </div>
@@ -6883,10 +6964,13 @@ function renderActividadObra() {
   `;
 }
 
-// ── REPOSTAJES ─────────────────────────────────────────
+// ── REPOSTAJES Y TICKETS ───────────────────────────────
 let repostajeEditando = null;       // id del repostaje en edición
 let repostajeFotoFile = null;       // File pendiente de subir
 let repostajeFotoUrl  = '';         // URL ya subida (al editar)
+let ticketEditando    = null;
+let ticketFotoFile    = null;
+let ticketFotoUrl     = '';
 
 function enterRepostajes() {
   if (!requireLogin()) return;
@@ -6896,6 +6980,7 @@ function enterRepostajes() {
   document.getElementById('view-repostajes').style.display = 'block';
   document.getElementById('repostajes-list-section').style.display = 'block';
   document.getElementById('repostajes-form-section').style.display = 'none';
+  document.getElementById('tickets-form-section').style.display = 'none';
   sheetsLoad().then(() => renderRepostajes());
 }
 
@@ -6958,6 +7043,172 @@ function cerrarFormRepostaje() {
   document.getElementById('repostajes-form-section').style.display = 'none';
   document.getElementById('repostajes-list-section').style.display = 'block';
   renderRepostajes();
+}
+
+function abrirFormTicket(id) {
+  ticketEditando = id || null;
+  ticketFotoFile = null;
+  ticketFotoUrl = '';
+  document.getElementById('repostajes-list-section').style.display = 'none';
+  document.getElementById('repostajes-form-section').style.display = 'none';
+  document.getElementById('tickets-form-section').style.display = 'block';
+  document.getElementById('ticket-form-title').textContent = id ? 'Editar ticket' : 'Nuevo ticket';
+  document.getElementById('tkt-extra-actions').style.display = id ? 'block' : 'none';
+
+  if (id) {
+    const t = incidents.find(i => i.id === id && i.tipo === 'ticket');
+    if (!t) return;
+    document.getElementById('tkt-fecha').value = t.fechaISO || '';
+    document.getElementById('tkt-categoria').value = t.categoria || '';
+    document.getElementById('tkt-concepto').value = t.concepto || '';
+    document.getElementById('tkt-importe').value = t.importe ?? '';
+    document.getElementById('tkt-pago').value = t.formaPago || '';
+    fillRepostajePersonaSelectById('tkt-persona', t.persona);
+    document.getElementById('tkt-notas').value = t.notas || '';
+    ticketFotoUrl = t.ticketUrl || '';
+  } else {
+    document.getElementById('tkt-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('tkt-categoria').value = '';
+    document.getElementById('tkt-concepto').value = '';
+    document.getElementById('tkt-importe').value = '';
+    document.getElementById('tkt-pago').value = '';
+    fillRepostajePersonaSelectById('tkt-persona', (currentUser && currentUser.nombre) || '');
+    document.getElementById('tkt-notas').value = '';
+  }
+  renderTicketFotoPreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cerrarFormTicket() {
+  document.getElementById('tickets-form-section').style.display = 'none';
+  document.getElementById('repostajes-list-section').style.display = 'block';
+  renderRepostajes();
+}
+
+function fillRepostajePersonaSelectById(selId, valor) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (inactivo)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function onTicketFotoChange(event) {
+  const file = (event && event.target && event.target.files && event.target.files[0]) || null;
+  if (!file) return;
+  if (event && event.target) event.target.value = '';
+  ticketFotoFile = file;
+  renderTicketFotoPreview();
+}
+
+function renderTicketFotoPreview() {
+  const cont = document.getElementById('tkt-foto-preview');
+  if (!cont) return;
+  cont.innerHTML = '';
+  if (ticketFotoUrl && !ticketFotoFile) {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img'); img.src = ticketFotoUrl; img.onclick = () => window.open(ticketFotoUrl, '_blank');
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕';
+    btnDel.onclick = (e) => { e.stopPropagation(); if (!confirm('¿Quitar la foto?')) return; ticketFotoUrl = ''; renderTicketFotoPreview(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  }
+  if (ticketFotoFile) {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img'); img.src = URL.createObjectURL(ticketFotoFile);
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕';
+    btnDel.onclick = (e) => { e.stopPropagation(); ticketFotoFile = null; renderTicketFotoPreview(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  }
+}
+
+async function guardarTicket() {
+  const fechaISO = document.getElementById('tkt-fecha').value;
+  const categoria = document.getElementById('tkt-categoria').value;
+  const concepto = document.getElementById('tkt-concepto').value.trim();
+  const importe = parseFloat(document.getElementById('tkt-importe').value);
+  const pago = document.getElementById('tkt-pago').value;
+  const persona = document.getElementById('tkt-persona').value.trim();
+  const notas = document.getElementById('tkt-notas').value.trim();
+
+  if (!fechaISO) { showToast('⚠ Indica la fecha', 'err'); return; }
+  if (!categoria) { showToast('⚠ Elige la categoría', 'err'); return; }
+  if (!concepto) { showToast('⚠ Rellena el concepto', 'err'); return; }
+  if (isNaN(importe) || importe <= 0) { showToast('⚠ Importe inválido', 'err'); return; }
+  if (!pago) { showToast('⚠ Indica la forma de pago', 'err'); return; }
+  if (!persona) { showToast('⚠ Indica quién paga', 'err'); return; }
+  if (!ticketFotoFile && !ticketFotoUrl) { showToast('⚠ Adjunta la foto del ticket', 'err'); return; }
+
+  const btn = document.getElementById('btn-tkt-save');
+  btn.disabled = true;
+
+  let fotoUrl = ticketFotoUrl || '';
+  if (ticketFotoFile) {
+    btn.textContent = 'Subiendo ticket...';
+    try {
+      fotoUrl = await subirFoto(ticketFotoFile);
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Guardar ticket';
+      showToast('⚠ Error al subir el ticket: ' + ((e && e.message) || ''), 'err');
+      return;
+    }
+  }
+
+  btn.textContent = 'Guardando...';
+  await sheetsLoad();
+
+  const [y, m, d] = fechaISO.split('-');
+  const fechaEs = `${parseInt(d,10)}/${parseInt(m,10)}/${y}`;
+
+  const reg = {
+    id: ticketEditando || Date.now(),
+    tipo: 'ticket',
+    fechaISO,
+    fecha: fechaEs,
+    fechaTs: new Date(fechaISO).getTime(),
+    categoria,
+    concepto,
+    importe,
+    formaPago: pago,
+    persona,
+    notas,
+    ticketUrl: fotoUrl,
+    creadoPor: (currentUser && currentUser.nombre) || 'Anónimo',
+    creadoTs: Date.now()
+  };
+
+  const idx = incidents.findIndex(i => i.id === reg.id && i.tipo === 'ticket');
+  if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+
+  await sheetsSave();
+  btn.disabled = false; btn.textContent = 'Guardar ticket';
+  ticketEditando = null;
+  ticketFotoFile = null;
+  ticketFotoUrl = '';
+  showToast('✓ Ticket guardado', 'ok');
+  cerrarFormTicket();
+}
+
+async function eliminarTicket() {
+  if (ticketEditando == null) return;
+  if (!confirm('¿Eliminar este ticket?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === ticketEditando && i.tipo === 'ticket'));
+  await sheetsSave();
+  ticketEditando = null;
+  showToast('✓ Eliminado', 'ok');
+  cerrarFormTicket();
 }
 
 function onRepostajeFotoChange(event) {
@@ -7127,18 +7378,32 @@ function renderResumenRepostajes() {
 // ── Exportar CSV (importable en Excel / Drive) ─────────
 function exportarRepostajesCSV() {
   if (!isAdmin()) { showToast('⚠ Solo el administrador puede exportar', 'err'); return; }
-  const reps = incidents.filter(i => i.tipo === 'repostaje');
-  if (!reps.length) { showToast('⚠ No hay repostajes para exportar', 'err'); return; }
-  const sorted = reps.slice().sort((a,b) => (a.fechaTs||0) - (b.fechaTs||0));
-  const headers = ['Fecha', 'Furgoneta', 'Km', 'Litros', 'Persona', 'Notas', 'TicketURL', 'CreadoPor'];
+  const gastos = incidents.filter(i => i.tipo === 'repostaje' || i.tipo === 'ticket');
+  if (!gastos.length) { showToast('⚠ Nada para exportar', 'err'); return; }
+  const sorted = gastos.slice().sort((a,b) => (a.fechaTs||0) - (b.fechaTs||0));
+  const headers = ['Tipo', 'Fecha', 'Categoria', 'Concepto', 'Furgoneta', 'Km', 'Litros', 'Importe', 'FormaPago', 'Persona', 'Notas', 'TicketURL', 'CreadoPor'];
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv = [headers.join(','), ...sorted.map(r => [r.fecha, r.furgoneta, r.km, r.litros, r.persona, r.notas, r.ticketUrl, r.creadoPor].map(esc).join(','))].join('\n');
+  const csv = [headers.join(','), ...sorted.map(r => [
+    r.tipo,
+    r.fecha,
+    r.categoria || '',
+    r.concepto || '',
+    r.furgoneta || '',
+    r.km ?? '',
+    r.litros ?? '',
+    r.importe ?? '',
+    r.formaPago || '',
+    r.persona || '',
+    r.notas || '',
+    r.ticketUrl || '',
+    r.creadoPor || ''
+  ].map(esc).join(','))].join('\n');
   const bom = '﻿';
   const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `repostajes-${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `repostajes-tickets-${new Date().toISOString().split('T')[0]}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -7208,9 +7473,9 @@ function enviarRepostajeASync(reg) {
 }
 
 function fillRepostajesFilterSelects() {
-  const reps = incidents.filter(i => i.tipo === 'repostaje');
-  const furs = [...new Set(reps.map(r => r.furgoneta).filter(Boolean))].sort();
-  const pers = [...new Set(reps.map(r => r.persona).filter(Boolean))].sort();
+  const gastos = incidents.filter(i => i.tipo === 'repostaje' || i.tipo === 'ticket');
+  const furs = [...new Set(gastos.filter(r => r.tipo === 'repostaje').map(r => r.furgoneta).filter(Boolean))].sort();
+  const pers = [...new Set(gastos.map(r => r.persona).filter(Boolean))].sort();
   const fSel = document.getElementById('rep-furgoneta-filtro');
   const pSel = document.getElementById('rep-persona-filtro');
   if (fSel) {
@@ -7226,7 +7491,7 @@ function fillRepostajesFilterSelects() {
 }
 
 function limpiarFiltrosRepostajes() {
-  ['rep-furgoneta-filtro','rep-persona-filtro','rep-desde','rep-hasta'].forEach(id => {
+  ['rep-tipo-filtro','rep-pago-filtro','rep-furgoneta-filtro','rep-persona-filtro','rep-desde','rep-hasta'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   renderRepostajes();
@@ -7239,6 +7504,8 @@ function renderRepostajes() {
   const btnExp = document.getElementById('btn-rep-export');
   if (btnExp) btnExp.style.display = isAdmin() ? '' : 'none';
   const c = document.getElementById('repostajes-container');
+  const tipoF = document.getElementById('rep-tipo-filtro')?.value || '';
+  const pagoF = document.getElementById('rep-pago-filtro')?.value || '';
   const fF = document.getElementById('rep-furgoneta-filtro')?.value || '';
   const pF = document.getElementById('rep-persona-filtro')?.value || '';
   const desdeStr = document.getElementById('rep-desde')?.value || '';
@@ -7246,36 +7513,64 @@ function renderRepostajes() {
   const desde = desdeStr ? new Date(desdeStr) : null;
   const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
 
-  let list = incidents.filter(i => i.tipo === 'repostaje');
+  let list = incidents.filter(i => i.tipo === 'repostaje' || i.tipo === 'ticket');
+  if (tipoF) list = list.filter(r => r.tipo === tipoF);
+  if (pagoF) list = list.filter(r => (r.formaPago || '') === pagoF);
   if (fF) list = list.filter(r => r.furgoneta === fF);
   if (pF) list = list.filter(r => r.persona === pF);
   if (desde) list = list.filter(r => r.fechaTs && r.fechaTs >= desde.getTime());
   if (hasta) list = list.filter(r => r.fechaTs && r.fechaTs <= hasta.getTime());
   list.sort((a,b) => (b.fechaTs || b.creadoTs || 0) - (a.fechaTs || a.creadoTs || 0));
 
-  const activos = [fF, pF, desdeStr, hastaStr].filter(Boolean).length;
+  const activos = [tipoF, pagoF, fF, pF, desdeStr, hastaStr].filter(Boolean).length;
   const badge = document.getElementById('rep-filtros-count');
   if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
 
   if (!list.length) {
-    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay repostajes. Crea el primero con el botón de arriba.'}</div>`;
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay registros. Crea el primero con los botones de arriba.'}</div>`;
     return;
   }
 
-  c.innerHTML = list.map(r => `
-    <div class="parte-card" onclick="abrirFormRepostaje(${r.id})">
-      <div class="mov-head">
-        <div class="mov-obra">${escapeHtml(r.furgoneta || '—')}</div>
-        <span class="badge badge-marca">${escapeHtml(r.fecha || '—')}</span>
+  c.innerHTML = list.map(r => {
+    if (r.tipo === 'ticket') {
+      const pagoBadge = r.formaPago === 'tarjeta'
+        ? '<span class="badge badge-modelo">TARJETA</span>'
+        : '<span class="badge badge-error">EFECTIVO</span>';
+      const catLabel = ({ comidas:'COMIDAS', material:'MATERIAL', otro:'OTRO' }[r.categoria] || (r.categoria||'').toUpperCase());
+      return `
+        <div class="parte-card" onclick="abrirFormTicket(${r.id})">
+          <div class="mov-head">
+            <div class="mov-obra">🧾 ${escapeHtml(r.concepto || '—')}</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+              <span class="badge badge-marca">${catLabel}</span>
+              ${pagoBadge}
+              <span class="badge badge-marca">${escapeHtml(r.fecha || '—')}</span>
+            </div>
+          </div>
+          <div class="mov-meta">
+            <span>💶 ${(r.importe ?? 0).toFixed(2)} €</span>
+            <span>👷 ${escapeHtml(r.persona || '—')}</span>
+            ${r.ticketUrl ? '<span>🎫 ticket</span>' : ''}
+          </div>
+        </div>
+      `;
+    }
+    // repostaje
+    return `
+      <div class="parte-card" onclick="abrirFormRepostaje(${r.id})">
+        <div class="mov-head">
+          <div class="mov-obra">⛽ ${escapeHtml(r.furgoneta || '—')}</div>
+          <span class="badge badge-marca">${escapeHtml(r.fecha || '—')}</span>
+        </div>
+        <div class="mov-meta">
+          <span>⛽ ${r.litros} L</span>
+          <span>📏 ${r.km} km</span>
+          <span>👷 ${escapeHtml(r.persona || '—')}</span>
+          ${r.ticketUrl ? '<span>🎫 ticket</span>' : ''}
+        </div>
       </div>
-      <div class="mov-meta">
-        <span>⛽ ${r.litros} L</span>
-        <span>📏 ${r.km} km</span>
-        <span>👷 ${escapeHtml(r.persona || '—')}</span>
-        ${r.ticketUrl ? '<span>🎫 ticket</span>' : ''}
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // ── MANTENIMIENTOS ─────────────────────────────────────

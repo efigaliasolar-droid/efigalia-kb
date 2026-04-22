@@ -1550,7 +1550,13 @@
       <div class="section-title">Repostajes</div>
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormRepostaje()">+ Nuevo repostaje</button>
+        <button class="btn-secondary" onclick="exportarRepostajesCSV()">Exportar CSV</button>
       </div>
+      <div id="rep-config-row" style="display:none;margin-bottom:14px"></div>
+      <details class="filtros-panel">
+        <summary>Resumen por furgoneta</summary>
+        <div class="filtros-body" id="rep-resumen"></div>
+      </details>
       <details class="filtros-panel">
         <summary>Filtros<span class="filtros-badge" id="rep-filtros-count" style="display:none">0</span></summary>
         <div class="filtros-body">
@@ -6902,6 +6908,7 @@ async function guardarRepostaje() {
   if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
 
   await sheetsSave();
+  enviarRepostajeASync(reg);   // fire-and-forget hacia Google Sheets si está configurado
   btn.disabled = false; btn.textContent = 'Guardar repostaje';
   repostajeEditando = null;
   repostajeFotoFile = null;
@@ -6919,6 +6926,134 @@ async function eliminarRepostaje() {
   repostajeEditando = null;
   showToast('✓ Eliminado', 'ok');
   cerrarFormRepostaje();
+}
+
+// ── Cálculo de consumo por furgoneta ───────────────────
+function calcularConsumoFurgoneta(reps) {
+  const sorted = reps.slice().sort((a,b) => (a.km||0) - (b.km||0));
+  if (!sorted.length) return null;
+  const totalLitrosTodos = sorted.reduce((s, r) => s + (r.litros||0), 0);
+  if (sorted.length < 2) {
+    return { count: 1, totalLitros: totalLitrosTodos, kmInicial: sorted[0].km, kmFinal: sorted[0].km, kmRecorridos: 0, l100: null, ultimaFecha: sorted[0].fecha || '' };
+  }
+  const kmInicial = sorted[0].km;
+  const kmFinal   = sorted[sorted.length-1].km;
+  const kmRecorridos = kmFinal - kmInicial;
+  // Estándar: el primer repostaje es el baseline; los litros que cuentan son los siguientes
+  const litrosTrayecto = sorted.slice(1).reduce((s, r) => s + (r.litros||0), 0);
+  const l100 = kmRecorridos > 0 ? (litrosTrayecto / kmRecorridos) * 100 : null;
+  const byFecha = sorted.slice().sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0));
+  return { count: sorted.length, totalLitros: totalLitrosTodos, kmInicial, kmFinal, kmRecorridos, l100, ultimaFecha: byFecha[0]?.fecha || '' };
+}
+
+function renderResumenRepostajes() {
+  const cont = document.getElementById('rep-resumen');
+  if (!cont) return;
+  const reps = incidents.filter(i => i.tipo === 'repostaje');
+  if (!reps.length) {
+    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Sin datos todavía.</div>';
+    return;
+  }
+  const porFur = {};
+  reps.forEach(r => { if (r.furgoneta) (porFur[r.furgoneta] ||= []).push(r); });
+  const furs = Object.keys(porFur).sort();
+  cont.innerHTML = furs.map(f => {
+    const c = calcularConsumoFurgoneta(porFur[f]);
+    if (!c) return '';
+    return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="font-weight:600;font-size:14px;margin-bottom:6px">${escapeHtml(f)}</div>
+        <div class="stat-grid" style="margin-bottom:0">
+          <div class="stat-card"><div class="lbl">l/100km</div><div class="val">${c.l100 != null ? c.l100.toFixed(2) : '—'}</div><div class="sub">${c.count < 2 ? 'falta más histórico' : 'media'}</div></div>
+          <div class="stat-card"><div class="lbl">Repostajes</div><div class="val">${c.count}</div><div class="sub">${c.ultimaFecha ? 'Último: ' + c.ultimaFecha : ''}</div></div>
+          <div class="stat-card"><div class="lbl">Km recorridos</div><div class="val">${c.kmRecorridos.toLocaleString('es-ES')}</div><div class="sub">${c.kmInicial.toLocaleString('es-ES')} → ${c.kmFinal.toLocaleString('es-ES')}</div></div>
+          <div class="stat-card"><div class="lbl">Litros total</div><div class="val">${c.totalLitros.toFixed(1)}</div><div class="sub">L</div></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Exportar CSV (importable en Excel / Drive) ─────────
+function exportarRepostajesCSV() {
+  const reps = incidents.filter(i => i.tipo === 'repostaje');
+  if (!reps.length) { showToast('⚠ No hay repostajes para exportar', 'err'); return; }
+  const sorted = reps.slice().sort((a,b) => (a.fechaTs||0) - (b.fechaTs||0));
+  const headers = ['Fecha', 'Furgoneta', 'Km', 'Litros', 'Persona', 'Notas', 'TicketURL', 'CreadoPor'];
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers.join(','), ...sorted.map(r => [r.fecha, r.furgoneta, r.km, r.litros, r.persona, r.notas, r.ticketUrl, r.creadoPor].map(esc).join(','))].join('\n');
+  const bom = '﻿';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `repostajes-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Auto-sync con Google Sheets (Apps Script) ──────────
+function getRepostajesSyncUrl() {
+  const cfg = incidents.find(i => i.tipo === 'config' && i.clave === 'repostajes-sync');
+  return cfg?.url || '';
+}
+
+async function configurarSyncRepostajes() {
+  if (!isAdmin()) { showToast('⚠ Solo admin puede configurar el sync', 'err'); return; }
+  const actual = getRepostajesSyncUrl();
+  const ayuda = '\n\nPasos:\n1) Crea una hoja nueva en Drive\n2) Extensiones → Apps Script → pega el código que tienes en /docs (o pídeselo al admin de la app)\n3) Implementa como Web App con acceso "Cualquiera"\n4) Pega aquí la URL terminada en /exec';
+  const nueva = prompt('URL del Apps Script (vacío para desactivar):' + ayuda, actual);
+  if (nueva === null) return;
+  const limpia = nueva.trim();
+  await sheetsLoad();
+  let cfg = incidents.find(i => i.tipo === 'config' && i.clave === 'repostajes-sync');
+  if (cfg) cfg.url = limpia;
+  else incidents.push({ id: Date.now(), tipo: 'config', clave: 'repostajes-sync', url: limpia });
+  await sheetsSave();
+  showToast(limpia ? '✓ Sync con Drive activo' : '✓ Sync desactivado', 'ok');
+  pintarConfigSyncRepostajes();
+}
+
+function pintarConfigSyncRepostajes() {
+  const cont = document.getElementById('rep-config-row');
+  if (!cont) return;
+  if (!isAdmin()) { cont.style.display = 'none'; return; }
+  const url = getRepostajesSyncUrl();
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px">
+      <div style="color:var(--text-muted);min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${url ? `<span style="color:var(--green)">●</span> Sync con Drive activo` : `<span style="color:var(--text-muted)">○</span> Sync con Drive desactivado`}
+      </div>
+      <button class="btn-ghost" onclick="configurarSyncRepostajes()" style="flex-shrink:0">Configurar</button>
+    </div>
+  `;
+}
+
+function enviarRepostajeASync(reg) {
+  const url = getRepostajesSyncUrl();
+  if (!url) return;
+  // fire-and-forget; no-cors porque Apps Script no devuelve cabeceras CORS
+  try {
+    fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fecha: reg.fecha,
+        fechaISO: reg.fechaISO,
+        furgoneta: reg.furgoneta,
+        km: reg.km,
+        litros: reg.litros,
+        persona: reg.persona,
+        notas: reg.notas,
+        ticketUrl: reg.ticketUrl,
+        creadoPor: reg.creadoPor
+      })
+    }).catch(e => console.warn('[sync repostaje]', e));
+  } catch(e) { console.warn('[sync repostaje]', e); }
 }
 
 function fillRepostajesFilterSelects() {
@@ -6948,6 +7083,8 @@ function limpiarFiltrosRepostajes() {
 
 function renderRepostajes() {
   fillRepostajesFilterSelects();
+  renderResumenRepostajes();
+  pintarConfigSyncRepostajes();
   const c = document.getElementById('repostajes-container');
   const fF = document.getElementById('rep-furgoneta-filtro')?.value || '';
   const pF = document.getElementById('rep-persona-filtro')?.value || '';

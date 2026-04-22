@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -386,6 +386,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="home-title">Visita pre-contrato</div>
         <div class="home-desc">Visita técnica antes del contrato: cubierta, obstáculos, cableado, conexión.</div>
+      </div>
+      <div class="home-card" onclick="enterRepostajes()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/><path d="M17 12v3"/></svg></div>
+        <div class="home-title">Repostajes</div>
+        <div class="home-desc">Registrar carga de combustible por furgoneta con kilómetros y ticket.</div>
       </div>
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-14.3 7.3L3 20l.7-3.7A9 9 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7"/><circle cx="12" cy="16.5" r="0.4" fill="currentColor" stroke="none"/></svg></div>
@@ -1537,6 +1542,91 @@
   <datalist id="dl-obras"></datalist>
   <datalist id="dl-furgonetas"></datalist>
   <datalist id="dl-instaladores"></datalist>
+
+  <!-- ═══════════════ REPOSTAJES ═══════════════ -->
+  <div id="view-repostajes">
+    <div id="repostajes-list-section">
+      <button class="back-link" onclick="goHome()">← Atrás</button>
+      <div class="section-title">Repostajes</div>
+      <div class="action-row">
+        <button class="btn-primary" onclick="abrirFormRepostaje()">+ Nuevo repostaje</button>
+      </div>
+      <details class="filtros-panel">
+        <summary>Filtros<span class="filtros-badge" id="rep-filtros-count" style="display:none">0</span></summary>
+        <div class="filtros-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Furgoneta</label>
+              <select id="rep-furgoneta-filtro" onchange="renderRepostajes()"></select>
+            </div>
+            <div class="form-group">
+              <label>Persona</label>
+              <select id="rep-persona-filtro" onchange="renderRepostajes()"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Desde</label>
+              <input type="date" id="rep-desde" onchange="renderRepostajes()">
+            </div>
+            <div class="form-group">
+              <label>Hasta</label>
+              <input type="date" id="rep-hasta" onchange="renderRepostajes()">
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="limpiarFiltrosRepostajes()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+        </div>
+      </details>
+      <div id="repostajes-container"></div>
+    </div>
+
+    <div id="repostajes-form-section" style="display:none">
+      <button class="back-link" onclick="cerrarFormRepostaje()">← Atrás</button>
+      <div class="section-title" id="repostaje-form-title">Nuevo repostaje</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="rep-fecha">
+        </div>
+        <div class="form-group">
+          <label>Furgoneta *</label>
+          <select id="rep-furgoneta" class="select-furgoneta"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kilómetros *</label>
+          <input type="number" step="any" inputmode="decimal" id="rep-km" placeholder="Ej: 124350">
+        </div>
+        <div class="form-group">
+          <label>Litros *</label>
+          <input type="number" step="any" inputmode="decimal" id="rep-litros" placeholder="Ej: 42.7">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Quién reposta *</label>
+        <select id="rep-persona"></select>
+      </div>
+      <div class="form-group">
+        <label>Foto del ticket</label>
+        <div class="photo-drop" onclick="document.getElementById('rep-foto-input').click()">
+          <input type="file" id="rep-foto-input" accept="image/*" onchange="onRepostajeFotoChange(event)">
+          <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Adjuntar ticket
+        </div>
+        <div class="photo-previews" id="rep-foto-preview"></div>
+      </div>
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea class="field" id="rep-notas" placeholder="Estación, importe, anomalías..."></textarea>
+      </div>
+
+      <button class="btn-primary" id="btn-rep-save" onclick="guardarRepostaje()">Guardar repostaje</button>
+      <div id="rep-extra-actions" style="margin-top:10px;display:none">
+        <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarRepostaje()">🗑 Eliminar repostaje</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════ ADMINISTRACIÓN ═══════════════ -->
   <div id="view-admin">
@@ -6635,6 +6725,267 @@ function renderActividadObra() {
       <div class="stat-card"><div class="lbl">Visitas</div><div class="val">${visitasObra.length}</div></div>
     </div>
   `;
+}
+
+// ── REPOSTAJES ─────────────────────────────────────────
+let repostajeEditando = null;       // id del repostaje en edición
+let repostajeFotoFile = null;       // File pendiente de subir
+let repostajeFotoUrl  = '';         // URL ya subida (al editar)
+
+function enterRepostajes() {
+  if (!requireLogin()) return;
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  document.getElementById('view-repostajes').style.display = 'block';
+  document.getElementById('repostajes-list-section').style.display = 'block';
+  document.getElementById('repostajes-form-section').style.display = 'none';
+  sheetsLoad().then(() => renderRepostajes());
+}
+
+function fillRepostajeFurgonetaSelect(valor) {
+  const sel = document.getElementById('rep-furgoneta');
+  if (!sel) return;
+  const lista = (typeof furgonetasActivasAdmin === 'function') ? furgonetasActivasAdmin() : [];
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    lista.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (anterior)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function fillRepostajePersonaSelect(valor) {
+  const sel = document.getElementById('rep-persona');
+  if (!sel) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor + ' (inactivo)'; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function abrirFormRepostaje(id) {
+  repostajeEditando = id || null;
+  repostajeFotoFile = null;
+  repostajeFotoUrl  = '';
+  document.getElementById('repostajes-list-section').style.display = 'none';
+  document.getElementById('repostajes-form-section').style.display = 'block';
+  document.getElementById('repostaje-form-title').textContent = id ? 'Editar repostaje' : 'Nuevo repostaje';
+  document.getElementById('rep-extra-actions').style.display = id ? 'block' : 'none';
+
+  if (id) {
+    const r = incidents.find(i => i.id === id && i.tipo === 'repostaje');
+    if (!r) return;
+    document.getElementById('rep-fecha').value = r.fechaISO || '';
+    fillRepostajeFurgonetaSelect(r.furgoneta);
+    document.getElementById('rep-km').value = r.km ?? '';
+    document.getElementById('rep-litros').value = r.litros ?? '';
+    fillRepostajePersonaSelect(r.persona);
+    document.getElementById('rep-notas').value = r.notas || '';
+    repostajeFotoUrl = r.ticketUrl || '';
+  } else {
+    document.getElementById('rep-fecha').value = new Date().toISOString().split('T')[0];
+    fillRepostajeFurgonetaSelect('');
+    document.getElementById('rep-km').value = '';
+    document.getElementById('rep-litros').value = '';
+    fillRepostajePersonaSelect((currentUser && currentUser.nombre) || '');
+    document.getElementById('rep-notas').value = '';
+  }
+  renderRepostajeFotoPreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cerrarFormRepostaje() {
+  document.getElementById('repostajes-form-section').style.display = 'none';
+  document.getElementById('repostajes-list-section').style.display = 'block';
+  renderRepostajes();
+}
+
+function onRepostajeFotoChange(event) {
+  const file = (event && event.target && event.target.files && event.target.files[0]) || null;
+  if (!file) return;
+  if (event && event.target) event.target.value = '';
+  repostajeFotoFile = file;
+  renderRepostajeFotoPreview();
+}
+
+function renderRepostajeFotoPreview() {
+  const cont = document.getElementById('rep-foto-preview');
+  if (!cont) return;
+  cont.innerHTML = '';
+  // URL ya subida (al editar)
+  if (repostajeFotoUrl && !repostajeFotoFile) {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = repostajeFotoUrl;
+    img.onclick = () => window.open(repostajeFotoUrl, '_blank');
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕';
+    btnDel.onclick = (e) => { e.stopPropagation(); if (!confirm('¿Quitar la foto?')) return; repostajeFotoUrl = ''; renderRepostajeFotoPreview(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  }
+  // Archivo pendiente de subir
+  if (repostajeFotoFile) {
+    const wrap = document.createElement('span');
+    wrap.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(repostajeFotoFile);
+    wrap.appendChild(img);
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button'; btnDel.className = 'btn-anot'; btnDel.title = 'Quitar'; btnDel.textContent = '✕';
+    btnDel.onclick = (e) => { e.stopPropagation(); repostajeFotoFile = null; renderRepostajeFotoPreview(); };
+    wrap.appendChild(btnDel);
+    cont.appendChild(wrap);
+  }
+}
+
+async function guardarRepostaje() {
+  const fechaISO = document.getElementById('rep-fecha').value;
+  const furgoneta = document.getElementById('rep-furgoneta').value.trim();
+  const km = parseFloat(document.getElementById('rep-km').value);
+  const litros = parseFloat(document.getElementById('rep-litros').value);
+  const persona = document.getElementById('rep-persona').value.trim();
+  const notas = document.getElementById('rep-notas').value.trim();
+
+  if (!fechaISO) { showToast('⚠ Indica la fecha', 'err'); return; }
+  if (!furgoneta) { showToast('⚠ Selecciona furgoneta', 'err'); return; }
+  if (isNaN(km) || km < 0) { showToast('⚠ Kilómetros inválidos', 'err'); return; }
+  if (isNaN(litros) || litros <= 0) { showToast('⚠ Litros inválidos', 'err'); return; }
+  if (!persona) { showToast('⚠ Indica quién reposta', 'err'); return; }
+
+  const btn = document.getElementById('btn-rep-save');
+  btn.disabled = true;
+
+  // 1) Subir ticket si lo hay
+  let ticketUrl = repostajeFotoUrl || '';
+  if (repostajeFotoFile) {
+    btn.textContent = 'Subiendo ticket...';
+    try {
+      ticketUrl = await subirFoto(repostajeFotoFile);
+    } catch(e) {
+      btn.disabled = false; btn.textContent = 'Guardar repostaje';
+      showToast('⚠ Error al subir el ticket: ' + ((e && e.message) || ''), 'err');
+      return;
+    }
+  }
+
+  // 2) Persistir
+  btn.textContent = 'Guardando...';
+  await sheetsLoad();
+
+  const [y, m, d] = fechaISO.split('-');
+  const fechaEs = `${parseInt(d,10)}/${parseInt(m,10)}/${y}`;
+
+  const reg = {
+    id: repostajeEditando || Date.now(),
+    tipo: 'repostaje',
+    fechaISO,
+    fecha: fechaEs,
+    fechaTs: new Date(fechaISO).getTime(),
+    furgoneta,
+    km,
+    litros,
+    persona,
+    notas,
+    ticketUrl,
+    creadoPor: (currentUser && currentUser.nombre) || 'Anónimo',
+    creadoTs: Date.now()
+  };
+
+  const idx = incidents.findIndex(i => i.id === reg.id && i.tipo === 'repostaje');
+  if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+
+  await sheetsSave();
+  btn.disabled = false; btn.textContent = 'Guardar repostaje';
+  repostajeEditando = null;
+  repostajeFotoFile = null;
+  repostajeFotoUrl = '';
+  showToast('✓ Repostaje guardado', 'ok');
+  cerrarFormRepostaje();
+}
+
+async function eliminarRepostaje() {
+  if (repostajeEditando == null) return;
+  if (!confirm('¿Eliminar este repostaje?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === repostajeEditando && i.tipo === 'repostaje'));
+  await sheetsSave();
+  repostajeEditando = null;
+  showToast('✓ Eliminado', 'ok');
+  cerrarFormRepostaje();
+}
+
+function fillRepostajesFilterSelects() {
+  const reps = incidents.filter(i => i.tipo === 'repostaje');
+  const furs = [...new Set(reps.map(r => r.furgoneta).filter(Boolean))].sort();
+  const pers = [...new Set(reps.map(r => r.persona).filter(Boolean))].sort();
+  const fSel = document.getElementById('rep-furgoneta-filtro');
+  const pSel = document.getElementById('rep-persona-filtro');
+  if (fSel) {
+    const cur = fSel.value;
+    fSel.innerHTML = '<option value="">Todas</option>' + furs.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    fSel.value = cur;
+  }
+  if (pSel) {
+    const cur = pSel.value;
+    pSel.innerHTML = '<option value="">Todas</option>' + pers.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    pSel.value = cur;
+  }
+}
+
+function limpiarFiltrosRepostajes() {
+  ['rep-furgoneta-filtro','rep-persona-filtro','rep-desde','rep-hasta'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderRepostajes();
+}
+
+function renderRepostajes() {
+  fillRepostajesFilterSelects();
+  const c = document.getElementById('repostajes-container');
+  const fF = document.getElementById('rep-furgoneta-filtro')?.value || '';
+  const pF = document.getElementById('rep-persona-filtro')?.value || '';
+  const desdeStr = document.getElementById('rep-desde')?.value || '';
+  const hastaStr = document.getElementById('rep-hasta')?.value || '';
+  const desde = desdeStr ? new Date(desdeStr) : null;
+  const hasta = hastaStr ? new Date(hastaStr + 'T23:59:59') : null;
+
+  let list = incidents.filter(i => i.tipo === 'repostaje');
+  if (fF) list = list.filter(r => r.furgoneta === fF);
+  if (pF) list = list.filter(r => r.persona === pF);
+  if (desde) list = list.filter(r => r.fechaTs && r.fechaTs >= desde.getTime());
+  if (hasta) list = list.filter(r => r.fechaTs && r.fechaTs <= hasta.getTime());
+  list.sort((a,b) => (b.fechaTs || b.creadoTs || 0) - (a.fechaTs || a.creadoTs || 0));
+
+  const activos = [fF, pF, desdeStr, hastaStr].filter(Boolean).length;
+  const badge = document.getElementById('rep-filtros-count');
+  if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
+
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/></svg></div>${activos ? 'Sin resultados.' : 'Aún no hay repostajes. Crea el primero con el botón de arriba.'}</div>`;
+    return;
+  }
+
+  c.innerHTML = list.map(r => `
+    <div class="parte-card" onclick="abrirFormRepostaje(${r.id})">
+      <div class="mov-head">
+        <div class="mov-obra">${escapeHtml(r.furgoneta || '—')}</div>
+        <span class="badge badge-marca">${escapeHtml(r.fecha || '—')}</span>
+      </div>
+      <div class="mov-meta">
+        <span>⛽ ${r.litros} L</span>
+        <span>📏 ${r.km} km</span>
+        <span>👷 ${escapeHtml(r.persona || '—')}</span>
+        ${r.ticketUrl ? '<span>🎫 ticket</span>' : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
 // Limpiar cache local para evitar quota exceeded

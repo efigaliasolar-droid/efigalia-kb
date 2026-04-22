@@ -402,7 +402,7 @@
         <div class="home-title">Cálculos rápidos</div>
         <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
       </div>
-      <div class="home-card" id="home-card-admin" onclick="enterAdmin()">
+      <div class="home-card" id="home-card-admin" onclick="enterAdmin()" style="display:none">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg></div>
         <div class="home-title">Administración</div>
         <div class="home-desc">Gestionar furgonetas, instaladores y obras (acceso restringido).</div>
@@ -7153,6 +7153,7 @@ try { applyTheme(localStorage.getItem('efigalia_theme') || 'dark'); } catch(e) {
   await sheetsLoad();
   actualizarHeaderUsuario();
   if (!currentUser) mostrarLogin();
+  else goHome();   // refresca visibilidad de la card admin según el rol del usuario cacheado
 })();
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────

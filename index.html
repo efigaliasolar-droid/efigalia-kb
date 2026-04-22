@@ -1550,7 +1550,7 @@
       <div class="section-title">Repostajes</div>
       <div class="action-row">
         <button class="btn-primary" onclick="abrirFormRepostaje()">+ Nuevo repostaje</button>
-        <button class="btn-secondary" onclick="exportarRepostajesCSV()">Exportar CSV</button>
+        <button class="btn-secondary" id="btn-rep-export" onclick="exportarRepostajesCSV()" style="display:none">Exportar CSV</button>
       </div>
       <div id="rep-config-row" style="display:none;margin-bottom:14px"></div>
       <details class="filtros-panel">
@@ -6976,6 +6976,7 @@ function renderResumenRepostajes() {
 
 // ── Exportar CSV (importable en Excel / Drive) ─────────
 function exportarRepostajesCSV() {
+  if (!isAdmin()) { showToast('⚠ Solo el administrador puede exportar', 'err'); return; }
   const reps = incidents.filter(i => i.tipo === 'repostaje');
   if (!reps.length) { showToast('⚠ No hay repostajes para exportar', 'err'); return; }
   const sorted = reps.slice().sort((a,b) => (a.fechaTs||0) - (b.fechaTs||0));
@@ -7085,6 +7086,8 @@ function renderRepostajes() {
   fillRepostajesFilterSelects();
   renderResumenRepostajes();
   pintarConfigSyncRepostajes();
+  const btnExp = document.getElementById('btn-rep-export');
+  if (btnExp) btnExp.style.display = isAdmin() ? '' : 'none';
   const c = document.getElementById('repostajes-container');
   const fF = document.getElementById('rep-furgoneta-filtro')?.value || '';
   const pF = document.getElementById('rep-persona-filtro')?.value || '';

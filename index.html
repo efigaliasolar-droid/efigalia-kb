@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -337,6 +337,38 @@
   .pill { padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); user-select: none; }
   .pill:hover { border-color: var(--accent); }
   .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+
+  /* ── Mi día (banner instaladores en home) ── */
+  .mi-dia { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
+  .mi-dia h3 { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .mi-dia-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; }
+  .mi-dia-card:last-child { margin-bottom: 0; }
+  .mi-dia-card .obra { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .mi-dia-card .meta { font-size: 12px; color: var(--text-muted); font-family: var(--mono); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+  .mi-dia-card .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mi-dia-proximos { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .mi-dia-proximos .lbl { font-size: 11px; font-family: var(--mono); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .mi-dia-proximo { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed var(--border); }
+  .mi-dia-proximo:last-child { border-bottom: none; }
+  .mi-dia-proximo .f { font-family: var(--mono); font-size: 11px; color: var(--text-muted); min-width: 85px; }
+  .mi-dia-proximo .o { flex: 1; }
+
+  /* ── Planificación (cuadrícula semanal) ── */
+  .plan-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .plan-nav .plan-label { font-weight: 600; font-size: 14px; text-align: center; flex: 1; }
+  .plan-grid { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; overflow-x: auto; background: var(--surface); }
+  .plan-grid table { border-collapse: collapse; width: 100%; min-width: 700px; font-size: 12px; }
+  .plan-grid th, .plan-grid td { border: 1px solid var(--border); vertical-align: top; padding: 4px; }
+  .plan-grid th { background: var(--surface2); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; padding: 6px 8px; white-space: nowrap; }
+  .plan-grid th.hoy { color: var(--accent); background: var(--bg); }
+  .plan-grid .col-nom { width: 120px; font-weight: 600; color: var(--text); background: var(--surface2); }
+  .plan-grid td.col-nom { font-size: 13px; }
+  .plan-cell { min-height: 58px; cursor: pointer; transition: background 0.12s; }
+  .plan-cell:hover { background: var(--surface2); }
+  .plan-cell.hoy { background: rgba(33,113,199,0.06); }
+  .plan-pill { display: block; background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 6px; margin-bottom: 3px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+  .plan-pill .obr { font-weight: 600; }
+  .plan-pill .fur { font-family: var(--mono); font-size: 10px; opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -374,9 +406,15 @@
   </div>
 
   <div id="view-home">
+    <div id="mi-dia-banner" class="mi-dia" style="display:none"></div>
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
     <div class="home-grid">
+      <div class="home-card" id="home-card-planificacion" onclick="enterPlanificacion()" style="display:none">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/><rect x="7" y="12" width="3" height="3"/><rect x="12" y="12" width="3" height="3"/></svg></div>
+        <div class="home-title">Planificación</div>
+        <div class="home-desc">Asignar obras, instaladores y furgonetas por día.</div>
+      </div>
       <div class="home-card" onclick="enterObra()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M4 20c0-4.5 3.5-8 8-8s8 3.5 8 8"/><path d="M12 12V8"/><path d="M8 8h8"/></svg></div>
         <div class="home-title">Obra</div>
@@ -1859,6 +1897,67 @@
     </div>
   </div>
 
+  <!-- ═══════════════ PLANIFICACIÓN ═══════════════ -->
+  <div id="view-planificacion">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Planificación semanal</div>
+    <div class="action-row" style="margin-bottom:12px">
+      <button class="btn-primary" onclick="abrirModalAsignacion()">+ Nueva asignación</button>
+    </div>
+    <div class="plan-nav">
+      <button class="btn-ghost" onclick="cambiarSemanaPlan(-1)">◀ Anterior</button>
+      <div class="plan-label" id="plan-label-semana">—</div>
+      <button class="btn-ghost" onclick="cambiarSemanaPlan(1)">Siguiente ▶</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button class="btn-ghost" onclick="irSemanaPlanHoy()" style="flex:1">Esta semana</button>
+    </div>
+    <div class="plan-grid" id="plan-grid"></div>
+    <div class="calc-note" style="margin-top:14px">Toca cualquier celda para crear una asignación ese día, o toca una pastilla existente para editarla.</div>
+  </div>
+
+  <!-- Modal de asignación -->
+  <div class="modal-overlay" id="asignacion-modal">
+    <div class="modal" style="max-width:520px">
+      <button class="modal-close" onclick="cerrarModalAsignacion()">✕</button>
+      <div class="modal-title" id="asig-title">Nueva asignación</div>
+      <div class="form-group">
+        <label>Obra *</label>
+        <select id="asig-obra"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Desde *</label>
+          <input type="date" id="asig-desde">
+        </div>
+        <div class="form-group">
+          <label>Hasta *</label>
+          <input type="date" id="asig-hasta">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Instaladores *</label>
+        <div class="pill-selector" id="asig-instaladores-pills"></div>
+      </div>
+      <div class="form-group">
+        <label>Furgoneta</label>
+        <select id="asig-furgoneta" class="select-furgoneta"></select>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea class="field" id="asig-notas" placeholder="Horario, indicaciones..."></textarea>
+      </div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="btn-primary" onclick="guardarAsignacion()" style="flex:1">Guardar</button>
+        <button class="btn-secondary" id="btn-asig-duplicar" onclick="duplicarAsignacionMañana()" style="flex:1;display:none">Duplicar a mañana</button>
+      </div>
+      <div class="action-row" style="margin-top:6px" id="asig-extra" style="display:none">
+        <button class="btn-secondary" id="btn-asig-acortar" onclick="acortarAsignacionHastaAyer()" style="flex:1;display:none">Acortar hasta ayer</button>
+        <button class="btn-ghost" id="btn-asig-eliminar" onclick="eliminarAsignacion()" style="flex:1;color:var(--red);border-color:var(--red);display:none">🗑 Eliminar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════ ADMINISTRACIÓN ═══════════════ -->
   <div id="view-admin">
     <button class="back-link" onclick="goHome()">← Atrás</button>
@@ -2337,6 +2436,8 @@ function goHome() {
   const esAdmin = !!(currentUser && currentUser.rol === 'admin');
   const adminCard = document.getElementById('home-card-admin');
   if (adminCard) adminCard.style.display = esAdmin ? '' : 'none';
+  const planCard = document.getElementById('home-card-planificacion');
+  if (planCard) planCard.style.display = esAdmin ? '' : 'none';
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
@@ -2345,6 +2446,8 @@ function goHome() {
   if (cardVisitas) cardVisitas.style.display = tieneVisitas ? '' : 'none';
   const cardMnt = document.getElementById('home-card-mantenimientos');
   if (cardMnt) cardMnt.style.display = tieneMnt ? '' : 'none';
+  // Mi día (solo para instaladores con asignaciones)
+  renderMiDia();
 }
 function enterIncidencias() {
   hideAllViews();
@@ -8207,6 +8310,316 @@ function generarPDFParte(id) {
     ${_pdfFotos(p.fotos)}
   `;
   imprimirComoPDF('Parte diario · ' + (p.idObra || id) + ' · ' + (p.fecha || ''), html);
+}
+
+// ── PLANIFICACIÓN (asignaciones) ───────────────────────
+let planSemanaOffset = 0;   // 0 = esta semana, -1 = anterior, +1 = siguiente
+let asigEnEdicion = null;
+let asigInstaladoresSel = [];
+
+function hoyISO() { return new Date().toISOString().split('T')[0]; }
+function fechaIsoToEs(iso) { if (!iso) return ''; const [y,m,d] = iso.split('-'); return `${+d}/${+m}/${y}`; }
+
+function inicioSemanaISO(offsetWeeks) {
+  // Lunes como inicio (ISO 8601)
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  const dow = (d.getDay() + 6) % 7;   // 0 = lunes, ..., 6 = domingo
+  d.setDate(d.getDate() - dow + (offsetWeeks || 0) * 7);
+  return d.toISOString().split('T')[0];
+}
+
+function diasSemana(offsetWeeks) {
+  const base = new Date(inicioSemanaISO(offsetWeeks) + 'T00:00:00');
+  return Array.from({length: 7}, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return d.toISOString().split('T')[0];
+  });
+}
+
+function asignacionesEnFechaParaPersona(fechaISO, nombrePersona) {
+  return incidents.filter(i => i.tipo === 'asignacion'
+    && (i.instaladores || []).includes(nombrePersona)
+    && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO);
+}
+
+function asignacionesEnFecha(fechaISO) {
+  return incidents.filter(i => i.tipo === 'asignacion'
+    && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO);
+}
+
+function enterPlanificacion() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-planificacion').style.display = 'block';
+  planSemanaOffset = 0;
+  sheetsLoad().then(() => renderPlanificacion());
+}
+
+function cambiarSemanaPlan(delta) { planSemanaOffset += delta; renderPlanificacion(); }
+function irSemanaPlanHoy() { planSemanaOffset = 0; renderPlanificacion(); }
+
+function renderPlanificacion() {
+  const dias = diasSemana(planSemanaOffset);
+  const hoy = hoyISO();
+  const instaladores = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  const diasES = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const label = `${fechaIsoToEs(dias[0])} – ${fechaIsoToEs(dias[6])}`;
+  document.getElementById('plan-label-semana').textContent = label;
+
+  const grid = document.getElementById('plan-grid');
+  if (!instaladores.length) {
+    grid.innerHTML = '<div class="empty-state" style="padding:24px">Aún no hay instaladores activos. Añádelos desde Administración.</div>';
+    return;
+  }
+
+  const ths = dias.map((d, i) => {
+    const [y,m,dd] = d.split('-');
+    const esHoy = d === hoy;
+    return `<th class="${esHoy?'hoy':''}">${diasES[i]}<br><span style="font-weight:400">${+dd}/${+m}</span></th>`;
+  }).join('');
+
+  const rows = instaladores.map(nom => {
+    const cells = dias.map(fecha => {
+      const esHoy = fecha === hoy;
+      const asigs = asignacionesEnFechaParaPersona(fecha, nom);
+      const pills = asigs.map(a => `
+        <div class="plan-pill" onclick="event.stopPropagation();abrirModalAsignacion(${a.id})">
+          <div class="obr">${escapeHtml(a.idObra || '—')}</div>
+          ${a.furgoneta ? `<div class="fur">${escapeHtml(a.furgoneta)}</div>` : ''}
+        </div>
+      `).join('');
+      return `<td class="plan-cell ${esHoy?'hoy':''}" onclick="abrirModalAsignacionNueva('${fecha}','${escapeAttr(nom)}')">${pills}</td>`;
+    }).join('');
+    return `<tr><td class="col-nom">${escapeHtml(nom)}</td>${cells}</tr>`;
+  }).join('');
+
+  grid.innerHTML = `<table>
+    <thead><tr><th class="col-nom">Instalador</th>${ths}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
+
+function abrirModalAsignacionNueva(fechaISO, nombrePrefill) {
+  asigEnEdicion = null;
+  asigInstaladoresSel = nombrePrefill ? [nombrePrefill] : [];
+  document.getElementById('asig-title').textContent = 'Nueva asignación';
+  fillObraSelects();
+  fillFurgonetaSelects();
+  document.getElementById('asig-obra').value = '';
+  document.getElementById('asig-desde').value = fechaISO || hoyISO();
+  document.getElementById('asig-hasta').value = fechaISO || hoyISO();
+  document.getElementById('asig-furgoneta').value = '';
+  document.getElementById('asig-notas').value = '';
+  renderAsigInstaladoresPills();
+  document.getElementById('btn-asig-duplicar').style.display = 'none';
+  document.getElementById('btn-asig-acortar').style.display = 'none';
+  document.getElementById('btn-asig-eliminar').style.display = 'none';
+  document.getElementById('asignacion-modal').classList.add('open');
+}
+
+function abrirModalAsignacion(id) {
+  const a = incidents.find(i => i.id === id && i.tipo === 'asignacion');
+  if (!a) return;
+  asigEnEdicion = id;
+  asigInstaladoresSel = (a.instaladores || []).slice();
+  document.getElementById('asig-title').textContent = 'Editar asignación';
+  fillObraSelects();
+  fillFurgonetaSelects();
+  const obraSel = document.getElementById('asig-obra');
+  obraSel.value = a.idObra || '';
+  if (a.idObra && !obraSel.value) {
+    const op = document.createElement('option'); op.value = a.idObra; op.textContent = a.idObra + ' (anterior)'; obraSel.appendChild(op); obraSel.value = a.idObra;
+  }
+  document.getElementById('asig-desde').value = a.fechaDesdeISO || '';
+  document.getElementById('asig-hasta').value = a.fechaHastaISO || '';
+  document.getElementById('asig-furgoneta').value = a.furgoneta || '';
+  document.getElementById('asig-notas').value = a.notas || '';
+  renderAsigInstaladoresPills();
+  document.getElementById('btn-asig-duplicar').style.display = '';
+  document.getElementById('btn-asig-acortar').style.display = '';
+  document.getElementById('btn-asig-eliminar').style.display = '';
+  document.getElementById('asignacion-modal').classList.add('open');
+}
+
+function cerrarModalAsignacion() {
+  document.getElementById('asignacion-modal').classList.remove('open');
+  asigEnEdicion = null;
+  asigInstaladoresSel = [];
+}
+
+function renderAsigInstaladoresPills() {
+  const c = document.getElementById('asig-instaladores-pills');
+  if (!c) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  c.innerHTML = lista.map(n => `<button type="button" class="pill${asigInstaladoresSel.includes(n)?' on':''}" onclick="toggleAsigInstalador('${escapeAttr(n)}')">${escapeHtml(n)}</button>`).join('');
+}
+
+function toggleAsigInstalador(nombre) {
+  const idx = asigInstaladoresSel.indexOf(nombre);
+  if (idx >= 0) asigInstaladoresSel.splice(idx, 1);
+  else asigInstaladoresSel.push(nombre);
+  renderAsigInstaladoresPills();
+}
+
+async function guardarAsignacion() {
+  const idObra = document.getElementById('asig-obra').value.trim();
+  const desde = document.getElementById('asig-desde').value;
+  const hasta = document.getElementById('asig-hasta').value;
+  const furgoneta = document.getElementById('asig-furgoneta').value.trim();
+  const notas = document.getElementById('asig-notas').value.trim();
+
+  if (!idObra) { showToast('⚠ Selecciona obra', 'err'); return; }
+  if (!desde || !hasta) { showToast('⚠ Rellena las fechas', 'err'); return; }
+  if (desde > hasta) { showToast('⚠ La fecha final debe ser ≥ la inicial', 'err'); return; }
+  if (!asigInstaladoresSel.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
+
+  await sheetsLoad();
+  const existente = asigEnEdicion ? incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion') : null;
+  const reg = {
+    id: existente?.id || Date.now(),
+    tipo: 'asignacion',
+    idObra,
+    fechaDesdeISO: desde,
+    fechaHastaISO: hasta,
+    instaladores: asigInstaladoresSel.slice(),
+    furgoneta,
+    notas,
+    creadoPor: existente?.creadoPor || (currentUser?.nombre || 'Admin'),
+    creadoTs: existente?.creadoTs || Date.now(),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now()
+  };
+  const idx = incidents.findIndex(i => i.id === reg.id && i.tipo === 'asignacion');
+  if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
+  await sheetsSave();
+  cerrarModalAsignacion();
+  renderPlanificacion();
+  showToast('✓ Asignación guardada', 'ok');
+}
+
+async function duplicarAsignacionMañana() {
+  const a = incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion');
+  if (!a) return;
+  // La siguiente fecha tras su fechaHastaISO
+  const d = new Date(a.fechaHastaISO + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  const siguiente = d.toISOString().split('T')[0];
+  await sheetsLoad();
+  incidents.unshift({
+    id: Date.now(),
+    tipo: 'asignacion',
+    idObra: a.idObra,
+    fechaDesdeISO: siguiente,
+    fechaHastaISO: siguiente,
+    instaladores: (a.instaladores || []).slice(),
+    furgoneta: a.furgoneta || '',
+    notas: a.notas || '',
+    creadoPor: currentUser?.nombre || 'Admin',
+    creadoTs: Date.now()
+  });
+  await sheetsSave();
+  cerrarModalAsignacion();
+  renderPlanificacion();
+  showToast('✓ Duplicada al día siguiente', 'ok');
+}
+
+async function acortarAsignacionHastaAyer() {
+  const a = incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion');
+  if (!a) return;
+  const hoy = hoyISO();
+  const d = new Date(hoy + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  const ayer = d.toISOString().split('T')[0];
+  if (ayer < a.fechaDesdeISO) {
+    if (!confirm('Acortar hasta ayer dejaría la asignación sin días. ¿Eliminarla?')) return;
+    await sheetsLoad();
+    incidents = incidents.filter(i => !(i.id === a.id && i.tipo === 'asignacion'));
+    await sheetsSave();
+  } else {
+    await sheetsLoad();
+    const target = incidents.find(i => i.id === a.id && i.tipo === 'asignacion');
+    if (!target) return;
+    target.fechaHastaISO = ayer;
+    target.modificadoPor = currentUser?.nombre || 'Admin';
+    target.modificadoTs = Date.now();
+    await sheetsSave();
+  }
+  cerrarModalAsignacion();
+  renderPlanificacion();
+  showToast('✓ Acortada hasta ayer', 'ok');
+}
+
+async function eliminarAsignacion() {
+  if (asigEnEdicion == null) return;
+  if (!confirm('¿Eliminar esta asignación?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === asigEnEdicion && i.tipo === 'asignacion'));
+  await sheetsSave();
+  cerrarModalAsignacion();
+  renderPlanificacion();
+  showToast('✓ Eliminada', 'ok');
+}
+
+// ── MI DÍA (home para instaladores) ────────────────────
+function renderMiDia() {
+  const banner = document.getElementById('mi-dia-banner');
+  if (!banner) return;
+  const nombre = currentUser?.nombre || '';
+  // admin no ve "Mi día" (ya tiene Planificación completa)
+  if (!nombre || isAdmin()) { banner.style.display = 'none'; return; }
+
+  const hoy = hoyISO();
+  const hoyAsigs = asignacionesEnFechaParaPersona(hoy, nombre);
+  // Próximas 7 asignaciones futuras (excluyendo hoy)
+  const proximas = incidents
+    .filter(i => i.tipo === 'asignacion' && (i.instaladores || []).includes(nombre) && i.fechaDesdeISO > hoy)
+    .sort((a,b) => a.fechaDesdeISO.localeCompare(b.fechaDesdeISO))
+    .slice(0, 5);
+
+  if (!hoyAsigs.length && !proximas.length) { banner.style.display = 'none'; return; }
+
+  let html = `<h3>Mi día · ${fechaIsoToEs(hoy)}</h3>`;
+  if (hoyAsigs.length) {
+    html += hoyAsigs.map(a => {
+      const otros = (a.instaladores || []).filter(n => n !== nombre);
+      const obra = incidents.find(o => o.tipo === 'obra' && o.nombre === a.idObra);
+      return `
+        <div class="mi-dia-card">
+          <div class="obra">${escapeHtml(a.idObra || '—')}</div>
+          <div class="meta">
+            ${otros.length ? `<span>👷 Con ${escapeHtml(otros.join(', '))}</span>` : '<span>👷 Solo</span>'}
+            ${a.furgoneta ? `<span>🚐 ${escapeHtml(a.furgoneta)}</span>` : ''}
+            <span>📅 Hasta ${fechaIsoToEs(a.fechaHastaISO)}</span>
+          </div>
+          ${a.notas ? `<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">${escapeHtml(a.notas)}</div>` : ''}
+          <div class="acciones">
+            ${obra ? `<button class="btn-ghost" onclick="abrirFichaObra(${obra.id}, 'estado')">Ver ficha obra</button>` : ''}
+            <button class="btn-ghost" onclick="enterPartes()">Nuevo parte</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    html += `<div class="mi-dia-card"><div class="obra">Hoy sin asignación</div><div class="meta">El administrador aún no te ha asignado obra para hoy.</div></div>`;
+  }
+  if (proximas.length) {
+    html += `<div class="mi-dia-proximos">
+      <div class="lbl">Próximos días</div>
+      ${proximas.map(a => `
+        <div class="mi-dia-proximo">
+          <span class="f">${fechaIsoToEs(a.fechaDesdeISO)}${a.fechaDesdeISO !== a.fechaHastaISO ? ' → ' + fechaIsoToEs(a.fechaHastaISO) : ''}</span>
+          <span class="o">${escapeHtml(a.idObra || '—')}${a.furgoneta ? ' · ' + escapeHtml(a.furgoneta) : ''}</span>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  banner.innerHTML = html;
+  banner.style.display = 'block';
 }
 
 // Limpiar cache local para evitar quota exceeded

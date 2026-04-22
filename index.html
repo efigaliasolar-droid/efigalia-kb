@@ -1678,10 +1678,6 @@
           </select>
         </div>
       </div>
-      <div class="form-group">
-        <label>Concepto / descripción *</label>
-        <input type="text" id="tkt-concepto" placeholder="Ej: comida con cliente · tornillería ferretería Pepe">
-      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Importe € *</label>
@@ -7060,7 +7056,6 @@ function abrirFormTicket(id) {
     if (!t) return;
     document.getElementById('tkt-fecha').value = t.fechaISO || '';
     document.getElementById('tkt-categoria').value = t.categoria || '';
-    document.getElementById('tkt-concepto').value = t.concepto || '';
     document.getElementById('tkt-importe').value = t.importe ?? '';
     document.getElementById('tkt-pago').value = t.formaPago || '';
     fillRepostajePersonaSelectById('tkt-persona', t.persona);
@@ -7069,7 +7064,6 @@ function abrirFormTicket(id) {
   } else {
     document.getElementById('tkt-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('tkt-categoria').value = '';
-    document.getElementById('tkt-concepto').value = '';
     document.getElementById('tkt-importe').value = '';
     document.getElementById('tkt-pago').value = '';
     fillRepostajePersonaSelectById('tkt-persona', (currentUser && currentUser.nombre) || '');
@@ -7136,7 +7130,6 @@ function renderTicketFotoPreview() {
 async function guardarTicket() {
   const fechaISO = document.getElementById('tkt-fecha').value;
   const categoria = document.getElementById('tkt-categoria').value;
-  const concepto = document.getElementById('tkt-concepto').value.trim();
   const importe = parseFloat(document.getElementById('tkt-importe').value);
   const pago = document.getElementById('tkt-pago').value;
   const persona = document.getElementById('tkt-persona').value.trim();
@@ -7144,7 +7137,6 @@ async function guardarTicket() {
 
   if (!fechaISO) { showToast('⚠ Indica la fecha', 'err'); return; }
   if (!categoria) { showToast('⚠ Elige la categoría', 'err'); return; }
-  if (!concepto) { showToast('⚠ Rellena el concepto', 'err'); return; }
   if (isNaN(importe) || importe <= 0) { showToast('⚠ Importe inválido', 'err'); return; }
   if (!pago) { showToast('⚠ Indica la forma de pago', 'err'); return; }
   if (!persona) { showToast('⚠ Indica quién paga', 'err'); return; }
@@ -7178,7 +7170,6 @@ async function guardarTicket() {
     fecha: fechaEs,
     fechaTs: new Date(fechaISO).getTime(),
     categoria,
-    concepto,
     importe,
     formaPago: pago,
     persona,
@@ -7381,13 +7372,12 @@ function exportarRepostajesCSV() {
   const gastos = incidents.filter(i => i.tipo === 'repostaje' || i.tipo === 'ticket');
   if (!gastos.length) { showToast('⚠ Nada para exportar', 'err'); return; }
   const sorted = gastos.slice().sort((a,b) => (a.fechaTs||0) - (b.fechaTs||0));
-  const headers = ['Tipo', 'Fecha', 'Categoria', 'Concepto', 'Furgoneta', 'Km', 'Litros', 'Importe', 'FormaPago', 'Persona', 'Notas', 'TicketURL', 'CreadoPor'];
+  const headers = ['Tipo', 'Fecha', 'Categoria', 'Furgoneta', 'Km', 'Litros', 'Importe', 'FormaPago', 'Persona', 'Notas', 'TicketURL', 'CreadoPor'];
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const csv = [headers.join(','), ...sorted.map(r => [
     r.tipo,
     r.fecha,
     r.categoria || '',
-    r.concepto || '',
     r.furgoneta || '',
     r.km ?? '',
     r.litros ?? '',
@@ -7536,13 +7526,12 @@ function renderRepostajes() {
       const pagoBadge = r.formaPago === 'tarjeta'
         ? '<span class="badge badge-modelo">TARJETA</span>'
         : '<span class="badge badge-error">EFECTIVO</span>';
-      const catLabel = ({ comidas:'COMIDAS', material:'MATERIAL', otro:'OTRO' }[r.categoria] || (r.categoria||'').toUpperCase());
+      const catLabel = ({ comidas:'Comidas', material:'Material', otro:'Otro' }[r.categoria] || (r.categoria||''));
       return `
         <div class="parte-card" onclick="abrirFormTicket(${r.id})">
           <div class="mov-head">
-            <div class="mov-obra">🧾 ${escapeHtml(r.concepto || '—')}</div>
+            <div class="mov-obra">🧾 ${escapeHtml(catLabel || '—')}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-              <span class="badge badge-marca">${catLabel}</span>
               ${pagoBadge}
               <span class="badge badge-marca">${escapeHtml(r.fecha || '—')}</span>
             </div>

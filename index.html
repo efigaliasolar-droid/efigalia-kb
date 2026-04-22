@@ -2196,6 +2196,49 @@ function setSyncStatus(state, label) {
   document.getElementById('sync-label').textContent = label;
 }
 
+// ── SINCRONIZACIÓN OFFLINE ─────────────────────────────
+// Cuando un save falla, se marca el dataset como "dirty" y se reintenta al recuperar red.
+const SYNC_DIRTY_KEYS = ['data', 'partes', 'visitas', 'movimientos', 'materiales'];
+function setDirty(name)   { try { localStorage.setItem('efigalia_dirty_' + name, '1'); } catch(e) {} actualizarIndicadorSync(); }
+function clearDirty(name) { try { localStorage.removeItem('efigalia_dirty_' + name); } catch(e) {} actualizarIndicadorSync(); }
+function isDirty(name)    { return localStorage.getItem('efigalia_dirty_' + name) === '1'; }
+function dirtyNames()     { return SYNC_DIRTY_KEYS.filter(isDirty); }
+
+function actualizarIndicadorSync() {
+  const pendientes = dirtyNames().length;
+  if (!navigator.onLine) {
+    setSyncStatus('err', pendientes ? `sin conexión · ${pendientes} pendiente${pendientes === 1 ? '' : 's'}` : 'sin conexión');
+  } else if (pendientes) {
+    setSyncStatus('spin', `${pendientes} pendiente${pendientes === 1 ? '' : 's'}`);
+  } else {
+    setSyncStatus('ok', 'sincronizado');
+  }
+}
+
+let syncEnCurso = false;
+async function sincronizarPendientes() {
+  if (!navigator.onLine || syncEnCurso) return;
+  const dirty = dirtyNames();
+  if (!dirty.length) return;
+  syncEnCurso = true;
+  try {
+    for (const name of dirty) {
+      if (name === 'data')        await sheetsSave();
+      else if (name === 'partes')      await partesSave();
+      else if (name === 'visitas')     await visitasSave();
+      else if (name === 'movimientos') await movimientosSave();
+      else if (name === 'materiales')  await materialesSave();
+    }
+  } finally {
+    syncEnCurso = false;
+    actualizarIndicadorSync();
+  }
+}
+
+window.addEventListener('online',  () => { actualizarIndicadorSync(); sincronizarPendientes(); });
+window.addEventListener('offline', () => actualizarIndicadorSync());
+setInterval(() => { if (navigator.onLine && dirtyNames().length) sincronizarPendientes(); }, 30000);
+
 // ── DATA ───────────────────────────────────────────────
 async function sheetsLoad() {
   setSyncStatus('spin', 'cargando...');
@@ -2224,18 +2267,26 @@ async function sheetsLoad() {
 }
 
 async function sheetsSave() {
+  // Reducir payload: truncar contenidoExtraido a 4000 chars
+  const payload = incidents.map(i => {
+    if (i.tipo === 'documento' && i.contenidoExtraido && i.contenidoExtraido.length > 4000) {
+      return { ...i, contenidoExtraido: i.contenidoExtraido.substring(0, 4000) };
+    }
+    return i;
+  });
+  // 1) Guardar local siempre (payload completo, eliminando fotos data: para no saturar)
+  try {
+    const light = payload.map(i => ({...i, fotos: i.fotos?.map ? i.fotos.map(f => typeof f === 'string' && f.startsWith('data:') ? '' : f) : []}));
+    localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
+  } catch(e) { localStorage.removeItem('efigalia_kb_v4'); }
+  incidents = payload;
+
+  // 2) Intentar subir al servidor
+  if (!navigator.onLine) { setDirty('data'); return true; }
   setSyncStatus('spin', 'guardando...');
   try {
-    // Reducir payload: truncar contenidoExtraido a 4000 chars
-    const payload = incidents.map(i => {
-      if (i.tipo === 'documento' && i.contenidoExtraido && i.contenidoExtraido.length > 4000) {
-        return { ...i, contenidoExtraido: i.contenidoExtraido.substring(0, 4000) };
-      }
-      return i;
-    });
     const body = JSON.stringify(payload);
     console.log(`[sheetsSave] enviando ${payload.length} registros, ${(body.length/1024).toFixed(1)} KB`);
-
     const res = await fetch(WORKER + '/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2243,27 +2294,16 @@ async function sheetsSave() {
     });
     const respText = await res.text().catch(() => '');
     console.log(`[sheetsSave] respuesta HTTP ${res.status}${respText ? ' · body: ' + respText.substring(0,200) : ''}`);
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}${respText ? ' · ' + respText.substring(0,120) : ''}`);
-    }
-
-    incidents = payload;
-    try {
-      const light = incidents.map(i => ({...i, fotos: i.fotos?.map ? i.fotos.map(f => typeof f === 'string' && f.startsWith('data:') ? '' : f) : []}));
-      localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
-    } catch(e) { localStorage.removeItem('efigalia_kb_v4'); }
-    setSyncStatus('ok', 'sincronizado');
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}${respText ? ' · ' + respText.substring(0,120) : ''}`);
+    clearDirty('data');
+    actualizarIndicadorSync();
     return true;
   } catch(e) {
     console.error('[sheetsSave] error', e);
-    try {
-      const light = incidents.map(i => ({...i, fotos: []}));
-      localStorage.setItem('efigalia_kb_v4', JSON.stringify(light));
-    } catch(e2) { localStorage.removeItem('efigalia_kb_v4'); }
-    setSyncStatus('err', 'error al guardar');
-    showToast('⚠ Error al guardar: ' + (e.message || 'desconocido'), 'err');
-    return false;
+    setDirty('data');
+    actualizarIndicadorSync();
+    // Sin toast: el indicador ya muestra "N pendientes" y el caller mostrará su propio "✓ Guardado"
+    return true;
   }
 }
 
@@ -4573,18 +4613,23 @@ async function materialesLoad() {
 }
 
 async function materialesSave() {
+  try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
+  if (!navigator.onLine) { setDirty('materiales'); return true; }
   try {
-    await fetch(WORKER + '/materiales', {
+    const res = await fetch(WORKER + '/materiales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(materiales)
     });
-    try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('materiales');
+    actualizarIndicadorSync();
     return true;
   } catch(e) {
-    try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e2) {}
-    showToast('⚠ Guardado solo local (Worker sin /materiales POST)', 'err');
-    return false;
+    console.warn('[materialesSave]', e);
+    setDirty('materiales');
+    actualizarIndicadorSync();
+    return true;
   }
 }
 
@@ -4601,18 +4646,23 @@ async function movimientosLoad() {
 }
 
 async function movimientosSave() {
+  try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
+  if (!navigator.onLine) { setDirty('movimientos'); return true; }
   try {
-    await fetch(WORKER + '/movimientos', {
+    const res = await fetch(WORKER + '/movimientos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(movimientos)
     });
-    try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('movimientos');
+    actualizarIndicadorSync();
     return true;
   } catch(e) {
-    try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e2) {}
-    showToast('⚠ Guardado solo en local', 'err');
-    return false;
+    console.warn('[movimientosSave]', e);
+    setDirty('movimientos');
+    actualizarIndicadorSync();
+    return true;
   }
 }
 
@@ -4633,23 +4683,25 @@ async function partesLoad() {
 
 async function partesSave() {
   try {
-    await fetch(WORKER + '/partes', {
+    const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
+    localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
+  } catch(e) {}
+  if (!navigator.onLine) { setDirty('partes'); return true; }
+  try {
+    const res = await fetch(WORKER + '/partes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(partes)
     });
-    try {
-      const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
-      localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
-    } catch(e) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('partes');
+    actualizarIndicadorSync();
     return true;
   } catch(e) {
-    try {
-      const light = partes.map(p => ({...p, fotos: (p.fotos||[]).filter(f => typeof f === 'string' && !f.startsWith('data:'))}));
-      localStorage.setItem('efigalia_partes_v1', JSON.stringify(light));
-    } catch(e2) {}
-    showToast('⚠ Guardado solo en local', 'err');
-    return false;
+    console.warn('[partesSave]', e);
+    setDirty('partes');
+    actualizarIndicadorSync();
+    return true;
   }
 }
 
@@ -4670,18 +4722,23 @@ async function visitasLoad() {
 }
 
 async function visitasSave() {
+  try { localStorage.setItem('efigalia_visitas_v1', JSON.stringify(visitas)); } catch(e) {}
+  if (!navigator.onLine) { setDirty('visitas'); return true; }
   try {
-    await fetch(WORKER + '/visitas', {
+    const res = await fetch(WORKER + '/visitas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(visitas)
     });
-    try { localStorage.setItem('efigalia_visitas_v1', JSON.stringify(visitas)); } catch(e) {}
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('visitas');
+    actualizarIndicadorSync();
     return true;
   } catch(e) {
-    try { localStorage.setItem('efigalia_visitas_v1', JSON.stringify(visitas)); } catch(e2) {}
-    showToast('⚠ Guardado solo en local (Worker sin /visitas POST)', 'err');
-    return false;
+    console.warn('[visitasSave]', e);
+    setDirty('visitas');
+    actualizarIndicadorSync();
+    return true;
   }
 }
 
@@ -8179,6 +8236,8 @@ try { applyTheme(localStorage.getItem('efigalia_theme') || 'dark'); } catch(e) {
   actualizarHeaderUsuario();
   if (!currentUser) mostrarLogin();
   else goHome();   // refresca visibilidad de las cards según el rol del usuario cacheado
+  actualizarIndicadorSync();
+  if (navigator.onLine && dirtyNames().length) sincronizarPendientes();
 })();
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────

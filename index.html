@@ -7980,7 +7980,22 @@ function generarPDFVisita(id) {
   const v = (Array.isArray(visitas) ? visitas : []).find(x => x.id === id);
   if (!v) { showToast('⚠ Visita no encontrada', 'err'); return; }
   const c = v.campo || {};
+  const contacto = c.contacto || {};
+  const cub = c.cubierta || {};
+  const cor = c.correas || {};
+  const gre = c.grecas || {};
+  const obs = c.obstaculos || {};
+  const acc = c.acceso || {};
+  const aco = c.acopio || {};
+  const ele = c.elevacion || {};
+  const inv = c.inversor || {};
+  const cuap = c.cuadroProteccion || {};
+  const cug = c.cuadroGeneral || {};
+  const cab = c.cableado || {};
+  const net = c.internet || {};
   const fotos = c.fotos ? Object.values(c.fotos).flat().filter(Boolean) : [];
+  const yn = (b) => b === true ? 'Sí' : (b === false ? 'No' : '');
+
   const html = `
     <h2>Datos del proyecto</h2>
     ${_pdfFld('Título', v.titulo)}
@@ -7994,32 +8009,65 @@ function generarPDFVisita(id) {
     ${_pdfFld('Fecha realización', v.fechaReal)}
     ${_pdfFld('Estado', v.estado)}
     ${_pdfBlock('Observaciones para el operario', v.observaciones)}
+
     <h2>Contacto en la visita</h2>
-    ${_pdfFld('¿Quién recibe?', c.contactoTipo)}
-    ${_pdfFld('Nombre', c.contactoNombre)}
-    ${_pdfFld('Teléfono', c.contactoTelefono)}
-    ${_pdfBlock('Observaciones', c.contactoObs)}
+    ${_pdfFld('¿Quién recibe?', contacto.tipo)}
+    ${_pdfFld('Nombre', contacto.nombre)}
+    ${_pdfFld('Teléfono', contacto.telefono)}
+    ${_pdfBlock('Observaciones', contacto.observaciones)}
+
     <h2>Cubierta</h2>
-    ${_pdfFld('Tipo', c.cubiertaTipo)}
-    ${_pdfFld('Largo cumbrera (m)', c.cubiertaLargo)}
-    ${_pdfFld('Distancia al borde (m)', c.cubiertaBorde)}
-    ${_pdfBlock('Otras medidas', c.cubiertaOtras)}
+    ${_pdfFld('Tipo', cub.tipo)}
+    ${_pdfFld('Largo cumbrera (m)', cub.largoCumbrera)}
+    ${_pdfFld('Distancia al borde (m)', cub.distanciaBorde)}
+    ${_pdfBlock('Otras medidas', cub.otrasMedidas)}
+
+    ${(cor.tipo || cor.distanciaEntre || cor.numPorCara) ? `
+      <h2>Correas</h2>
+      ${_pdfFld('Tipo', cor.tipo)}
+      ${_pdfFld('Distancia entre correas (m)', cor.distanciaEntre)}
+      ${_pdfFld('Nº por cara', cor.numPorCara)}
+    ` : ''}
+
+    ${(gre.altura || gre.distanciaEntre || gre.ancho) ? `
+      <h2>Grecas</h2>
+      ${_pdfFld('Altura (mm)', gre.altura)}
+      ${_pdfFld('Distancia entre (mm)', gre.distanciaEntre)}
+      ${_pdfFld('Ancho (mm)', gre.ancho)}
+    ` : ''}
+
     <h2>Obstáculos y acceso</h2>
-    ${_pdfBlock('Obstáculos', c.obstaculos)}
-    ${_pdfBlock('Acceso', c.acceso)}
-    ${_pdfBlock('Acopio', c.acopio)}
-    ${_pdfBlock('Elevación', c.elevacion)}
+    ${_pdfFld('¿Sin obstáculos?', yn(obs.noExisten))}
+    ${_pdfFld('Altura muretes (m)', obs.alturaMuretes)}
+    ${_pdfFld('Altura chimeneas (m)', obs.alturaChimeneas)}
+    ${_pdfBlock('Otros obstáculos', obs.otros)}
+    ${_pdfBlock('Ubicación obstáculos', obs.ubicacion)}
+    ${_pdfBlock('Acceso (ubicación)', acc.ubicacion)}
+    ${_pdfFld('Altura acceso (m)', acc.altura)}
+    ${_pdfBlock('Observaciones acceso', acc.observaciones)}
+    ${_pdfFld('Acopio en exterior cerrado', yn(aco.exteriorCerrado))}
+    ${_pdfBlock('Detalles acopio', aco.detalles)}
+    ${_pdfBlock('Elevación', ele.detalles)}
+
     <h2>Cuarto de inversor y cuadros</h2>
-    ${_pdfBlock('Inversor: plano / ubicación', c.inversorPlano)}
-    ${_pdfBlock('Equipos cercanos', c.inversorEquipos)}
-    ${_pdfBlock('Cuadro protección', c.cuadroProteccion)}
-    ${_pdfBlock('Cuadro interruptor', c.cuadroInterruptor)}
-    ${_pdfBlock('Cuadro general', c.cuadroGeneral)}
+    ${_pdfBlock('Observaciones inversor', inv.observaciones)}
+    ${_pdfBlock('Cuadro de protección', cuap.observaciones)}
+    ${_pdfFld('Interruptor general', cug.interruptor)}
+    ${_pdfFld('Toroidales dentro del cuadro', yn(cug.toroidalesDentro))}
+    ${_pdfBlock('Observaciones cuadro general', cug.observaciones)}
+
     <h2>Cableado</h2>
-    ${_pdfBlock('Entrada cableado', c.cableadoEntrada)}
-    ${_pdfBlock('Recorrido', c.cableadoRecorrido)}
+    ${_pdfFld('Distancia módulos–inversor (m)', cab.distModulosInversor)}
+    ${_pdfFld('Distancia inversor–cuadro (m)', cab.distInversorCuadro)}
+    ${_pdfBlock('Entrada a nave', cab.entradaNaveObs)}
+
     <h2>Conexión a internet</h2>
-    ${_pdfBlock('Router / conexión', c.router)}
+    ${_pdfFld('Router / conexión', net.router)}
+    ${_pdfFld('Wi-Fi disponible', yn(net.wifi))}
+    ${_pdfFld('Distancia al router (m)', net.distanciaRouter)}
+    ${_pdfBlock('Observaciones internet', net.observaciones)}
+
+    ${_pdfBlock('Otros', c.otros)}
     ${_pdfFotos(fotos)}
   `;
   imprimirComoPDF('Visita pre-contrato · ' + (v.titulo || v.cliente_nombre || v.id), html);

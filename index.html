@@ -1248,10 +1248,6 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Dirección de la instalación *</label>
-          <input type="text" id="v-direccion" placeholder="Calle, polígono...">
-        </div>
-        <div class="form-group">
           <label>Enlace Google Maps</label>
           <input type="text" id="v-maps" placeholder="https://..." oninput="onMapsInputChange()">
           <a id="v-maps-link" target="_blank" rel="noopener" style="display:none;margin-top:8px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;align-items:center;gap:6px;width:fit-content">🗺 Abrir en Google Maps ↗</a>
@@ -2073,58 +2069,19 @@
           <input type="text" id="fo-maps" placeholder="https://..." oninput="onFichaMapsChange()">
           <a id="fo-maps-link" target="_blank" rel="noopener" style="display:none;margin-top:8px;color:var(--accent);font-size:14px;font-weight:600;text-decoration:none;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;align-items:center;gap:6px;width:fit-content">Abrir en Google Maps ↗</a>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Latitud</label>
-            <input type="number" step="any" id="fo-lat" placeholder="ej: 42.4325">
-          </div>
-          <div class="form-group">
-            <label>Longitud</label>
-            <input type="number" step="any" id="fo-lng" placeholder="ej: -8.6456">
-          </div>
-        </div>
-        <div class="calc-note" style="margin-top:0">
-          Pega el enlace completo de Google Maps (no el corto "maps.app.goo.gl"). Si no consigue extraer lat/lng, escríbelas a mano.
-        </div>
       </div>
     </details>
 
     <details class="filtros-panel">
       <summary>Contacto</summary>
       <div class="filtros-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Cliente</label>
-            <input type="text" id="fo-cliente" placeholder="Nombre o razón social">
-          </div>
-          <div class="form-group">
-            <label>Tipo</label>
-            <select id="fo-cliente-tipo">
-              <option value="">—</option>
-              <option value="persona">Persona</option>
-              <option value="empresa">Empresa</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label>Cliente</label>
+          <input type="text" id="fo-cliente" placeholder="Nombre o razón social">
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Teléfono</label>
-            <input type="text" id="fo-telefono" inputmode="tel">
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="text" id="fo-email" inputmode="email">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Persona contacto en obra (si distinto)</label>
-            <input type="text" id="fo-contacto-nombre">
-          </div>
-          <div class="form-group">
-            <label>Teléfono contacto obra</label>
-            <input type="text" id="fo-contacto-tel" inputmode="tel">
-          </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="fo-telefono" inputmode="tel">
         </div>
         <div class="form-group">
           <label>Observaciones de contacto</label>
@@ -2666,10 +2623,9 @@ function renderEstadoObra() {
   const resumenFicha = obraRec ? `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
       ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(obraRec.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
-      ${obraRec.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.clienteNombre)}${obraRec.telefono ? ` · <a href="tel:${escapeHtml(obraRec.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.telefono)}</a>` : ''}${obraRec.email ? ` · <a href="mailto:${escapeHtml(obraRec.email)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.email)}</a>` : ''}</div></div>` : ''}
-      ${obraRec.contactoNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Contacto en obra</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.contactoNombre)}${obraRec.contactoTelefono ? ` · <a href="tel:${escapeHtml(obraRec.contactoTelefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.contactoTelefono)}</a>` : ''}</div></div>` : ''}
+      ${obraRec.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.clienteNombre)}${obraRec.telefono ? ` · <a href="tel:${escapeHtml(obraRec.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.telefono)}</a>` : ''}</div></div>` : ''}
       ${obraRec.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obraRec.contactoObs)}</div>` : ''}
-      ${!obraRec.direccion && !obraRec.clienteNombre && !obraRec.contactoNombre ? `<div style="color:var(--text-muted);font-size:13px">Ficha sin rellenar. Usa el botón para añadir contacto, dirección y documentos.</div>` : ''}
+      ${!obraRec.direccion && !obraRec.clienteNombre && !obraRec.contactoObs ? `<div style="color:var(--text-muted);font-size:13px">Ficha sin rellenar. Usa el botón para añadir contacto, dirección y documentos.</div>` : ''}
     </div>
   ` : '';
 
@@ -5024,7 +4980,6 @@ function abrirFormularioVisita(v) {
   document.getElementById('v-titulo').value = titulo;
   document.getElementById('v-cliente').value = cliente;
   document.getElementById('v-telefono').value = telefono;
-  document.getElementById('v-direccion').value = direccion;
   document.getElementById('v-maps').value = maps;
   onMapsInputChange();
   document.getElementById('v-equipos').value = equipos;
@@ -5041,7 +4996,7 @@ function abrirFormularioVisita(v) {
 
   // Permisos admin-only: cabecera readonly para instalador con visita existente
   const adminReadOnly = v && !isAdmin();
-  ['v-titulo','v-cliente','v-telefono','v-direccion','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
+  ['v-titulo','v-cliente','v-telefono','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') el.disabled = adminReadOnly;
@@ -5100,7 +5055,6 @@ function leerFormularioVisita() {
     titulo: txt('v-titulo'),
     cliente_nombre: txt('v-cliente'),
     telefono: txt('v-telefono'),
-    direccion: txt('v-direccion'),
     urlMaps: txt('v-maps'),
     equipos: txt('v-equipos'),
     observaciones: txt('v-obs'),
@@ -5371,7 +5325,6 @@ async function guardarVisita() {
     if (!datos.titulo) { showToast('⚠ Rellena el título del proyecto', 'err'); return; }
     if (!datos.cliente_nombre) { showToast('⚠ Rellena el nombre del cliente', 'err'); return; }
     if (!datos.telefono) { showToast('⚠ Rellena el teléfono del cliente', 'err'); return; }
-    if (!datos.direccion) { showToast('⚠ Rellena la dirección de la instalación', 'err'); return; }
     if (!datos.fechaPrevista) { showToast('⚠ Indica la fecha prevista', 'err'); return; }
   } else if (!esNueva) {
     // Instalador guardando visita existente: la cabecera vino de admin y está en readonly
@@ -6983,11 +6936,6 @@ function onFichaMapsChange() {
     link.removeAttribute('href');
     link.style.display = 'none';
   }
-  const coords = extraerLatLngGoogleMaps(val);
-  if (coords) {
-    document.getElementById('fo-lat').value = coords.lat;
-    document.getElementById('fo-lng').value = coords.lng;
-  }
 }
 
 function abrirFichaObra(id, origen) {
@@ -7007,16 +6955,10 @@ function abrirFichaObra(id, origen) {
     // Ubicación
     document.getElementById('fo-direccion').value = obra.direccion || '';
     document.getElementById('fo-maps').value = obra.mapsUrl || '';
-    document.getElementById('fo-lat').value = obra.lat ?? '';
-    document.getElementById('fo-lng').value = obra.lng ?? '';
     onFichaMapsChange();
     // Contacto
     document.getElementById('fo-cliente').value = obra.clienteNombre || '';
-    document.getElementById('fo-cliente-tipo').value = obra.clienteTipo || '';
     document.getElementById('fo-telefono').value = obra.telefono || '';
-    document.getElementById('fo-email').value = obra.email || '';
-    document.getElementById('fo-contacto-nombre').value = obra.contactoNombre || '';
-    document.getElementById('fo-contacto-tel').value = obra.contactoTelefono || '';
     document.getElementById('fo-contacto-obs').value = obra.contactoObs || '';
     // Documentación y actividad
     renderDocsObra();
@@ -7030,9 +6972,8 @@ function aplicarPermisosFichaObra() {
   const editable = isAdmin();
   const ids = [
     'fo-nombre','fo-estado','fo-fecha-prevista',
-    'fo-direccion','fo-maps','fo-lat','fo-lng',
-    'fo-cliente','fo-cliente-tipo','fo-telefono','fo-email',
-    'fo-contacto-nombre','fo-contacto-tel','fo-contacto-obs'
+    'fo-direccion','fo-maps',
+    'fo-cliente','fo-telefono','fo-contacto-obs'
   ];
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -7071,23 +7012,14 @@ async function guardarFichaObra() {
     if (!confirm(`Estás cambiando el nombre de la obra. Los partes / movimientos / puestas / visitas que usaban "${obra.nombre}" no se renombrarán automáticamente. ¿Continuar?`)) return;
   }
 
-  const latVal = parseFloat(document.getElementById('fo-lat').value);
-  const lngVal = parseFloat(document.getElementById('fo-lng').value);
-
   Object.assign(obra, {
     nombre: nuevoNombre,
     estadoObra: document.getElementById('fo-estado').value,
     fechaInicioPrevista: document.getElementById('fo-fecha-prevista').value,
     direccion: document.getElementById('fo-direccion').value.trim(),
     mapsUrl: document.getElementById('fo-maps').value.trim(),
-    lat: isNaN(latVal) ? null : latVal,
-    lng: isNaN(lngVal) ? null : lngVal,
     clienteNombre: document.getElementById('fo-cliente').value.trim(),
-    clienteTipo: document.getElementById('fo-cliente-tipo').value,
     telefono: document.getElementById('fo-telefono').value.trim(),
-    email: document.getElementById('fo-email').value.trim(),
-    contactoNombre: document.getElementById('fo-contacto-nombre').value.trim(),
-    contactoTelefono: document.getElementById('fo-contacto-tel').value.trim(),
     contactoObs: document.getElementById('fo-contacto-obs').value.trim(),
     modificadoPor: (currentUser && currentUser.nombre) || 'Admin',
     modificadoTs: Date.now()
@@ -7957,7 +7889,6 @@ function onMntObraChange() {
   cont.innerHTML = `
     ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(obra.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
     ${obra.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.clienteNombre)}${obra.telefono ? ` · <a href="tel:${escapeHtml(obra.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.telefono)}</a>` : ''}</div></div>` : ''}
-    ${obra.contactoNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Contacto en obra</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.contactoNombre)}${obra.contactoTelefono ? ` · <a href="tel:${escapeHtml(obra.contactoTelefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.contactoTelefono)}</a>` : ''}</div></div>` : ''}
     ${obra.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obra.contactoObs)}</div>` : ''}
     ${docs.length ? `
       <div style="margin-top:10px">
@@ -7965,7 +7896,7 @@ function onMntObraChange() {
         ${docs.map(d => `<a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
       </div>
     ` : ''}
-    ${!obra.direccion && !obra.clienteNombre && !obra.contactoNombre && !docs.length ? '<div style="color:var(--text-muted);font-size:13px">Ficha de obra sin rellenar. Edítala desde Administración → Obras → Ficha.</div>' : ''}
+    ${!obra.direccion && !obra.clienteNombre && !obra.contactoObs && !docs.length ? '<div style="color:var(--text-muted);font-size:13px">Ficha de obra sin rellenar. Edítala desde Administración → Obras → Ficha.</div>' : ''}
   `;
 }
 

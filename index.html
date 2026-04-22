@@ -976,7 +976,10 @@
         <select id="parte-registradopor" class="select-registradopor"></select>
       </div>
 
-      <button class="btn-primary" id="btn-parte-save" onclick="guardarParte()">Guardar parte</button>
+      <div class="action-row">
+        <button class="btn-primary" id="btn-parte-save" onclick="guardarParte()" style="flex:1">Guardar parte</button>
+        <button class="btn-secondary" id="btn-parte-pdf" onclick="generarPDFParte(parteForm?.editId)" style="flex:1;display:none">Descargar PDF</button>
+      </div>
     </div>
   </div>
 
@@ -1110,7 +1113,10 @@
         <textarea class="field" id="pm-modificaciones" placeholder="Cambios de esquema, equipos sustituidos, reubicaciones..."></textarea>
       </div>
 
-      <button class="btn-primary" id="btn-pm-save" onclick="guardarPuesta()">Guardar puesta en marcha</button>
+      <div class="action-row">
+        <button class="btn-primary" id="btn-pm-save" onclick="guardarPuesta()" style="flex:1">Guardar puesta en marcha</button>
+        <button class="btn-secondary" id="btn-pm-pdf" onclick="generarPDFPuesta(puestaEditando)" style="flex:1;display:none">Descargar PDF</button>
+      </div>
     </div>
   </div>
 
@@ -1538,6 +1544,7 @@
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn-secondary" onclick="enterVisitas()" style="flex:1;min-width:0">Cancelar</button>
       <button class="btn-primary" id="btn-visita-save" onclick="guardarVisita()" style="flex:1;min-width:0;width:auto">Guardar</button>
+      <button class="btn-secondary" id="btn-visita-pdf" onclick="generarPDFVisita(visitaEnEdicion)" style="flex:1;min-width:0;width:auto;display:none">Descargar PDF</button>
     </div>
     <div id="visita-extra-actions" style="margin-top:10px;display:none">
       <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarVisita()">🗑 Eliminar visita</button>
@@ -1643,7 +1650,7 @@
       <div class="form-group">
         <label>Foto del ticket</label>
         <div class="photo-drop" onclick="document.getElementById('rep-foto-input').click()">
-          <input type="file" id="rep-foto-input" accept="image/*" onchange="onRepostajeFotoChange(event)">
+          <input type="file" id="rep-foto-input" accept="image/*" capture="environment" onchange="onRepostajeFotoChange(event)">
           <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Adjuntar ticket
         </div>
         <div class="photo-previews" id="rep-foto-preview"></div>
@@ -1699,7 +1706,7 @@
       <div class="form-group">
         <label>Foto del ticket *</label>
         <div class="photo-drop" onclick="document.getElementById('tkt-foto-input').click()">
-          <input type="file" id="tkt-foto-input" accept="image/*" onchange="onTicketFotoChange(event)">
+          <input type="file" id="tkt-foto-input" accept="image/*" capture="environment" onchange="onTicketFotoChange(event)">
           <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Adjuntar ticket
         </div>
         <div class="photo-previews" id="tkt-foto-preview"></div>
@@ -1845,6 +1852,7 @@
     <div class="action-row">
       <button class="btn-primary" id="btn-mnt-save" onclick="guardarMantenimiento()" style="flex:1">Guardar</button>
       <button class="btn-secondary" id="btn-mnt-completar" onclick="completarMantenimiento()" style="flex:1;display:none">Marcar completado</button>
+      <button class="btn-secondary" id="btn-mnt-pdf" onclick="generarPDFMantenimiento(mntEditando)" style="flex:1;display:none">Descargar PDF</button>
     </div>
     <div id="mnt-extra-actions" style="margin-top:10px;display:none">
       <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarMantenimiento()">🗑 Eliminar mantenimiento</button>
@@ -4787,6 +4795,8 @@ function abrirVisita(id) {
 function abrirFormularioVisita(v) {
   hideAllViews();
   document.getElementById('view-visita').style.display = 'block';
+  const btnVisitaPdf = document.getElementById('btn-visita-pdf');
+  if (btnVisitaPdf) btnVisitaPdf.style.display = (isAdmin() && v && v.id) ? '' : 'none';
 
   // Rellenar select de operario
   const selOp = document.getElementById('v-operario');
@@ -5831,6 +5841,8 @@ function abrirFormParte(prefill) {
     });
   }
   refrescarDatalists();
+  const btnPartePdf = document.getElementById('btn-parte-pdf');
+  if (btnPartePdf) btnPartePdf.style.display = (isAdmin() && parteForm.editId) ? '' : 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarFormParte() {
@@ -6363,6 +6375,8 @@ function abrirFormPuesta(id) {
   puestaFotoUrls = {};
   document.getElementById('puestas-list-section').style.display = 'none';
   document.getElementById('puestas-form-section').style.display = 'block';
+  const btnPmPdf = document.getElementById('btn-pm-pdf');
+  if (btnPmPdf) btnPmPdf.style.display = (isAdmin() && id) ? '' : 'none';
   document.getElementById('puesta-form-title').textContent = id ? 'Editar puesta en marcha' : 'Nueva puesta en marcha';
   renderPuestaChecks();
   renderPuestaFotoGroups();
@@ -7610,6 +7624,8 @@ function fillMntObraSelect(valor) {
 function abrirMantenimiento(id) {
   if (!requireLogin()) return;
   mntEditando = id || null;
+  const btnMntPdf = document.getElementById('btn-mnt-pdf');
+  if (btnMntPdf) btnMntPdf.style.display = (isAdmin() && id) ? '' : 'none';
   mntFotosFiles = [];
   mntFotosUrls = [];
   hideAllViews();
@@ -7916,6 +7932,176 @@ function renderMantenimientos() {
       </div>
     `;
   }).join('');
+}
+
+// ── EXPORTACIÓN A PDF (admin, uso interno) ─────────────
+function imprimirComoPDF(titulo, contenidoHtml) {
+  if (!isAdmin()) { showToast('⚠ Solo el administrador puede generar PDF', 'err'); return; }
+  const win = window.open('', '_blank');
+  if (!win) { showToast('⚠ Activa los pop-ups del navegador', 'err'); return; }
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${escapeHtml(titulo)}</title><style>
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;max-width:900px;margin:0 auto;padding:24px;background:#fff}
+    h1{font-size:20px;margin:0 0 2px;color:#1560a8;letter-spacing:0.08em}
+    h2{font-size:13px;margin:22px 0 8px;color:#1560a8;border-bottom:1px solid #d1d5dc;padding-bottom:4px;text-transform:uppercase;letter-spacing:0.05em}
+    .meta{font-size:11px;color:#5b6275;margin-bottom:16px;border-bottom:2px solid #1560a8;padding-bottom:8px}
+    .fld{display:grid;grid-template-columns:210px 1fr;gap:12px;padding:6px 0;border-bottom:1px dashed #e2e5ec;font-size:12px;page-break-inside:avoid}
+    .fld .k{color:#5b6275;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:0.05em}
+    .fld .v{color:#1a1a1a;white-space:pre-wrap}
+    .blk{font-size:12px;white-space:pre-wrap;padding:8px 0}
+    .chk{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-right:6px;margin-bottom:4px}
+    .chk.on{background:#e0f3e8;color:#1f7a4a}
+    .chk.off{background:#fbecd6;color:#b46b00}
+    .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;page-break-inside:avoid}
+    .photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;border:1px solid #d1d5dc}
+    .ftr{margin-top:28px;font-size:10px;color:#5b6275;border-top:1px solid #d1d5dc;padding-top:8px}
+    @page{margin:12mm}
+    @media print{body{padding:0;max-width:none}}
+  </style></head><body>
+    <h1>EFIGALIA</h1>
+    <div class="meta">${escapeHtml(titulo)} · Generado ${new Date().toLocaleString('es-ES')} · ${escapeHtml(currentUser?.nombre || 'Admin')}</div>
+    ${contenidoHtml}
+    <div class="ftr">Documento interno · No válido como firma/conformidad del cliente</div>
+    <script>window.addEventListener('load',function(){setTimeout(function(){window.print();},400);});<\/script>
+  </body></html>`;
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+function _pdfFld(k, v) { return (v != null && v !== '') ? `<div class="fld"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(String(v))}</div></div>` : ''; }
+function _pdfBlock(title, texto) { return texto ? `<h2>${escapeHtml(title)}</h2><div class="blk">${escapeHtml(texto)}</div>` : ''; }
+function _pdfFotos(urls) {
+  if (!Array.isArray(urls) || !urls.length) return '';
+  return `<h2>Fotografías (${urls.length})</h2><div class="photos">${urls.map(u => `<img src="${escapeHtml(u)}" alt="">`).join('')}</div>`;
+}
+
+function generarPDFVisita(id) {
+  const v = (Array.isArray(visitas) ? visitas : []).find(x => x.id === id);
+  if (!v) { showToast('⚠ Visita no encontrada', 'err'); return; }
+  const c = v.campo || {};
+  const fotos = c.fotos ? Object.values(c.fotos).flat().filter(Boolean) : [];
+  const html = `
+    <h2>Datos del proyecto</h2>
+    ${_pdfFld('Título', v.titulo)}
+    ${_pdfFld('Cliente', v.cliente_nombre || v.cliente)}
+    ${_pdfFld('Teléfono', v.telefono)}
+    ${_pdfFld('Dirección', v.direccion)}
+    ${_pdfFld('Maps', v.urlMaps || v.mapsUrl)}
+    ${_pdfFld('Equipos previstos', v.equipos_previstos || v.equipos)}
+    ${_pdfFld('Operario asignado', v.operarioAsignado)}
+    ${_pdfFld('Fecha prevista', v.fechaPrevista)}
+    ${_pdfFld('Fecha realización', v.fechaReal)}
+    ${_pdfFld('Estado', v.estado)}
+    ${_pdfBlock('Observaciones para el operario', v.observaciones)}
+    <h2>Contacto en la visita</h2>
+    ${_pdfFld('¿Quién recibe?', c.contactoTipo)}
+    ${_pdfFld('Nombre', c.contactoNombre)}
+    ${_pdfFld('Teléfono', c.contactoTelefono)}
+    ${_pdfBlock('Observaciones', c.contactoObs)}
+    <h2>Cubierta</h2>
+    ${_pdfFld('Tipo', c.cubiertaTipo)}
+    ${_pdfFld('Largo cumbrera (m)', c.cubiertaLargo)}
+    ${_pdfFld('Distancia al borde (m)', c.cubiertaBorde)}
+    ${_pdfBlock('Otras medidas', c.cubiertaOtras)}
+    <h2>Obstáculos y acceso</h2>
+    ${_pdfBlock('Obstáculos', c.obstaculos)}
+    ${_pdfBlock('Acceso', c.acceso)}
+    ${_pdfBlock('Acopio', c.acopio)}
+    ${_pdfBlock('Elevación', c.elevacion)}
+    <h2>Cuarto de inversor y cuadros</h2>
+    ${_pdfBlock('Inversor: plano / ubicación', c.inversorPlano)}
+    ${_pdfBlock('Equipos cercanos', c.inversorEquipos)}
+    ${_pdfBlock('Cuadro protección', c.cuadroProteccion)}
+    ${_pdfBlock('Cuadro interruptor', c.cuadroInterruptor)}
+    ${_pdfBlock('Cuadro general', c.cuadroGeneral)}
+    <h2>Cableado</h2>
+    ${_pdfBlock('Entrada cableado', c.cableadoEntrada)}
+    ${_pdfBlock('Recorrido', c.cableadoRecorrido)}
+    <h2>Conexión a internet</h2>
+    ${_pdfBlock('Router / conexión', c.router)}
+    ${_pdfFotos(fotos)}
+  `;
+  imprimirComoPDF('Visita pre-contrato · ' + (v.titulo || v.cliente_nombre || v.id), html);
+}
+
+function generarPDFPuesta(id) {
+  const p = incidents.find(i => i.id === id && i.tipo === 'puesta');
+  if (!p) { showToast('⚠ Puesta no encontrada', 'err'); return; }
+  const checks = p.checks || {};
+  const m = p.medidas || {};
+  const strings = Array.isArray(m.strings_vdc) ? m.strings_vdc : [];
+  const PM_LBL = Object.fromEntries(PM_CHECKS.map(([k,l]) => [k, l]));
+  const checksHtml = Object.entries(checks).map(([k, ok]) => `<span class="chk ${ok ? 'on' : 'off'}">${ok ? '✓' : '✗'} ${escapeHtml(PM_LBL[k] || k)}</span>`).join('');
+  const todasFotos = [];
+  Object.values(p.fotos || {}).forEach(arr => { if (Array.isArray(arr)) todasFotos.push(...arr); });
+  const html = `
+    <h2>Datos</h2>
+    ${_pdfFld('Obra', p.idObra)}
+    ${_pdfFld('Fecha', p.fecha)}
+    ${_pdfFld('Técnico', p.tecnico)}
+    <h2>Comprobaciones eléctricas</h2>
+    <div class="blk">${checksHtml}</div>
+    <h2>Medidas</h2>
+    ${_pdfFld('Calibre fusibles CC (A)', m.calibre_fusibles_cc)}
+    ${_pdfFld('Calibre toroidales consumo (A)', m.calibre_toroidales_consumo)}
+    ${strings.length ? _pdfFld('Tensiones strings (Vdc)', strings.map((v,i) => `S${i+1}: ${v}`).join(' · ')) : ''}
+    <h2>Monitorización</h2>
+    ${_pdfFld('Conexión internet', p.conexion_internet)}
+    ${_pdfBlock('Observaciones', p.observaciones)}
+    ${_pdfBlock('Modificaciones respecto a documentación', p.modificaciones)}
+    ${_pdfFotos(todasFotos)}
+  `;
+  imprimirComoPDF('Puesta en marcha · ' + (p.idObra || id), html);
+}
+
+function generarPDFMantenimiento(id) {
+  const m = incidents.find(i => i.id === id && i.tipo === 'mantenimiento');
+  if (!m) { showToast('⚠ Mantenimiento no encontrado', 'err'); return; }
+  const obra = incidents.find(i => i.tipo === 'obra' && i.nombre === m.idObra);
+  const html = `
+    <h2>Datos del mantenimiento</h2>
+    ${_pdfFld('Tipo', (m.tipoMantenimiento||'').toUpperCase())}
+    ${_pdfFld('Obra', m.idObra)}
+    ${_pdfFld('Fecha prevista', m.fechaPrevista)}
+    ${_pdfFld('Fecha realización', m.fechaReal)}
+    ${_pdfFld('Operario asignado', m.operarioAsignado)}
+    ${_pdfFld('Estado', m.estado)}
+    ${_pdfBlock('Trabajos previstos', m.trabajosPrevistos)}
+    ${_pdfBlock('Equipos a intervenir', m.equipos)}
+    ${_pdfBlock('Observaciones del administrador', m.observacionesAdmin)}
+    ${obra ? `
+      <h2>Datos de la obra</h2>
+      ${_pdfFld('Dirección', obra.direccion)}
+      ${_pdfFld('Cliente', obra.clienteNombre)}
+      ${_pdfFld('Teléfono cliente', obra.telefono)}
+      ${_pdfFld('Contacto en obra', obra.contactoNombre)}
+      ${_pdfFld('Teléfono contacto', obra.contactoTelefono)}
+    ` : ''}
+    <h2>Trabajos realizados</h2>
+    ${_pdfBlock('Trabajos realizados', m.trabajosRealizados)}
+    ${_pdfBlock('Material utilizado', m.materialUtilizado)}
+    ${_pdfBlock('Observaciones técnicas', m.observacionesCampo)}
+    ${_pdfFotos(m.fotos)}
+  `;
+  imprimirComoPDF('Mantenimiento · ' + (m.idObra || id), html);
+}
+
+function generarPDFParte(id) {
+  const p = (Array.isArray(partes) ? partes : []).find(x => x.id === id);
+  if (!p) { showToast('⚠ Parte no encontrado', 'err'); return; }
+  const html = `
+    <h2>Datos</h2>
+    ${_pdfFld('Fecha', p.fecha)}
+    ${_pdfFld('Obra', p.idObra)}
+    ${_pdfFld('Furgoneta', p.furgoneta)}
+    ${_pdfFld('Instaladores', (p.instaladores||[]).join(', '))}
+    ${_pdfFld('Registrado por', p.registradoPor)}
+    ${_pdfBlock('Trabajos realizados', p.trabajosRealizados)}
+    ${_pdfBlock('Notas', p.notas)}
+    ${_pdfFotos(p.fotos)}
+  `;
+  imprimirComoPDF('Parte diario · ' + (p.idObra || id) + ' · ' + (p.fecha || ''), html);
 }
 
 // Limpiar cache local para evitar quota exceeded

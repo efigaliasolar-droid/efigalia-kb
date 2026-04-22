@@ -1168,7 +1168,7 @@
     <div class="section-title">Estado de obras</div>
     <div class="form-group">
       <label>Seleccionar obra</label>
-      <select id="est-obra" class="select-obra" onchange="renderEstadoObra()"></select>
+      <select id="est-obra" onchange="renderEstadoObra()"></select>
     </div>
     <div id="est-dashboard"></div>
   </div>
@@ -2567,8 +2567,17 @@ function enterEstadoObras() {
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-estado-obras').style.display = 'block';
   Promise.all([movimientosLoad(), partesLoad(), materialesLoad(), sheetsLoad()]).then(() => {
-    fillObraSelects();
+    // Estado de obras: incluir todas las obras (también finalizadas y en garantía)
     const sel = document.getElementById('est-obra');
+    if (sel) {
+      const cur = sel.value;
+      const obras = maestrosDe('obra');
+      sel.innerHTML = '<option value="">— Seleccionar —</option>' + obras.map(o => {
+        const tag = o.estadoObra && o.estadoObra !== 'activa' ? ` (${o.estadoObra})` : '';
+        return `<option value="${escapeHtml(o.nombre)}">${escapeHtml(o.nombre)}${tag}</option>`;
+      }).join('');
+      if (cur) sel.value = cur;
+    }
     if (sel.value) renderEstadoObra();
     else document.getElementById('est-dashboard').innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>Selecciona una obra arriba para ver su estado.</div>';
   });
@@ -2651,7 +2660,7 @@ function renderEstadoObra() {
   // Datos "ficha" (contacto, dirección) de la obra si está guardada
   const obraRec = incidents.find(i => i.tipo === 'obra' && i.nombre === idObra);
   const fichaBtn = obraRec
-    ? `<button class="btn-secondary" style="width:100%;margin-bottom:14px" onclick="abrirFichaObra(${obraRec.id}, 'estado')">Ver / editar ficha completa</button>`
+    ? `<button class="btn-secondary" style="width:100%;margin-bottom:14px" onclick="abrirFichaObra(${obraRec.id}, 'estado')">${isAdmin() ? 'Ver / editar ficha completa' : 'Ver ficha completa'}</button>`
     : `<div class="calc-note" style="margin-bottom:14px">Esta obra no está dada de alta en Administración → Obras, por lo que no tiene ficha asociada.</div>`;
 
   const resumenFicha = obraRec ? `
@@ -3201,7 +3210,18 @@ function maestrosDe(tipo) {
 function maestrosActivos(tipo) {
   return maestrosDe(tipo).filter(i => i.activa !== false).map(i => i.nombre);
 }
-function obrasActivas() { return maestrosActivos('obra'); }
+function obrasActivas() {
+  // Una obra es "activa" para selectores nuevos si:
+  //   - no está marcada inactiva en Administración
+  //   - su estadoObra es activa, pausada o sin definir (no finalizada/garantía)
+  return maestrosDe('obra')
+    .filter(i => i.activa !== false)
+    .filter(i => !i.estadoObra || i.estadoObra === 'activa' || i.estadoObra === 'pausada')
+    .map(i => i.nombre);
+}
+function obrasTodasNombres() {
+  return maestrosDe('obra').map(i => i.nombre);
+}
 function furgonetasActivasAdmin() {
   const a = maestrosActivos('furgoneta');
   return a.length ? a : FURGONETAS;
@@ -6837,6 +6857,16 @@ async function guardarPuesta() {
   const idx = incidents.findIndex(i => i.id === reg.id && (i.tipo || '') === 'puesta');
   if (idx >= 0) incidents[idx] = reg; else incidents.unshift(reg);
 
+  // Auto-marcar la obra como finalizada si aún estaba activa o pausada
+  let obraMarcada = false;
+  const obraRec = incidents.find(o => o.tipo === 'obra' && o.nombre === idObra);
+  if (obraRec && (!obraRec.estadoObra || obraRec.estadoObra === 'activa' || obraRec.estadoObra === 'pausada')) {
+    obraRec.estadoObra = 'finalizada';
+    obraRec.modificadoPor = currentUser?.nombre || '';
+    obraRec.modificadoTs = Date.now();
+    obraMarcada = true;
+  }
+
   await sheetsSave();
 
   btn.disabled = false; btn.textContent = 'Guardar puesta en marcha';
@@ -6844,7 +6874,7 @@ async function guardarPuesta() {
   puestaFotoFiles = {};
   puestaFotoUrls = {};
   clearDraft(DRAFT_KEYS.puesta);
-  showToast('✓ Puesta en marcha guardada', 'ok');
+  showToast('✓ Puesta en marcha guardada' + (obraMarcada ? ` · obra "${idObra}" marcada como finalizada` : ''), 'ok');
   cerrarFormPuesta();
 }
 
@@ -6991,8 +7021,33 @@ function abrirFichaObra(id, origen) {
     // Documentación y actividad
     renderDocsObra();
     renderActividadObra();
+    aplicarPermisosFichaObra();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+function aplicarPermisosFichaObra() {
+  const editable = isAdmin();
+  const ids = [
+    'fo-nombre','fo-estado','fo-fecha-prevista',
+    'fo-direccion','fo-maps','fo-lat','fo-lng',
+    'fo-cliente','fo-cliente-tipo','fo-telefono','fo-email',
+    'fo-contacto-nombre','fo-contacto-tel','fo-contacto-obs'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tagName === 'SELECT') el.disabled = !editable;
+    else el.readOnly = !editable;
+    if (!editable) el.style.opacity = '0.85'; else el.style.opacity = '';
+  });
+  // Botones admin
+  document.getElementById('btn-fo-save').style.display = editable ? '' : 'none';
+  // Zona de subida de docs
+  const drop = document.querySelector('#view-ficha-obra .photo-drop');
+  if (drop) drop.style.display = editable ? '' : 'none';
+  // Re-render de docs para ocultar el botón de eliminar a no-admin
+  renderDocsObra();
 }
 
 function volverDesdeFichaObra() {
@@ -7002,6 +7057,7 @@ function volverDesdeFichaObra() {
 }
 
 async function guardarFichaObra() {
+  if (!isAdmin()) { showToast('⚠ Solo el administrador puede editar', 'err'); return; }
   if (fichaObraId == null) return;
   await sheetsLoad();
   const obra = incidents.find(i => i.id === fichaObraId && i.tipo === 'obra');
@@ -7044,6 +7100,7 @@ async function guardarFichaObra() {
 
 // Documentación asociada a la obra (tipo='documento' + idObraAsociada=nombreObra)
 async function subirDocObra(event) {
+  if (!isAdmin()) { showToast('⚠ Solo el administrador puede subir documentos', 'err'); return; }
   const files = Array.from((event && event.target && event.target.files) || []);
   if (!files.length) return;
   if (event && event.target) event.target.value = '';
@@ -7105,6 +7162,7 @@ async function subirDocObra(event) {
 }
 
 async function eliminarDocObra(id) {
+  if (!isAdmin()) return;
   if (!confirm('¿Eliminar este documento?')) return;
   await sheetsLoad();
   incidents = incidents.filter(i => i.id !== id);
@@ -7131,7 +7189,7 @@ function renderDocsObra() {
       <a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
       <div class="acciones">
         <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">${escapeHtml(d.fecha || '')}</span>
-        <button class="icon-btn" onclick="eliminarDocObra(${d.id})" title="Eliminar">🗑</button>
+        ${isAdmin() ? `<button class="icon-btn" onclick="eliminarDocObra(${d.id})" title="Eliminar">🗑</button>` : ''}
       </div>
     </div>
   `).join('');

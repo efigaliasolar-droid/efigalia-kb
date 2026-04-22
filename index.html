@@ -1262,7 +1262,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Operario asignado *</label>
+            <label>Operario asignado</label>
             <select id="v-operario"></select>
           </div>
           <div class="form-group">
@@ -1845,7 +1845,7 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Operario asignado *</label>
+            <label>Operario asignado</label>
             <select id="mnt-operario"></select>
           </div>
           <div class="form-group">
@@ -1963,7 +1963,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Instaladores *</label>
+        <label>Instaladores</label>
         <div class="pill-selector" id="asig-instaladores-pills"></div>
       </div>
       <div class="form-group">
@@ -5352,7 +5352,6 @@ async function guardarVisita() {
     if (!datos.cliente_nombre) { showToast('⚠ Rellena el nombre del cliente', 'err'); return; }
     if (!datos.telefono) { showToast('⚠ Rellena el teléfono del cliente', 'err'); return; }
     if (!datos.direccion) { showToast('⚠ Rellena la dirección de la instalación', 'err'); return; }
-    if (!datos.operarioAsignado) { showToast('⚠ Asigna un operario', 'err'); return; }
     if (!datos.fechaPrevista) { showToast('⚠ Indica la fecha prevista', 'err'); return; }
   } else if (!esNueva) {
     // Instalador guardando visita existente: la cabecera vino de admin y está en readonly
@@ -7972,7 +7971,6 @@ async function guardarMantenimiento(marcandoCompletado) {
   if (isAdmin()) {
     if (!idObra) { showToast('⚠ Selecciona una obra', 'err'); return; }
     if (!fechaPrevistaISO) { showToast('⚠ Indica la fecha prevista', 'err'); return; }
-    if (!operario) { showToast('⚠ Asigna un operario', 'err'); return; }
   }
 
   const btn = document.getElementById('btn-mnt-save');
@@ -8387,6 +8385,34 @@ function asignacionesEnFecha(fechaISO) {
     && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO);
 }
 
+// Items sin operario asignado para una fecha concreta (fila "Por asignar")
+function itemsSinAsignarFecha(fechaISO) {
+  const items = [];
+  incidents.forEach(i => {
+    if (i.tipo === 'asignacion' && (!(i.instaladores || []).length)
+        && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO) {
+      items.push({ kind: 'obra', id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta, hora: '' });
+    }
+  });
+  (Array.isArray(visitas) ? visitas : []).forEach(v => {
+    if (!v.operarioAsignado && v.fechaPrevista === fechaISO) {
+      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: '', hora: v.horaPrevista || '' });
+    }
+  });
+  incidents.forEach(i => {
+    if (i.tipo === 'mantenimiento' && !i.operarioAsignado && i.fechaPrevistaISO === fechaISO) {
+      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: '', hora: i.horaPrevista || '' });
+    }
+  });
+  items.sort((a, b) => {
+    if (a.hora && b.hora) return a.hora.localeCompare(b.hora);
+    if (a.hora) return -1;
+    if (b.hora) return 1;
+    return 0;
+  });
+  return items;
+}
+
 // Agrega items de los 3 tipos (obra / visita / mantenimiento) para una persona+fecha
 function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
   const items = [];
@@ -8453,25 +8479,39 @@ function renderPlanificacion() {
     return `<th class="${esHoy?'hoy':''}">${diasES[i]}<br><span style="font-weight:400">${+dd}/${+m}</span></th>`;
   }).join('');
 
+  const renderPill = (it) => {
+    const cls = it.kind;
+    const onclick = it.kind === 'obra'
+      ? `abrirModalAsignacion(${it.id})`
+      : it.kind === 'visita'
+      ? `abrirVisita(${it.id})`
+      : `abrirMantenimiento(${it.id})`;
+    return `
+      <div class="plan-pill ${cls}" onclick="event.stopPropagation();${onclick}">
+        ${it.hora ? `<div class="hora">${escapeHtml(it.hora)}</div>` : ''}
+        <div class="obr">${escapeHtml(it.obra || '—')}</div>
+        ${it.furgoneta ? `<div class="fur">${escapeHtml(it.furgoneta)}</div>` : ''}
+      </div>
+    `;
+  };
+
+  // Fila "Por asignar" (arriba): items sin operario de esos 7 días
+  const pendientesSemana = dias.some(d => itemsSinAsignarFecha(d).length);
+  const filaPorAsignar = pendientesSemana ? `<tr>
+    <td class="col-nom" style="color:#b46b00">🟡 Por asignar</td>
+    ${dias.map(fecha => {
+      const esHoy = fecha === hoy;
+      const items = itemsSinAsignarFecha(fecha);
+      const pills = items.map(renderPill).join('');
+      return `<td class="plan-cell ${esHoy?'hoy':''}" onclick="abrirSelectorTipoPlan('${fecha}','')">${pills}</td>`;
+    }).join('')}
+  </tr>` : '';
+
   const rows = instaladores.map(nom => {
     const cells = dias.map(fecha => {
       const esHoy = fecha === hoy;
       const items = itemsPlanificacionPersonaFecha(fecha, nom);
-      const pills = items.map(it => {
-        const cls = it.kind;  // 'obra' | 'visita' | 'mantenimiento' | 'correctivo'
-        const onclick = it.kind === 'obra'
-          ? `abrirModalAsignacion(${it.id})`
-          : it.kind === 'visita'
-          ? `abrirVisita(${it.id})`
-          : `abrirMantenimiento(${it.id})`;
-        return `
-          <div class="plan-pill ${cls}" onclick="event.stopPropagation();${onclick}">
-            ${it.hora ? `<div class="hora">${escapeHtml(it.hora)}</div>` : ''}
-            <div class="obr">${escapeHtml(it.obra || '—')}</div>
-            ${it.furgoneta ? `<div class="fur">${escapeHtml(it.furgoneta)}</div>` : ''}
-          </div>
-        `;
-      }).join('');
+      const pills = items.map(renderPill).join('');
       return `<td class="plan-cell ${esHoy?'hoy':''}" onclick="abrirSelectorTipoPlan('${fecha}','${escapeAttr(nom)}')">${pills}</td>`;
     }).join('');
     return `<tr><td class="col-nom">${escapeHtml(nom)}</td>${cells}</tr>`;
@@ -8479,7 +8519,7 @@ function renderPlanificacion() {
 
   grid.innerHTML = `<table>
     <thead><tr><th class="col-nom">Instalador</th>${ths}</tr></thead>
-    <tbody>${rows}</tbody>
+    <tbody>${filaPorAsignar}${rows}</tbody>
   </table>`;
 }
 
@@ -8589,7 +8629,6 @@ async function guardarAsignacion() {
   if (!idObra) { showToast('⚠ Selecciona obra', 'err'); return; }
   if (!desde || !hasta) { showToast('⚠ Rellena las fechas', 'err'); return; }
   if (desde > hasta) { showToast('⚠ La fecha final debe ser ≥ la inicial', 'err'); return; }
-  if (!asigInstaladoresSel.length) { showToast('⚠ Selecciona al menos un instalador', 'err'); return; }
 
   await sheetsLoad();
   const existente = asigEnEdicion ? incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion') : null;

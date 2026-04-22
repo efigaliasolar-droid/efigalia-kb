@@ -8317,24 +8317,31 @@ let planSemanaOffset = 0;   // 0 = esta semana, -1 = anterior, +1 = siguiente
 let asigEnEdicion = null;
 let asigInstaladoresSel = [];
 
-function hoyISO() { return new Date().toISOString().split('T')[0]; }
+function _dateToLocalISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function hoyISO() { return _dateToLocalISO(new Date()); }
 function fechaIsoToEs(iso) { if (!iso) return ''; const [y,m,d] = iso.split('-'); return `${+d}/${+m}/${y}`; }
 
 function inicioSemanaISO(offsetWeeks) {
-  // Lunes como inicio (ISO 8601)
+  // Lunes como inicio (ISO 8601), siempre en zona horaria local
   const d = new Date();
   d.setHours(0,0,0,0);
   const dow = (d.getDay() + 6) % 7;   // 0 = lunes, ..., 6 = domingo
   d.setDate(d.getDate() - dow + (offsetWeeks || 0) * 7);
-  return d.toISOString().split('T')[0];
+  return _dateToLocalISO(d);
 }
 
 function diasSemana(offsetWeeks) {
-  const base = new Date(inicioSemanaISO(offsetWeeks) + 'T00:00:00');
+  const [y, m, dd] = inicioSemanaISO(offsetWeeks).split('-').map(Number);
+  const base = new Date(y, m - 1, dd);
   return Array.from({length: 7}, (_, i) => {
     const d = new Date(base);
     d.setDate(base.getDate() + i);
-    return d.toISOString().split('T')[0];
+    return _dateToLocalISO(d);
   });
 }
 
@@ -8505,9 +8512,10 @@ async function duplicarAsignacionMañana() {
   const a = incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion');
   if (!a) return;
   // La siguiente fecha tras su fechaHastaISO
-  const d = new Date(a.fechaHastaISO + 'T00:00:00');
+  const [y,m,dd] = a.fechaHastaISO.split('-').map(Number);
+  const d = new Date(y, m - 1, dd);
   d.setDate(d.getDate() + 1);
-  const siguiente = d.toISOString().split('T')[0];
+  const siguiente = _dateToLocalISO(d);
   await sheetsLoad();
   incidents.unshift({
     id: Date.now(),
@@ -8531,9 +8539,10 @@ async function acortarAsignacionHastaAyer() {
   const a = incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion');
   if (!a) return;
   const hoy = hoyISO();
-  const d = new Date(hoy + 'T00:00:00');
+  const [y,m,dd] = hoy.split('-').map(Number);
+  const d = new Date(y, m - 1, dd);
   d.setDate(d.getDate() - 1);
-  const ayer = d.toISOString().split('T')[0];
+  const ayer = _dateToLocalISO(d);
   if (ayer < a.fechaDesdeISO) {
     if (!confirm('Acortar hasta ayer dejaría la asignación sin días. ¿Eliminarla?')) return;
     await sheetsLoad();

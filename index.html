@@ -4261,9 +4261,12 @@ function calcularProtecciones() {
   const inv = INVERSORES[marca][modelo];
   const tri = inv.tipo === 'tri';
   const V = tri ? 400 : 230;
-  const I_design = imax * 1.25;
 
-  const mcb = MCB_SIZES.find(s => s >= I_design) || null;
+  // Para la protección NO se aplica el 1,25 de la ITC-BT-40: ese factor es obligatorio
+  // para el cable, no para el magnetotérmico. Un inversor no sobrecarga (electrónicamente
+  // limitado a su nominal), así que el calibre estándar inmediatamente ≥ Imax es suficiente
+  // y evita conflictos con el térmico general de consumo.
+  const mcb = MCB_SIZES.find(s => s >= imax) || null;
 
   // Calibre del diferencial por tramos:
   //   MCB ≤ 40 A → 40 A
@@ -4286,7 +4289,6 @@ function calcularProtecciones() {
     <div class="calc-row"><span class="k">Inversor</span><span class="v">${modelo}</span></div>
     <div class="calc-row"><span class="k">Tipo / Tensión</span><span class="v">${tri?'Trifásico':'Monofásico'} · ${V} V</span></div>
     <div class="calc-row"><span class="k">Imax AC</span><span class="v">${imax} A</span></div>
-    <div class="calc-row"><span class="k">Corriente diseño (1,25·Imax)</span><span class="v">${I_design.toFixed(1)} A</span></div>
     <div class="calc-row"><span class="k">Uso</span><span class="v">${usoTxt}</span></div>
     <div class="calc-final" style="flex-direction:column;align-items:stretch;gap:10px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
@@ -4300,7 +4302,7 @@ function calcularProtecciones() {
       </div>
     </div>
     <div class="calc-note">
-      Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ 1,25 · Imax del inversor. Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2): 40 A cuando el magnetotérmico es ≤ 40 A, 63 A cuando está entre 40 y 63 A, y relé diferencial con toroidal para calibres superiores. Sensibilidad 30 mA en residencial y 300 mA en comercial/industrial. Verifica siempre con proyecto.
+      Cálculo orientativo según REBT. Magnetotérmico curva C con calibre I<sub>n</sub> ≥ I<sub>max</sub> del inversor (el factor 1,25 de la ITC-BT-40 aplica al dimensionado del <b>cable</b>, no al magnetotérmico; añadirlo aquí sobredimensionaría la protección y podría superar el térmico general de consumo). Diferencial Tipo A (compatible con Huawei / Sigenergy / SolarEdge al incorporar vigilancia interna de corriente continua residual según UNE-EN 62109-2): 40 A cuando el magnetotérmico es ≤ 40 A, 63 A cuando está entre 40 y 63 A, y relé diferencial con toroidal para calibres superiores. Sensibilidad 30 mA en residencial y 300 mA en comercial/industrial. El calibre resultante debe ser además <b>≤ al del térmico de consumo</b> (mantener selectividad). Verifica siempre con proyecto.
     </div>`;
 }
 

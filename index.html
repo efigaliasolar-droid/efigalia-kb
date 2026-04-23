@@ -1266,9 +1266,15 @@
             <input type="date" id="v-fecha">
           </div>
         </div>
-        <div class="form-group">
-          <label>Hora prevista</label>
-          <input type="time" id="v-hora" placeholder="Opcional">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Hora prevista</label>
+            <input type="time" id="v-hora" placeholder="Opcional">
+          </div>
+          <div class="form-group">
+            <label>Furgoneta</label>
+            <select id="v-furgoneta" class="select-furgoneta"></select>
+          </div>
         </div>
         <div class="form-group">
           <label>Observaciones para el operario</label>
@@ -1848,6 +1854,10 @@
             <label>Hora prevista</label>
             <input type="time" id="mnt-hora" placeholder="Opcional">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Furgoneta</label>
+          <select id="mnt-furgoneta" class="select-furgoneta"></select>
         </div>
         <div class="form-group">
           <label>Trabajos previstos</label>
@@ -4986,6 +4996,8 @@ function abrirFormularioVisita(v) {
   document.getElementById('v-obs').value = obs;
   document.getElementById('v-fecha').value = (v && v.fechaPrevista) || '';
   document.getElementById('v-hora').value = (v && v.horaPrevista) || '';
+  fillFurgonetaSelects();
+  const vFur = document.getElementById('v-furgoneta'); if (vFur) vFur.value = (v && v.furgoneta) || '';
 
   // Rellenar bloque de campo
   rellenarCampoVisita(v && v.campo);
@@ -5061,6 +5073,7 @@ function leerFormularioVisita() {
     operarioAsignado: document.getElementById('v-operario').value,
     fechaPrevista: document.getElementById('v-fecha').value,
     horaPrevista: document.getElementById('v-hora').value,
+    furgoneta: document.getElementById('v-furgoneta')?.value || '',
     campo: {
       contacto: {
         tipo: document.getElementById('v-contacto-tipo').value,
@@ -7827,6 +7840,8 @@ function abrirMantenimiento(id) {
   document.getElementById('mnt-fecha-prevista').value = m?.fechaPrevistaISO || '';
   fillMntOperarioSelect('mnt-operario', m?.operarioAsignado || '', false);
   document.getElementById('mnt-hora').value = m?.horaPrevista || '';
+  fillFurgonetaSelects();
+  const mFur = document.getElementById('mnt-furgoneta'); if (mFur) mFur.value = m?.furgoneta || '';
   // Bloques admin
   document.getElementById('mnt-trabajos-previstos').value = m?.trabajosPrevistos || '';
   document.getElementById('mnt-equipos').value = m?.equipos || '';
@@ -7850,7 +7865,7 @@ function aplicarPermisosMantenimiento(m) {
   const esAdminEditando = isAdmin();
 
   // Admin edita todo; operario solo el bloque de campo
-  ['mnt-obra','mnt-fecha-prevista','mnt-hora','mnt-operario','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
+  ['mnt-obra','mnt-fecha-prevista','mnt-hora','mnt-operario','mnt-furgoneta','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (esAdminEditando) {
@@ -7982,6 +7997,7 @@ async function guardarMantenimiento(marcandoCompletado) {
     fechaPrevistaISO,
     fechaPrevista: fechaPrevistaISO ? (() => { const [y,m,d] = fechaPrevistaISO.split('-'); return `${+d}/${+m}/${y}`; })() : '',
     horaPrevista: document.getElementById('mnt-hora').value || '',
+    furgoneta: document.getElementById('mnt-furgoneta')?.value || '',
     operarioAsignado: operario,
     trabajosPrevistos: document.getElementById('mnt-trabajos-previstos').value.trim(),
     equipos: document.getElementById('mnt-equipos').value.trim(),
@@ -8183,7 +8199,9 @@ function generarPDFVisita(id) {
     ${_pdfFld('Maps', v.urlMaps || v.mapsUrl)}
     ${_pdfFld('Equipos previstos', v.equipos_previstos || v.equipos)}
     ${_pdfFld('Operario asignado', v.operarioAsignado)}
+    ${_pdfFld('Furgoneta', v.furgoneta)}
     ${_pdfFld('Fecha prevista', v.fechaPrevista)}
+    ${_pdfFld('Hora prevista', v.horaPrevista)}
     ${_pdfFld('Fecha realización', v.fechaReal)}
     ${_pdfFld('Estado', v.estado)}
     ${_pdfBlock('Observaciones para el operario', v.observaciones)}
@@ -8292,6 +8310,8 @@ function generarPDFMantenimiento(id) {
     ${_pdfFld('Fecha prevista', m.fechaPrevista)}
     ${_pdfFld('Fecha realización', m.fechaReal)}
     ${_pdfFld('Operario asignado', m.operarioAsignado)}
+    ${_pdfFld('Furgoneta', m.furgoneta)}
+    ${_pdfFld('Hora prevista', m.horaPrevista)}
     ${_pdfFld('Estado', m.estado)}
     ${_pdfBlock('Trabajos previstos', m.trabajosPrevistos)}
     ${_pdfBlock('Equipos a intervenir', m.equipos)}
@@ -8385,12 +8405,12 @@ function itemsSinAsignarFecha(fechaISO) {
   });
   (Array.isArray(visitas) ? visitas : []).forEach(v => {
     if (!v.operarioAsignado && v.fechaPrevista === fechaISO) {
-      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: '', hora: v.horaPrevista || '' });
+      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: v.furgoneta || '', hora: v.horaPrevista || '' });
     }
   });
   incidents.forEach(i => {
     if (i.tipo === 'mantenimiento' && !i.operarioAsignado && i.fechaPrevistaISO === fechaISO) {
-      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: '', hora: i.horaPrevista || '' });
+      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '' });
     }
   });
   items.sort((a, b) => {
@@ -8416,7 +8436,7 @@ function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
   // Visitas (fechaPrevista ISO date)
   (Array.isArray(visitas) ? visitas : []).forEach(v => {
     if (v.operarioAsignado === nombrePersona && v.fechaPrevista === fechaISO) {
-      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: '', hora: v.horaPrevista || '' });
+      items.push({ kind: 'visita', id: v.id, data: v, obra: v.titulo || v.cliente_nombre || '—', furgoneta: v.furgoneta || '', hora: v.horaPrevista || '' });
     }
   });
   // Mantenimientos
@@ -8424,7 +8444,7 @@ function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
     if (i.tipo === 'mantenimiento'
         && i.operarioAsignado === nombrePersona
         && i.fechaPrevistaISO === fechaISO) {
-      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: '', hora: i.horaPrevista || '' });
+      items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '' });
     }
   });
   // Ordenar: primero con hora (asc), luego sin hora (obras van al final)
@@ -8719,12 +8739,12 @@ function proximosItemsParaPersona(nombre, hoyISOstr, limite) {
   });
   (Array.isArray(visitas) ? visitas : []).forEach(v => {
     if (v.operarioAsignado === nombre && v.fechaPrevista > hoyISOstr) {
-      out.push({ kind: 'visita', fecha: v.fechaPrevista, obra: v.titulo || v.cliente_nombre || '—', hora: v.horaPrevista || '', id: v.id });
+      out.push({ kind: 'visita', fecha: v.fechaPrevista, obra: v.titulo || v.cliente_nombre || '—', furgoneta: v.furgoneta || '', hora: v.horaPrevista || '', id: v.id });
     }
   });
   incidents.forEach(i => {
     if (i.tipo === 'mantenimiento' && i.operarioAsignado === nombre && i.fechaPrevistaISO > hoyISOstr) {
-      out.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', fecha: i.fechaPrevistaISO, obra: i.idObra, hora: i.horaPrevista || '', id: i.id });
+      out.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', fecha: i.fechaPrevistaISO, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '', id: i.id });
     }
   });
   out.sort((a,b) => (a.fecha + (a.hora || '99:99')).localeCompare(b.fecha + (b.hora || '99:99')));
@@ -8773,7 +8793,7 @@ function renderMiDia() {
             <div class="obra">📋 Visita · ${escapeHtml(d.titulo || d.cliente_nombre || '—')}</div>
             <div class="meta">
               ${it.hora ? `<span>🕒 ${escapeHtml(it.hora)}</span>` : ''}
-              ${d.direccion ? `<span>📍 ${escapeHtml(d.direccion)}</span>` : ''}
+              ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
               ${d.telefono ? `<span>📞 ${escapeHtml(d.telefono)}</span>` : ''}
             </div>
             <div class="acciones">
@@ -8791,6 +8811,7 @@ function renderMiDia() {
           <div class="obra">🔧 ${escapeHtml(tipoEtq)} · ${escapeHtml(d.idObra || '—')}</div>
           <div class="meta">
             ${it.hora ? `<span>🕒 ${escapeHtml(it.hora)}</span>` : ''}
+            ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
             ${d.equipos ? `<span>🛠 ${escapeHtml((d.equipos||'').substring(0,60))}</span>` : ''}
           </div>
           <div class="acciones">

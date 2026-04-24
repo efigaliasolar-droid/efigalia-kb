@@ -2422,6 +2422,7 @@ function hideAllViews() {
   document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
 }
 function goHome() {
+  if (!currentUser) { mostrarLogin(); return; }
   hideAllViews();
   document.getElementById('view-home').style.display = 'block';
   document.getElementById('tab-bar-incidencias').style.display = 'none';

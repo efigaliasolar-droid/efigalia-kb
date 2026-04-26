@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -509,6 +509,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 15l4 4h10l4-4"/><path d="M3 15V5h18v10"/><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/></svg></div>
         <div class="home-title">Solicitud de material</div>
         <div class="home-desc">Solicitar material para una obra de forma rápida.</div>
+      </div>
+      <div class="home-card" onclick="enterStockFurgoneta()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 17h1M20 17h1M3 17V7h11v4h4l2 3v3h-2"/><path d="M14 11V7"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M6 10h6"/></svg></div>
+        <div class="home-title">Stock furgoneta</div>
+        <div class="home-desc">Inventario de material que va siempre en cada furgoneta.</div>
       </div>
       <div class="home-card" onclick="enterEstadoObras()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg></div>
@@ -1914,6 +1919,104 @@
     </div>
     <div id="mnt-extra-actions" style="margin-top:10px;display:none">
       <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarMantenimiento()">🗑 Eliminar mantenimiento</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ STOCK FURGONETA ═══════════════ -->
+  <div id="view-stock-furgoneta">
+    <button class="back-link" onclick="enterObra()">← Atrás</button>
+    <div class="section-title">Stock furgoneta</div>
+    <div class="form-group">
+      <label>Furgoneta</label>
+      <select id="sf-furgoneta" class="select-furgoneta" onchange="renderStockFurgoneta()"></select>
+    </div>
+    <div class="tab-bar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+      <button class="tab active" id="sf-tab-inventario" onclick="sfSwitchTab('inventario')">Inventario</button>
+      <button class="tab" id="sf-tab-uso" onclick="sfSwitchTab('uso')">Registrar uso</button>
+      <button class="tab" id="sf-tab-recuento" onclick="sfSwitchTab('recuento')" style="display:none">Recuento (admin)</button>
+      <button class="tab" id="sf-tab-historial" onclick="sfSwitchTab('historial')">Historial</button>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div id="sf-section-inventario">
+      <div class="action-row" id="sf-add-item-row" style="display:none;margin-bottom:10px">
+        <button class="btn-primary" onclick="abrirModalSfItem()">+ Añadir item</button>
+      </div>
+      <div id="sf-inventario-list"></div>
+    </div>
+
+    <!-- REGISTRAR USO -->
+    <div id="sf-section-uso" style="display:none">
+      <div class="form-group">
+        <label>Quién retira *</label>
+        <select id="sf-uso-persona"></select>
+      </div>
+      <div class="form-group">
+        <label>Obra (opcional)</label>
+        <select id="sf-uso-obra" class="select-obra"></select>
+      </div>
+      <div class="form-group">
+        <label>Items</label>
+        <div id="sf-uso-items"></div>
+        <button class="btn-ghost" type="button" onclick="agregarLineaUsoSf()" style="margin-top:6px">+ Añadir línea</button>
+      </div>
+      <div class="form-group">
+        <label>Notas (opcional)</label>
+        <textarea class="field" id="sf-uso-notas" placeholder="Para qué, observaciones..."></textarea>
+      </div>
+      <button class="btn-primary" id="btn-sf-uso-save" onclick="guardarUsoSf()">Guardar uso</button>
+    </div>
+
+    <!-- RECUENTO / REPOSICIÓN -->
+    <div id="sf-section-recuento" style="display:none">
+      <div class="calc-note" style="margin-top:0">Escribe la cantidad real que tienes ahora mismo en cada item. Al guardar, el stock queda fijado a esos valores.</div>
+      <div id="sf-recuento-list" style="margin-top:10px"></div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Notas del recuento (opcional)</label>
+        <textarea class="field" id="sf-recuento-notas" placeholder="Reposiciones realizadas..."></textarea>
+      </div>
+      <button class="btn-primary" id="btn-sf-recuento-save" onclick="guardarRecuentoSf()">Guardar recuento</button>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div id="sf-section-historial" style="display:none">
+      <div id="sf-historial-list"></div>
+    </div>
+  </div>
+
+  <!-- Modal añadir/editar item de furgo -->
+  <div class="modal-overlay" id="sf-item-modal">
+    <div class="modal" style="max-width:480px">
+      <button class="modal-close" onclick="cerrarModalSfItem()">✕</button>
+      <div class="modal-title" id="sf-item-title">Nuevo item</div>
+      <div class="form-group">
+        <label>Descripción *</label>
+        <input type="text" id="sf-item-desc" placeholder="Ej: Termorretráctil 6 mm">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unidad *</label>
+          <input type="text" id="sf-item-unidad" placeholder="ud, m, kg...">
+        </div>
+        <div class="form-group">
+          <label>Cantidad esperada</label>
+          <input type="number" step="any" inputmode="decimal" id="sf-item-esperada">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cantidad mínima</label>
+          <input type="number" step="any" inputmode="decimal" id="sf-item-minima">
+        </div>
+        <div class="form-group">
+          <label>Cantidad actual</label>
+          <input type="number" step="any" inputmode="decimal" id="sf-item-actual">
+        </div>
+      </div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="btn-primary" onclick="guardarSfItem()" style="flex:1">Guardar</button>
+        <button class="btn-ghost" id="btn-sf-item-eliminar" onclick="eliminarSfItem()" style="flex:1;color:var(--red);border-color:var(--red);display:none">🗑 Eliminar</button>
+      </div>
     </div>
   </div>
 
@@ -8840,6 +8943,355 @@ function renderMiDia() {
 
   banner.innerHTML = html;
   banner.style.display = 'block';
+}
+
+// ── STOCK FURGONETA ────────────────────────────────────
+let sfFurgonetaSel = '';
+let sfTabActual = 'inventario';
+let sfItemEnEdicion = null;       // id del item en edición desde modal
+let sfUsoLineas = [];             // [{descripcion, unidad, cantidad}]
+
+function enterStockFurgoneta() {
+  if (!requireLogin()) return;
+  hideAllViews();
+  document.getElementById('view-stock-furgoneta').style.display = 'block';
+  fillFurgonetaSelects();
+  fillObraSelects();
+  // Recordar la furgo previa o asignarle la última usada por el usuario
+  const sel = document.getElementById('sf-furgoneta');
+  if (sfFurgonetaSel && [...sel.options].some(o => o.value === sfFurgonetaSel)) sel.value = sfFurgonetaSel;
+  else if (!sel.value && sel.options.length > 1) sel.value = sel.options[1].value;
+  sfFurgonetaSel = sel.value;
+  // Recuento solo admin
+  document.getElementById('sf-tab-recuento').style.display = isAdmin() ? '' : 'none';
+  document.getElementById('sf-add-item-row').style.display = isAdmin() ? 'flex' : 'none';
+  // Persona inicial = usuario actual
+  fillSfUsoPersonaSelect((currentUser && currentUser.nombre) || '');
+  sfSwitchTab('inventario');
+  sheetsLoad().then(() => renderStockFurgoneta());
+}
+
+function fillSfUsoPersonaSelect(valor) {
+  const sel = document.getElementById('sf-uso-persona');
+  if (!sel) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' + lista.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  if (valor && !lista.includes(valor)) {
+    const op = document.createElement('option'); op.value = valor; op.textContent = valor; sel.appendChild(op);
+  }
+  sel.value = valor || '';
+}
+
+function sfSwitchTab(tab) {
+  sfTabActual = tab;
+  ['inventario','uso','recuento','historial'].forEach(t => {
+    const sec = document.getElementById('sf-section-' + t);
+    const btn = document.getElementById('sf-tab-' + t);
+    if (sec) sec.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'uso') {
+    if (!sfUsoLineas.length) { sfUsoLineas = [{ descripcion: '', unidad: 'ud', cantidad: 1 }]; }
+    renderSfUsoLineas();
+  }
+  if (tab === 'recuento') renderSfRecuento();
+  if (tab === 'historial') renderSfHistorial();
+}
+
+function itemsFurgoneta(furgoneta) {
+  return incidents.filter(i => i.tipo === 'furgo-item' && i.furgoneta === furgoneta)
+    .sort((a,b) => (a.descripcion||'').localeCompare(b.descripcion||''));
+}
+
+function renderStockFurgoneta() {
+  sfFurgonetaSel = document.getElementById('sf-furgoneta').value;
+  if (sfTabActual === 'inventario') renderSfInventario();
+  if (sfTabActual === 'recuento') renderSfRecuento();
+  if (sfTabActual === 'historial') renderSfHistorial();
+}
+
+function renderSfInventario() {
+  const cont = document.getElementById('sf-inventario-list');
+  if (!sfFurgonetaSel) { cont.innerHTML = '<div class="empty-state" style="padding:24px">Selecciona una furgoneta arriba.</div>'; return; }
+  const items = itemsFurgoneta(sfFurgonetaSel);
+  if (!items.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>${isAdmin() ? 'Sin items todavía. Añade el primero arriba.' : 'Esta furgoneta aún no tiene inventario configurado.'}</div>`;
+    return;
+  }
+  cont.innerHTML = items.map(it => {
+    const actual = it.cantidadActual ?? 0;
+    const minima = it.cantidadMinima ?? 0;
+    const esperada = it.cantidadEsperada ?? 0;
+    const bajo = minima > 0 && actual <= minima;
+    const adminBtn = isAdmin() ? `<button class="icon-btn" onclick="abrirModalSfItem(${it.id})" title="Editar">✎</button>` : '';
+    return `
+      <div class="parte-card" style="padding:10px 12px">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+            <div class="mov-meta" style="margin-top:4px">
+              <span style="${bajo?'color:var(--red);font-weight:600':''}">📦 ${actual} ${escapeHtml(it.unidad || '')}</span>
+              ${esperada ? `<span>esperada: ${esperada}</span>` : ''}
+              ${minima ? `<span>mín: ${minima}</span>` : ''}
+              ${bajo ? '<span style="color:var(--red)">⚠ por debajo del mínimo</span>' : ''}
+            </div>
+          </div>
+          ${adminBtn}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Modal de item (admin)
+function abrirModalSfItem(id) {
+  if (!isAdmin()) return;
+  if (!sfFurgonetaSel) { showToast('⚠ Selecciona una furgoneta primero', 'err'); return; }
+  sfItemEnEdicion = id || null;
+  document.getElementById('sf-item-title').textContent = id ? 'Editar item' : 'Nuevo item · ' + sfFurgonetaSel;
+  document.getElementById('btn-sf-item-eliminar').style.display = id ? '' : 'none';
+  if (id) {
+    const it = incidents.find(i => i.id === id && i.tipo === 'furgo-item');
+    if (!it) return;
+    document.getElementById('sf-item-desc').value = it.descripcion || '';
+    document.getElementById('sf-item-unidad').value = it.unidad || '';
+    document.getElementById('sf-item-esperada').value = it.cantidadEsperada ?? '';
+    document.getElementById('sf-item-minima').value = it.cantidadMinima ?? '';
+    document.getElementById('sf-item-actual').value = it.cantidadActual ?? '';
+  } else {
+    document.getElementById('sf-item-desc').value = '';
+    document.getElementById('sf-item-unidad').value = 'ud';
+    document.getElementById('sf-item-esperada').value = '';
+    document.getElementById('sf-item-minima').value = '';
+    document.getElementById('sf-item-actual').value = '';
+  }
+  document.getElementById('sf-item-modal').classList.add('open');
+}
+
+function cerrarModalSfItem() {
+  document.getElementById('sf-item-modal').classList.remove('open');
+  sfItemEnEdicion = null;
+}
+
+async function guardarSfItem() {
+  if (!isAdmin()) return;
+  const desc = document.getElementById('sf-item-desc').value.trim();
+  const unidad = document.getElementById('sf-item-unidad').value.trim() || 'ud';
+  const esperada = parseFloat(document.getElementById('sf-item-esperada').value);
+  const minima = parseFloat(document.getElementById('sf-item-minima').value);
+  const actual = parseFloat(document.getElementById('sf-item-actual').value);
+  if (!desc) { showToast('⚠ Falta la descripción', 'err'); return; }
+  await sheetsLoad();
+  if (sfItemEnEdicion) {
+    const it = incidents.find(i => i.id === sfItemEnEdicion && i.tipo === 'furgo-item');
+    if (!it) return;
+    it.descripcion = desc;
+    it.unidad = unidad;
+    it.cantidadEsperada = isNaN(esperada) ? null : esperada;
+    it.cantidadMinima = isNaN(minima) ? null : minima;
+    it.cantidadActual = isNaN(actual) ? 0 : actual;
+    it.modificadoPor = (currentUser && currentUser.nombre) || 'Admin';
+    it.modificadoTs = Date.now();
+  } else {
+    incidents.unshift({
+      id: Date.now(),
+      tipo: 'furgo-item',
+      furgoneta: sfFurgonetaSel,
+      descripcion: desc,
+      unidad,
+      cantidadEsperada: isNaN(esperada) ? null : esperada,
+      cantidadMinima: isNaN(minima) ? null : minima,
+      cantidadActual: isNaN(actual) ? 0 : actual,
+      creadoPor: (currentUser && currentUser.nombre) || 'Admin',
+      creadoTs: Date.now()
+    });
+  }
+  await sheetsSave();
+  cerrarModalSfItem();
+  renderStockFurgoneta();
+  showToast('✓ Item guardado', 'ok');
+}
+
+async function eliminarSfItem() {
+  if (!isAdmin() || !sfItemEnEdicion) return;
+  if (!confirm('¿Eliminar este item del inventario de la furgoneta?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === sfItemEnEdicion && i.tipo === 'furgo-item'));
+  await sheetsSave();
+  cerrarModalSfItem();
+  renderStockFurgoneta();
+  showToast('✓ Eliminado', 'ok');
+}
+
+// Registrar uso
+function renderSfUsoLineas() {
+  const cont = document.getElementById('sf-uso-items');
+  if (!cont) return;
+  const items = itemsFurgoneta(sfFurgonetaSel);
+  cont.innerHTML = sfUsoLineas.map((l, i) => {
+    const opciones = ['<option value="">— Item —</option>']
+      .concat(items.map(it => `<option value="${escapeHtml(it.descripcion)}" data-unidad="${escapeHtml(it.unidad||'ud')}" data-actual="${it.cantidadActual ?? 0}" ${it.descripcion === l.descripcion ? 'selected' : ''}>${escapeHtml(it.descripcion)} (${it.cantidadActual ?? 0} ${escapeHtml(it.unidad||'ud')})</option>`))
+      .join('');
+    return `
+      <div style="display:grid;grid-template-columns:1fr 70px 70px 30px;gap:6px;align-items:center;margin-bottom:6px">
+        <select onchange="actualizarLineaUsoSf(${i}, 'descripcion', this.value, this.options[this.selectedIndex]?.dataset?.unidad)">${opciones}</select>
+        <input type="number" step="any" inputmode="decimal" placeholder="Cant." value="${l.cantidad ?? ''}" oninput="actualizarLineaUsoSf(${i}, 'cantidad', this.value)">
+        <input type="text" placeholder="ud" value="${escapeHtml(l.unidad || '')}" oninput="actualizarLineaUsoSf(${i}, 'unidad', this.value)">
+        <button class="icon-btn" type="button" onclick="quitarLineaUsoSf(${i})" title="Quitar">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+function agregarLineaUsoSf() {
+  sfUsoLineas.push({ descripcion: '', unidad: 'ud', cantidad: 1 });
+  renderSfUsoLineas();
+}
+function quitarLineaUsoSf(i) {
+  sfUsoLineas.splice(i, 1);
+  if (!sfUsoLineas.length) sfUsoLineas.push({ descripcion: '', unidad: 'ud', cantidad: 1 });
+  renderSfUsoLineas();
+}
+function actualizarLineaUsoSf(i, key, val, extraUnidad) {
+  if (!sfUsoLineas[i]) return;
+  if (key === 'cantidad') sfUsoLineas[i].cantidad = parseFloat(val) || 0;
+  else sfUsoLineas[i][key] = val;
+  if (key === 'descripcion' && extraUnidad) sfUsoLineas[i].unidad = extraUnidad;
+  if (key === 'descripcion') renderSfUsoLineas();
+}
+
+async function guardarUsoSf() {
+  const persona = document.getElementById('sf-uso-persona').value.trim();
+  const idObra = document.getElementById('sf-uso-obra').value.trim();
+  const notas = document.getElementById('sf-uso-notas').value.trim();
+  if (!sfFurgonetaSel) { showToast('⚠ Selecciona furgoneta', 'err'); return; }
+  if (!persona) { showToast('⚠ Indica quién retira', 'err'); return; }
+  const limpias = sfUsoLineas
+    .map(l => ({ descripcion: (l.descripcion||'').trim(), unidad: (l.unidad||'ud').trim(), cantidad: parseFloat(l.cantidad) || 0 }))
+    .filter(l => l.descripcion && l.cantidad > 0);
+  if (!limpias.length) { showToast('⚠ Añade al menos un item con cantidad', 'err'); return; }
+
+  await sheetsLoad();
+  // Descontar del stock
+  limpias.forEach(l => {
+    const it = incidents.find(i => i.tipo === 'furgo-item' && i.furgoneta === sfFurgonetaSel && (i.descripcion||'').toLowerCase() === l.descripcion.toLowerCase());
+    if (it) it.cantidadActual = Math.max(0, (it.cantidadActual ?? 0) - l.cantidad);
+  });
+  // Crear registro de consumo
+  const fechaISO = new Date().toISOString().split('T')[0];
+  const [y,m,d] = fechaISO.split('-');
+  incidents.unshift({
+    id: Date.now(),
+    tipo: 'furgo-consumo',
+    furgoneta: sfFurgonetaSel,
+    fecha: `${+d}/${+m}/${y}`,
+    fechaISO,
+    fechaTs: Date.now(),
+    items: limpias,
+    idObra: idObra || '',
+    notas,
+    registradoPor: persona
+  });
+  await sheetsSave();
+  // Limpiar form
+  sfUsoLineas = [];
+  document.getElementById('sf-uso-notas').value = '';
+  document.getElementById('sf-uso-obra').value = '';
+  showToast('✓ Uso registrado', 'ok');
+  sfSwitchTab('inventario');
+  renderStockFurgoneta();
+}
+
+// Recuento (admin)
+function renderSfRecuento() {
+  const cont = document.getElementById('sf-recuento-list');
+  if (!cont) return;
+  if (!sfFurgonetaSel) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Selecciona furgoneta.</div>'; return; }
+  const items = itemsFurgoneta(sfFurgonetaSel);
+  if (!items.length) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Sin items para esta furgoneta.</div>'; return; }
+  cont.innerHTML = items.map(it => `
+    <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)">
+      <div>
+        <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">actual: ${it.cantidadActual ?? 0} · esperada: ${it.cantidadEsperada ?? 0} ${escapeHtml(it.unidad||'')}</div>
+      </div>
+      <input type="number" step="any" inputmode="decimal" id="sf-rec-${it.id}" value="${it.cantidadActual ?? 0}">
+    </div>
+  `).join('');
+}
+
+async function guardarRecuentoSf() {
+  if (!isAdmin()) return;
+  if (!sfFurgonetaSel) return;
+  await sheetsLoad();
+  const items = itemsFurgoneta(sfFurgonetaSel);
+  const ajustes = [];
+  items.forEach(it => {
+    const inp = document.getElementById('sf-rec-' + it.id);
+    if (!inp) return;
+    const nueva = parseFloat(inp.value);
+    if (!isNaN(nueva) && nueva !== (it.cantidadActual ?? 0)) {
+      ajustes.push({ descripcion: it.descripcion, unidad: it.unidad, antes: it.cantidadActual ?? 0, despues: nueva });
+      // Actualizar el item directamente en incidents
+      const ref = incidents.find(i => i.id === it.id && i.tipo === 'furgo-item');
+      if (ref) {
+        ref.cantidadActual = nueva;
+        ref.modificadoPor = currentUser?.nombre || 'Admin';
+        ref.modificadoTs = Date.now();
+      }
+    }
+  });
+  if (!ajustes.length) { showToast('⚠ No hay cambios', 'err'); return; }
+  const fechaISO = new Date().toISOString().split('T')[0];
+  const [y,m,d] = fechaISO.split('-');
+  incidents.unshift({
+    id: Date.now(),
+    tipo: 'furgo-reposicion',
+    furgoneta: sfFurgonetaSel,
+    fecha: `${+d}/${+m}/${y}`,
+    fechaISO,
+    fechaTs: Date.now(),
+    ajustes,
+    notas: document.getElementById('sf-recuento-notas').value.trim(),
+    registradoPor: currentUser?.nombre || 'Admin'
+  });
+  await sheetsSave();
+  document.getElementById('sf-recuento-notas').value = '';
+  showToast(`✓ Recuento guardado · ${ajustes.length} ajuste(s)`, 'ok');
+  sfSwitchTab('inventario');
+  renderStockFurgoneta();
+}
+
+// Historial
+function renderSfHistorial() {
+  const cont = document.getElementById('sf-historial-list');
+  if (!cont) return;
+  if (!sfFurgonetaSel) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Selecciona furgoneta.</div>'; return; }
+  const eventos = incidents.filter(i =>
+    (i.tipo === 'furgo-consumo' || i.tipo === 'furgo-reposicion') && i.furgoneta === sfFurgonetaSel
+  ).sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0)).slice(0, 50);
+  if (!eventos.length) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Sin movimientos todavía.</div>'; return; }
+  cont.innerHTML = eventos.map(e => {
+    if (e.tipo === 'furgo-consumo') {
+      const lineas = (e.items||[]).map(l => `${escapeHtml(l.descripcion)} · ${l.cantidad} ${escapeHtml(l.unidad||'')}`).join(' · ');
+      return `
+        <div class="parte-card" style="padding:10px 12px">
+          <div class="mov-head"><span class="badge badge-error">USO</span><span class="badge badge-marca">${escapeHtml(e.fecha||'')}</span></div>
+          <div class="mov-meta"><span>👷 ${escapeHtml(e.registradoPor||'—')}</span>${e.idObra ? `<span>🏗 ${escapeHtml(e.idObra)}</span>` : ''}</div>
+          <div style="font-size:13px;margin-top:6px">${lineas}</div>
+          ${e.notas ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(e.notas)}</div>` : ''}
+        </div>
+      `;
+    }
+    const lineas = (e.ajustes||[]).map(l => `${escapeHtml(l.descripcion)}: ${l.antes} → ${l.despues} ${escapeHtml(l.unidad||'')}`).join(' · ');
+    return `
+      <div class="parte-card" style="padding:10px 12px">
+        <div class="mov-head"><span class="badge badge-modelo">RECUENTO</span><span class="badge badge-marca">${escapeHtml(e.fecha||'')}</span></div>
+        <div class="mov-meta"><span>👷 ${escapeHtml(e.registradoPor||'—')}</span></div>
+        <div style="font-size:13px;margin-top:6px">${lineas}</div>
+        ${e.notas ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(e.notas)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 // Limpiar cache local para evitar quota exceeded

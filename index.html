@@ -1004,6 +1004,14 @@
         <textarea class="field" id="parte-trabajos" placeholder="Qué se ha hecho hoy en esta obra..."></textarea>
       </div>
 
+      <details class="filtros-panel" id="parte-mat-furgo-section" style="display:none">
+        <summary>Material usado de la furgoneta <span id="parte-mat-furgo-count" style="color:var(--text-muted);font-weight:normal;font-size:12px;margin-left:8px"></span></summary>
+        <div class="filtros-body">
+          <div id="parte-mat-furgo-list"></div>
+          <div class="calc-note" style="margin-top:8px">Solo apunta los items que has cogido <b>de tu furgoneta</b> hoy. Al guardar el parte se descontará del stock automáticamente.</div>
+        </div>
+      </details>
+
       <div class="form-group">
         <label>Fotos (opcional)</label>
         <div class="photo-drop" onclick="document.getElementById('parte-fotos').click()">
@@ -1932,10 +1940,10 @@
     </div>
     <div class="tab-bar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
       <button class="tab active" id="sf-tab-inventario" onclick="sfSwitchTab('inventario')">Inventario</button>
-      <button class="tab" id="sf-tab-uso" onclick="sfSwitchTab('uso')">Registrar uso</button>
       <button class="tab" id="sf-tab-recuento" onclick="sfSwitchTab('recuento')" style="display:none">Recuento (admin)</button>
       <button class="tab" id="sf-tab-historial" onclick="sfSwitchTab('historial')">Historial</button>
     </div>
+    <div class="calc-note" style="margin-bottom:14px">Para descontar material que has cogido de la furgoneta, usa el formulario de <b>+ Nuevo parte</b> (la sección "Material usado de la furgoneta"). Aquí solo se gestionan inventario y recuentos.</div>
 
     <!-- INVENTARIO -->
     <div id="sf-section-inventario">
@@ -1943,28 +1951,6 @@
         <button class="btn-primary" onclick="abrirModalSfItem()">+ Añadir item</button>
       </div>
       <div id="sf-inventario-list"></div>
-    </div>
-
-    <!-- REGISTRAR USO -->
-    <div id="sf-section-uso" style="display:none">
-      <div class="form-group">
-        <label>Quién retira *</label>
-        <select id="sf-uso-persona"></select>
-      </div>
-      <div class="form-group">
-        <label>Obra (opcional)</label>
-        <select id="sf-uso-obra" class="select-obra"></select>
-      </div>
-      <div class="form-group">
-        <label>Items</label>
-        <div id="sf-uso-items"></div>
-        <button class="btn-ghost" type="button" onclick="agregarLineaUsoSf()" style="margin-top:6px">+ Añadir línea</button>
-      </div>
-      <div class="form-group">
-        <label>Notas (opcional)</label>
-        <textarea class="field" id="sf-uso-notas" placeholder="Para qué, observaciones..."></textarea>
-      </div>
-      <button class="btn-primary" id="btn-sf-uso-save" onclick="guardarUsoSf()">Guardar uso</button>
     </div>
 
     <!-- RECUENTO / REPOSICIÓN -->
@@ -6123,7 +6109,31 @@ function abrirFormParte(prefill) {
   refrescarDatalists();
   const btnPartePdf = document.getElementById('btn-parte-pdf');
   if (btnPartePdf) btnPartePdf.style.display = (isAdmin() && parteForm.editId) ? '' : 'none';
+  // Material de la furgoneta: render según furgoneta seleccionada y reaccionar a cambios
+  renderParteMaterialFurgo();
+  document.getElementById('parte-furgoneta').onchange = renderParteMaterialFurgo;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderParteMaterialFurgo() {
+  const sec = document.getElementById('parte-mat-furgo-section');
+  const cont = document.getElementById('parte-mat-furgo-list');
+  const countEl = document.getElementById('parte-mat-furgo-count');
+  const fur = document.getElementById('parte-furgoneta').value;
+  if (!fur) { sec.style.display = 'none'; return; }
+  const items = (typeof itemsFurgoneta === 'function') ? itemsFurgoneta(fur) : [];
+  if (!items.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  if (countEl) countEl.textContent = `(${items.length} items)`;
+  cont.innerHTML = items.map(it => `
+    <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)">
+      <div>
+        <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">stock: ${it.cantidadActual ?? 0} ${escapeHtml(it.unidad||'')}</div>
+      </div>
+      <input type="number" step="any" inputmode="decimal" id="parte-mat-${it.id}" placeholder="0" value="">
+    </div>
+  `).join('');
 }
 function cerrarFormParte() {
   document.getElementById('partes-list-section').style.display = 'block';
@@ -6406,9 +6416,49 @@ async function guardarParte() {
   if (idx >= 0) partes[idx] = parte; else partes.unshift(parte);
   await partesSave();
 
+  // Material de la furgoneta usado durante este parte: descontar stock + crear registro
+  const fur = parte.furgoneta;
+  let nUsados = 0;
+  if (fur) {
+    const itemsFur = (typeof itemsFurgoneta === 'function') ? itemsFurgoneta(fur) : [];
+    const consumidos = [];
+    if (itemsFur.length) await sheetsLoad();
+    itemsFur.forEach(it => {
+      const inp = document.getElementById('parte-mat-' + it.id);
+      if (!inp) return;
+      const cant = parseFloat(inp.value);
+      if (isNaN(cant) || cant <= 0) return;
+      const ref = incidents.find(i => i.id === it.id && i.tipo === 'furgo-item');
+      if (!ref) return;
+      ref.cantidadActual = Math.max(0, (ref.cantidadActual ?? 0) - cant);
+      ref.modificadoPor = currentUser?.nombre || '';
+      ref.modificadoTs = Date.now();
+      consumidos.push({ descripcion: it.descripcion, unidad: it.unidad || 'ud', cantidad: cant });
+    });
+    if (consumidos.length) {
+      const fechaISO = parte.fecha && /^\d{4}-\d{2}-\d{2}$/.test(parte.fecha) ? parte.fecha : new Date().toISOString().split('T')[0];
+      const [y,m,d] = fechaISO.split('-');
+      incidents.unshift({
+        id: Date.now() + Math.floor(Math.random()*1000),
+        tipo: 'furgo-consumo',
+        furgoneta: fur,
+        fecha: `${+d}/${+m}/${y}`,
+        fechaISO,
+        fechaTs: Date.now(),
+        items: consumidos,
+        idObra: parte.idObra || '',
+        notas: '',
+        registradoPor: parte.registradoPor || (currentUser?.nombre || ''),
+        idParte: parte.id
+      });
+      await sheetsSave();
+      nUsados = consumidos.length;
+    }
+  }
+
   btn.disabled = false; btn.textContent = 'Guardar parte';
   clearDraft(DRAFT_KEYS.parte);
-  showToast('✓ Parte guardado', 'ok');
+  showToast(`✓ Parte guardado${nUsados ? ` · ${nUsados} item(s) descontados del stock` : ''}`, 'ok');
   cerrarFormParte();
   renderPartes();
 }
@@ -8984,16 +9034,12 @@ function fillSfUsoPersonaSelect(valor) {
 
 function sfSwitchTab(tab) {
   sfTabActual = tab;
-  ['inventario','uso','recuento','historial'].forEach(t => {
+  ['inventario','recuento','historial'].forEach(t => {
     const sec = document.getElementById('sf-section-' + t);
     const btn = document.getElementById('sf-tab-' + t);
     if (sec) sec.style.display = (t === tab) ? 'block' : 'none';
     if (btn) btn.classList.toggle('active', t === tab);
   });
-  if (tab === 'uso') {
-    if (!sfUsoLineas.length) { sfUsoLineas = [{ descripcion: '', unidad: 'ud', cantidad: 1 }]; }
-    renderSfUsoLineas();
-  }
   if (tab === 'recuento') renderSfRecuento();
   if (tab === 'historial') renderSfHistorial();
 }

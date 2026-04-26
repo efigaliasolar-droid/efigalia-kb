@@ -2516,8 +2516,8 @@ function goHome() {
   document.getElementById('view-home').style.display = 'block';
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
-  adminAutenticado = !!(currentUser && currentUser.rol === 'admin');
-  const esAdmin = !!(currentUser && currentUser.rol === 'admin');
+  adminAutenticado = isAdmin();
+  const esAdmin = isAdmin();
   const adminCard = document.getElementById('home-card-admin');
   if (adminCard) adminCard.style.display = esAdmin ? '' : 'none';
   const planCard = document.getElementById('home-card-planificacion');
@@ -2813,7 +2813,7 @@ function verificarPin() {
 }
 function enterAdmin() {
   // Si el usuario logueado es admin, acceso directo sin re-pedir PIN
-  if (currentUser && currentUser.rol === 'admin') {
+  if (isAdmin()) {
     adminAutenticado = true;
     mostrarAdmin();
     return;
@@ -3283,8 +3283,13 @@ function furgonetasActivasAdmin() {
   return a.length ? a : FURGONETAS;
 }
 function instaladoresActivosAdmin() {
-  const a = maestrosActivos('instalador');
-  return a.length ? a : INSTALADORES;
+  // Excluye usuarios que sólo son admin (rol === 'admin'). Incluye los que son
+  // solo instalador, ambos, o sin rol asignado (legado).
+  const lista = maestrosDe('instalador')
+    .filter(i => i.activa !== false)
+    .filter(i => i.rol !== 'admin')
+    .map(i => i.nombre);
+  return lista.length ? lista : INSTALADORES;
 }
 
 async function addMaestro(tipo) {
@@ -3344,7 +3349,7 @@ function renderAdminMaestros(tipo) {
     const extra = isInst ? `
         <button class="toggle-btn off" onclick="cambiarPinInstalador(${i.id})" title="Cambiar PIN" style="padding:5px 8px">🔑</button>
         ${pinDisplay}
-        <button class="toggle-btn ${i.rol==='admin'?'on':'off'}" onclick="cambiarRolInstalador(${i.id})" style="padding:5px 8px">${i.rol==='admin'?'ADMIN':'INST'}</button>
+        <button class="toggle-btn ${(i.rol==='admin'||i.rol==='ambos')?'on':'off'}" onclick="cambiarRolInstalador(${i.id})" style="padding:5px 8px" title="Tocar para cambiar: INST → INST+ADMIN → ADMIN → INST">${i.rol==='admin'?'ADMIN':i.rol==='ambos'?'INST+ADMIN':'INST'}</button>
     ` : '';
     const fichaBtn = isObra ? `<button class="toggle-btn off" onclick="abrirFichaObra(${i.id})" title="Ver ficha" style="padding:5px 10px">Ficha</button>` : '';
     return `
@@ -3415,10 +3420,13 @@ async function cambiarPinInstalador(id) {
 async function cambiarRolInstalador(id) {
   const user = incidents.find(i => i.id === id && i.tipo === 'instalador');
   if (!user) return;
-  user.rol = user.rol === 'admin' ? 'instalador' : 'admin';
+  // Cicla: instalador → ambos (inst+admin) → admin (solo) → instalador
+  const r = user.rol || 'instalador';
+  user.rol = r === 'instalador' ? 'ambos' : r === 'ambos' ? 'admin' : 'instalador';
   await sheetsSave();
   renderAdminMaestros('instalador');
-  showToast(`✓ ${user.nombre} ahora es ${user.rol}`, 'ok');
+  const label = user.rol === 'admin' ? 'sólo administrador' : user.rol === 'ambos' ? 'instalador + administrador' : 'instalador';
+  showToast(`✓ ${user.nombre} ahora es ${label}`, 'ok');
 }
 
 // ── CONSULTAR IA ───────────────────────────────────────
@@ -4950,7 +4958,7 @@ async function visitasSave() {
   }
 }
 
-function isAdmin() { return !!(currentUser && currentUser.rol === 'admin'); }
+function isAdmin() { return !!(currentUser && (currentUser.rol === 'admin' || currentUser.rol === 'ambos')); }
 
 function enterVisitas() {
   if (!requireLogin()) return;
@@ -6575,7 +6583,7 @@ function actualizarHeaderUsuario() {
       chip.title = 'Cerrar sesión';
       header.insertBefore(chip, header.firstChild);
     }
-    chip.innerHTML = `${currentUser.rol === 'admin' ? '👑 ' : '👷 '}${escapeHtml(currentUser.nombre)} <span style="opacity:0.6;margin-left:4px">↪</span>`;
+    chip.innerHTML = `${(currentUser.rol === 'admin' || currentUser.rol === 'ambos') ? '👑 ' : '👷 '}${escapeHtml(currentUser.nombre)} <span style="opacity:0.6;margin-left:4px">↪</span>`;
   } else if (chip) {
     chip.remove();
   }
@@ -6602,7 +6610,7 @@ async function hacerLogin() {
   if (!result.ok) { showToast('⚠ ' + result.error, 'err'); document.getElementById('login-pin').value = ''; return; }
   currentUser = result.user;
   sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser));
-  if (currentUser.rol === 'admin') adminAutenticado = true;
+  if (isAdmin()) adminAutenticado = true;
   actualizarHeaderUsuario();
   try { await visitasLoad(); } catch(e) {}
   goHome();

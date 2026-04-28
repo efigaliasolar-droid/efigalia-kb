@@ -1004,6 +1004,12 @@
         <textarea class="field" id="parte-trabajos" placeholder="Qué se ha hecho hoy en esta obra..."></textarea>
       </div>
 
+      <div class="form-group">
+        <label>Material pendiente para mañana</label>
+        <div id="parte-pendiente-list"></div>
+        <button class="btn-ghost" type="button" onclick="agregarLineaPendienteParte()" style="margin-top:6px">+ Añadir línea</button>
+      </div>
+
       <details class="filtros-panel" id="parte-mat-furgo-section" style="display:none">
         <summary>Material usado de la furgoneta <span id="parte-mat-furgo-count" style="color:var(--text-muted);font-weight:normal;font-size:12px;margin-left:8px"></span></summary>
         <div class="filtros-body">
@@ -4729,6 +4735,7 @@ let movForm = null;
 let parteForm = null;
 let movLineas = [];
 let parteFotoFiles = [];
+let partePendienteLineas = [];   // [{ descripcion, conseguido: bool }]
 
 // ── MAESTROS FIJOS (sólo se eligen, no se añaden desde campo) ──
 const FURGONETAS = [
@@ -6120,7 +6127,39 @@ function abrirFormParte(prefill) {
   // Material de la furgoneta: render según furgoneta seleccionada y reaccionar a cambios
   renderParteMaterialFurgo();
   document.getElementById('parte-furgoneta').onchange = renderParteMaterialFurgo;
+  // Material pendiente para mañana
+  partePendienteLineas = (prefill && Array.isArray(prefill.materialPendiente)) ? prefill.materialPendiente.map(l => ({ ...l })) : [];
+  renderPartePendiente();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderPartePendiente() {
+  const cont = document.getElementById('parte-pendiente-list');
+  if (!cont) return;
+  if (!partePendienteLineas.length) {
+    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin material pendiente. Pulsa "+ Añadir línea" si necesitas algo para mañana.</div>';
+    return;
+  }
+  cont.innerHTML = partePendienteLineas.map((l, i) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="checkbox" ${l.conseguido?'checked':''} onchange="actualizarLineaPendienteParte(${i}, 'conseguido', this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
+      <input type="text" placeholder="Ej: 4 mm² rojo · 20 m" value="${escapeHtml(l.descripcion||'')}" oninput="actualizarLineaPendienteParte(${i}, 'descripcion', this.value)" style="flex:1;${l.conseguido?'text-decoration:line-through;color:var(--text-muted)':''}">
+      <button class="icon-btn" type="button" onclick="quitarLineaPendienteParte(${i})" title="Quitar">✕</button>
+    </div>
+  `).join('');
+}
+function agregarLineaPendienteParte() {
+  partePendienteLineas.push({ descripcion: '', conseguido: false });
+  renderPartePendiente();
+}
+function actualizarLineaPendienteParte(i, key, val) {
+  if (!partePendienteLineas[i]) return;
+  partePendienteLineas[i][key] = val;
+  if (key === 'conseguido') renderPartePendiente();
+}
+function quitarLineaPendienteParte(i) {
+  partePendienteLineas.splice(i, 1);
+  renderPartePendiente();
 }
 
 function renderParteMaterialFurgo() {
@@ -6377,7 +6416,10 @@ function capturarParteForm() {
     trabajosRealizados: document.getElementById('parte-trabajos').value,
     notas: document.getElementById('parte-notas').value,
     registradoPor: document.getElementById('parte-registradopor').value,
-    fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : []
+    fotos: (parteForm && parteForm.fotosExistentes) ? parteForm.fotosExistentes.slice() : [],
+    materialPendiente: partePendienteLineas
+      .map(l => ({ descripcion: (l.descripcion||'').trim(), conseguido: !!l.conseguido }))
+      .filter(l => l.descripcion)
   };
 }
 
@@ -6414,6 +6456,7 @@ async function guardarParte() {
     furgoneta: snap.furgoneta,
     instaladores: snap.instaladores,
     trabajosRealizados: snap.trabajosRealizados,
+    materialPendiente: snap.materialPendiente || [],
     fotos: fotosUrls,
     notas: snap.notas,
     registradoPor: snap.registradoPor || 'Anónimo',
@@ -6549,6 +6592,7 @@ function openParteModal(id) {
     ${p.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(p.furgoneta)}</div></div>` : ''}
     ${(p.instaladores||[]).length ? `<div class="modal-section"><div class="modal-label">Instaladores</div><div class="modal-value">${escapeHtml((p.instaladores||[]).join(', '))}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Trabajos realizados</div><div class="modal-value">${escapeHtml(p.trabajosRealizados || '')}</div></div>
+    ${(p.materialPendiente && p.materialPendiente.length) ? `<div class="modal-section"><div class="modal-label">Material pendiente</div><div class="modal-value">${p.materialPendiente.map(l => `<div>${l.conseguido?'☑':'☐'} ${escapeHtml(l.descripcion)}</div>`).join('')}</div></div>` : ''}
     ${photos}
     ${p.notas ? `<div class="modal-section"><div class="modal-label">Notas</div><div class="modal-value">${escapeHtml(p.notas)}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Registrado por</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${escapeHtml(p.registradoPor || '—')}</div></div>
@@ -8508,6 +8552,7 @@ function generarPDFParte(id) {
     ${_pdfFld('Instaladores', (p.instaladores||[]).join(', '))}
     ${_pdfFld('Registrado por', p.registradoPor)}
     ${_pdfBlock('Trabajos realizados', p.trabajosRealizados)}
+    ${(p.materialPendiente && p.materialPendiente.length) ? '<h2>Material pendiente para mañana</h2>' + (p.materialPendiente.map(l => `<div class="blk">${l.conseguido ? '☑' : '☐'} ${escapeHtml(l.descripcion)}</div>`).join('')) : ''}
     ${_pdfBlock('Notas', p.notas)}
     ${_pdfFotos(p.fotos)}
   `;

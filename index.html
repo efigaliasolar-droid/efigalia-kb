@@ -1864,19 +1864,19 @@
             <input type="date" id="mnt-fecha-prevista">
           </div>
         </div>
+        <div class="form-group">
+          <label>Operarios asignados</label>
+          <div class="pill-selector" id="mnt-operarios-pills"></div>
+        </div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Operario asignado</label>
-            <select id="mnt-operario"></select>
-          </div>
           <div class="form-group">
             <label>Hora prevista</label>
             <input type="time" id="mnt-hora" placeholder="Opcional">
           </div>
-        </div>
-        <div class="form-group">
-          <label>Furgoneta</label>
-          <select id="mnt-furgoneta" class="select-furgoneta"></select>
+          <div class="form-group">
+            <label>Furgoneta</label>
+            <select id="mnt-furgoneta" class="select-furgoneta"></select>
+          </div>
         </div>
         <div class="form-group">
           <label>Trabajos previstos</label>
@@ -2547,7 +2547,7 @@ function goHome() {
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
-  const tieneMnt = esAdmin || (nombre && incidents.some(i => i.tipo === 'mantenimiento' && i.operarioAsignado === nombre));
+  const tieneMnt = esAdmin || (nombre && incidents.some(i => i.tipo === 'mantenimiento' && obtenerOperariosMnt(i).includes(nombre)));
   const cardVisitas = document.getElementById('home-card-visitas');
   if (cardVisitas) cardVisitas.style.display = tieneVisitas ? '' : 'none';
   const cardMnt = document.getElementById('home-card-mantenimientos');
@@ -7995,6 +7995,28 @@ function renderRepostajes() {
 let mntEditando = null;
 let mntFotosFiles = [];
 let mntFotosUrls = [];
+let mntOperariosSel = [];
+
+// Helper: lee operarios de un mantenimiento (admite formato nuevo y legacy)
+function obtenerOperariosMnt(m) {
+  if (!m) return [];
+  if (Array.isArray(m.operariosAsignados)) return m.operariosAsignados.slice();
+  if (m.operarioAsignado) return [m.operarioAsignado];
+  return [];
+}
+
+function renderMntOperariosPills() {
+  const c = document.getElementById('mnt-operarios-pills');
+  if (!c) return;
+  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  c.innerHTML = lista.map(n => `<button type="button" class="pill${mntOperariosSel.includes(n)?' on':''}" onclick="toggleMntOperario('${escapeAttr(n)}')">${escapeHtml(n)}</button>`).join('');
+}
+function toggleMntOperario(nombre) {
+  const i = mntOperariosSel.indexOf(nombre);
+  if (i >= 0) mntOperariosSel.splice(i, 1);
+  else mntOperariosSel.push(nombre);
+  renderMntOperariosPills();
+}
 
 function enterMantenimientos() {
   if (!requireLogin()) return;
@@ -8048,7 +8070,8 @@ function abrirMantenimiento(id) {
   document.getElementById('mnt-form-title').textContent = id ? 'Mantenimiento' : 'Nuevo mantenimiento';
 
   fillMntObraSelect('');
-  fillMntOperarioSelect('mnt-operario', '', false);
+  mntOperariosSel = [];
+  renderMntOperariosPills();
 
   // Defaults / carga
   let m = null;
@@ -8059,10 +8082,11 @@ function abrirMantenimiento(id) {
 
   // Tipo
   document.querySelectorAll('input[name="mnt-tipo"]').forEach(r => r.checked = (r.value === (m?.tipoMantenimiento || 'preventivo')));
-  // Obra + fecha + operario
+  // Obra + fecha + operarios
   fillMntObraSelect(m?.idObra || '');
   document.getElementById('mnt-fecha-prevista').value = m?.fechaPrevistaISO || '';
-  fillMntOperarioSelect('mnt-operario', m?.operarioAsignado || '', false);
+  mntOperariosSel = obtenerOperariosMnt(m);
+  renderMntOperariosPills();
   document.getElementById('mnt-hora').value = m?.horaPrevista || '';
   fillFurgonetaSelects();
   const mFur = document.getElementById('mnt-furgoneta'); if (mFur) mFur.value = m?.furgoneta || '';
@@ -8085,11 +8109,12 @@ function abrirMantenimiento(id) {
 }
 
 function aplicarPermisosMantenimiento(m) {
-  const editable = isAdmin() || !m || (m.operarioAsignado === (currentUser?.nombre || ''));
+  const yo = currentUser?.nombre || '';
+  const editable = isAdmin() || !m || obtenerOperariosMnt(m).includes(yo);
   const esAdminEditando = isAdmin();
 
   // Admin edita todo; operario solo el bloque de campo
-  ['mnt-obra','mnt-fecha-prevista','mnt-hora','mnt-operario','mnt-furgoneta','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
+  ['mnt-obra','mnt-fecha-prevista','mnt-hora','mnt-furgoneta','mnt-trabajos-previstos','mnt-equipos','mnt-obs-admin'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (esAdminEditando) {
@@ -8098,6 +8123,8 @@ function aplicarPermisosMantenimiento(m) {
       el.disabled = true;
     }
   });
+  // Pills de operarios solo editables por admin
+  document.querySelectorAll('#mnt-operarios-pills .pill').forEach(p => { p.disabled = !esAdminEditando; p.style.pointerEvents = esAdminEditando ? '' : 'none'; p.style.opacity = esAdminEditando ? '' : '0.7'; });
   document.querySelectorAll('input[name="mnt-tipo"]').forEach(r => { r.disabled = !esAdminEditando; });
 
   // Campo (trabajos realizados): admin + operario asignado pueden editar; otros readonly
@@ -8193,7 +8220,7 @@ async function guardarMantenimiento(marcandoCompletado) {
 
   const idObra = document.getElementById('mnt-obra').value.trim();
   const fechaPrevistaISO = document.getElementById('mnt-fecha-prevista').value;
-  const operario = document.getElementById('mnt-operario').value.trim();
+  const operarios = mntOperariosSel.slice();
   const tipoM = (document.querySelector('input[name="mnt-tipo"]:checked')||{}).value || 'preventivo';
 
   if (isAdmin()) {
@@ -8222,7 +8249,8 @@ async function guardarMantenimiento(marcandoCompletado) {
     fechaPrevista: fechaPrevistaISO ? (() => { const [y,m,d] = fechaPrevistaISO.split('-'); return `${+d}/${+m}/${y}`; })() : '',
     horaPrevista: document.getElementById('mnt-hora').value || '',
     furgoneta: document.getElementById('mnt-furgoneta')?.value || '',
-    operarioAsignado: operario,
+    operariosAsignados: operarios,
+    operarioAsignado: operarios[0] || '',   // mantener para compat. con código legacy
     trabajosPrevistos: document.getElementById('mnt-trabajos-previstos').value.trim(),
     equipos: document.getElementById('mnt-equipos').value.trim(),
     observacionesAdmin: document.getElementById('mnt-obs-admin').value.trim()
@@ -8308,13 +8336,13 @@ function renderMantenimientos() {
   // Los instaladores solo ven los suyos
   if (!isAdmin()) {
     const yo = currentUser?.nombre || '';
-    list = list.filter(m => m.operarioAsignado === yo);
+    list = list.filter(m => obtenerOperariosMnt(m).includes(yo));
   }
   if (obraF)  list = list.filter(m => m.idObra === obraF);
-  if (opF)    list = list.filter(m => m.operarioAsignado === opF);
+  if (opF)    list = list.filter(m => obtenerOperariosMnt(m).includes(opF));
   if (tipoF)  list = list.filter(m => (m.tipoMantenimiento || '') === tipoF);
   if (estadoF) list = list.filter(m => (m.estado || '') === estadoF);
-  if (q) list = list.filter(m => [m.idObra, m.trabajosPrevistos, m.trabajosRealizados, m.equipos, m.observacionesAdmin, m.observacionesCampo, m.operarioAsignado].filter(Boolean).join(' ').toLowerCase().includes(q));
+  if (q) list = list.filter(m => [m.idObra, m.trabajosPrevistos, m.trabajosRealizados, m.equipos, m.observacionesAdmin, m.observacionesCampo, ...obtenerOperariosMnt(m)].filter(Boolean).join(' ').toLowerCase().includes(q));
   list.sort((a,b) => (b.fechaRealTs || b.modificadoTs || b.creadoTs || 0) - (a.fechaRealTs || a.modificadoTs || a.creadoTs || 0));
 
   const activos = [obraF, opF, tipoF, estadoF, q].filter(Boolean).length;
@@ -8343,7 +8371,7 @@ function renderMantenimientos() {
         </div>
         <div class="mov-meta">
           <span>📅 ${escapeHtml(m.fechaPrevista || '—')}</span>
-          <span>👷 ${escapeHtml(m.operarioAsignado || '—')}</span>
+          <span>👷 ${escapeHtml(obtenerOperariosMnt(m).join(', ') || '—')}</span>
           ${(m.fotos||[]).length ? `<span>📷 ${m.fotos.length}</span>` : ''}
         </div>
         ${m.trabajosPrevistos ? `<div class="card-desc" style="margin-top:6px">${escapeHtml(m.trabajosPrevistos.substring(0,120))}${m.trabajosPrevistos.length>120?'…':''}</div>` : ''}
@@ -8533,7 +8561,7 @@ function generarPDFMantenimiento(id) {
     ${_pdfFld('Obra', m.idObra)}
     ${_pdfFld('Fecha prevista', m.fechaPrevista)}
     ${_pdfFld('Fecha realización', m.fechaReal)}
-    ${_pdfFld('Operario asignado', m.operarioAsignado)}
+    ${_pdfFld('Operarios asignados', obtenerOperariosMnt(m).join(', '))}
     ${_pdfFld('Furgoneta', m.furgoneta)}
     ${_pdfFld('Hora prevista', m.horaPrevista)}
     ${_pdfFld('Estado', m.estado)}
@@ -8636,7 +8664,7 @@ function itemsSinAsignarFecha(fechaISO) {
     }
   });
   incidents.forEach(i => {
-    if (i.tipo === 'mantenimiento' && !i.operarioAsignado && i.fechaPrevistaISO === fechaISO) {
+    if (i.tipo === 'mantenimiento' && !obtenerOperariosMnt(i).length && i.fechaPrevistaISO === fechaISO) {
       items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '' });
     }
   });
@@ -8669,7 +8697,7 @@ function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
   // Mantenimientos
   incidents.forEach(i => {
     if (i.tipo === 'mantenimiento'
-        && i.operarioAsignado === nombrePersona
+        && obtenerOperariosMnt(i).includes(nombrePersona)
         && i.fechaPrevistaISO === fechaISO) {
       items.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', subtipo: i.tipoMantenimiento, id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '' });
     }
@@ -8811,12 +8839,12 @@ function renderPlanTrabajos() {
   const sinAsignar = []
     .concat(obras.filter(a => !(a.instaladores||[]).length).map(a => ({ kind:'obra', data:a })))
     .concat(visitasDia.filter(v => !v.operarioAsignado).map(v => ({ kind:'visita', data:v })))
-    .concat(mantenimientosDia.filter(m => !m.operarioAsignado).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
+    .concat(mantenimientosDia.filter(m => !obtenerOperariosMnt(m).length).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
 
   const conOperario = []
     .concat(obras.filter(a => (a.instaladores||[]).length).map(a => ({ kind:'obra', data:a })))
     .concat(visitasDia.filter(v => v.operarioAsignado).map(v => ({ kind:'visita', data:v })))
-    .concat(mantenimientosDia.filter(m => m.operarioAsignado).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
+    .concat(mantenimientosDia.filter(m => obtenerOperariosMnt(m).length).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
 
   // Ordenar por hora (los sin hora al final)
   const sortByHora = (a, b) => {
@@ -8899,7 +8927,7 @@ function renderTarjetaTrabajo(t) {
         </div>
       </div>
       <div class="mov-meta">
-        <span>👷 ${escapeHtml(d.operarioAsignado || 'Sin asignar')}</span>
+        <span>👷 ${escapeHtml(obtenerOperariosMnt(d).join(', ') || 'Sin asignar')}</span>
         ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
       </div>
       ${d.trabajosPrevistos ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">${escapeHtml(d.trabajosPrevistos.substring(0,140))}${d.trabajosPrevistos.length>140?'…':''}</div>` : ''}
@@ -8934,8 +8962,8 @@ function crearDesdePlan(kind) {
     setTimeout(() => {
       if (fecha) document.getElementById('mnt-fecha-prevista').value = fecha;
       if (persona) {
-        const sel = document.getElementById('mnt-operario');
-        if (sel && [...sel.options].some(o => o.value === persona)) sel.value = persona;
+        if (!mntOperariosSel.includes(persona)) mntOperariosSel.push(persona);
+        renderMntOperariosPills();
       }
     }, 100);
   }
@@ -9118,7 +9146,7 @@ function proximosItemsParaPersona(nombre, hoyISOstr, limite) {
     }
   });
   incidents.forEach(i => {
-    if (i.tipo === 'mantenimiento' && i.operarioAsignado === nombre && i.fechaPrevistaISO > hoyISOstr) {
+    if (i.tipo === 'mantenimiento' && obtenerOperariosMnt(i).includes(nombre) && i.fechaPrevistaISO > hoyISOstr) {
       out.push({ kind: i.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', fecha: i.fechaPrevistaISO, obra: i.idObra, furgoneta: i.furgoneta || '', hora: i.horaPrevista || '', id: i.id });
     }
   });

@@ -2019,6 +2019,10 @@
     <div class="action-row" style="margin-bottom:12px">
       <button class="btn-primary" onclick="abrirSelectorTipoPlan()">+ Nueva...</button>
     </div>
+    <div class="tab-bar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <button class="tab active" id="plan-tab-personas" onclick="switchPlanVista('personas')">Por persona</button>
+      <button class="tab" id="plan-tab-trabajos" onclick="switchPlanVista('trabajos')">Por trabajo</button>
+    </div>
     <div class="plan-nav">
       <button class="btn-ghost" onclick="cambiarSemanaPlan(-1)">◀ Anterior</button>
       <div class="plan-label" id="plan-label-semana">—</div>
@@ -2027,8 +2031,20 @@
     <div style="display:flex;gap:6px;margin-bottom:12px">
       <button class="btn-ghost" onclick="irSemanaPlanHoy()" style="flex:1">Esta semana</button>
     </div>
-    <div class="plan-grid" id="plan-grid"></div>
-    <div class="calc-note" style="margin-top:14px">Toca cualquier celda para crear una asignación ese día, o toca una pastilla existente para editarla.</div>
+
+    <div id="plan-section-personas">
+      <div class="plan-grid" id="plan-grid"></div>
+      <div class="calc-note" style="margin-top:14px">Toca cualquier celda para crear una asignación ese día, o toca una pastilla existente para editarla.</div>
+    </div>
+
+    <div id="plan-section-trabajos" style="display:none">
+      <div class="form-group">
+        <label>Día</label>
+        <select id="plan-trabajos-dia" onchange="renderPlanTrabajos()"></select>
+      </div>
+      <div id="plan-trabajos-list"></div>
+      <div class="calc-note" style="margin-top:14px">Resumen del día por obra / visita / mantenimiento. Toca cualquier tarjeta para editarla.</div>
+    </div>
   </div>
 
   <!-- Selector de tipo de trabajo (desde Planificación) -->
@@ -8561,6 +8577,8 @@ function generarPDFParte(id) {
 
 // ── PLANIFICACIÓN (asignaciones) ───────────────────────
 let planSemanaOffset = 0;   // 0 = esta semana, -1 = anterior, +1 = siguiente
+let planVistaActual = 'personas';
+let planTrabajosDiaISO = '';
 let asigEnEdicion = null;
 let asigInstaladoresSel = [];
 
@@ -8675,7 +8693,16 @@ function enterPlanificacion() {
 }
 
 function cambiarSemanaPlan(delta) { planSemanaOffset += delta; renderPlanificacion(); }
-function irSemanaPlanHoy() { planSemanaOffset = 0; renderPlanificacion(); }
+function irSemanaPlanHoy() { planSemanaOffset = 0; planTrabajosDiaISO = hoyISO(); renderPlanificacion(); }
+
+function switchPlanVista(v) {
+  planVistaActual = v;
+  document.getElementById('plan-tab-personas').classList.toggle('active', v === 'personas');
+  document.getElementById('plan-tab-trabajos').classList.toggle('active', v === 'trabajos');
+  document.getElementById('plan-section-personas').style.display = v === 'personas' ? 'block' : 'none';
+  document.getElementById('plan-section-trabajos').style.display = v === 'trabajos' ? 'block' : 'none';
+  if (v === 'trabajos') renderPlanTrabajos();
+}
 
 function renderPlanificacion() {
   const dias = diasSemana(planSemanaOffset);
@@ -8739,6 +8766,145 @@ function renderPlanificacion() {
     <thead><tr><th class="col-nom">Instalador</th>${ths}</tr></thead>
     <tbody>${filaPorAsignar}${rows}</tbody>
   </table>`;
+
+  // Pintar también los selectores de la pestaña "Por trabajo" para mantenerlos sincronizados
+  const selDia = document.getElementById('plan-trabajos-dia');
+  if (selDia) {
+    const diasES = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const cur = selDia.value;
+    selDia.innerHTML = dias.map((d, i) => {
+      const [y,m,dd] = d.split('-');
+      return `<option value="${d}">${diasES[i]} · ${+dd}/${+m}/${y}</option>`;
+    }).join('');
+    // si el día seleccionado sigue en la semana, mantenlo; si no, hoy si está, si no el primero
+    if (cur && dias.includes(cur)) selDia.value = cur;
+    else if (dias.includes(hoy))   selDia.value = hoy;
+    else                           selDia.value = dias[0];
+    planTrabajosDiaISO = selDia.value;
+  }
+  if (planVistaActual === 'trabajos') renderPlanTrabajos();
+}
+
+function renderPlanTrabajos() {
+  const fechaISO = document.getElementById('plan-trabajos-dia').value;
+  if (!fechaISO) return;
+  planTrabajosDiaISO = fechaISO;
+  const cont = document.getElementById('plan-trabajos-list');
+
+  // Recolectar todos los trabajos del día
+  const obras = [];           // asignaciones de obra
+  const visitasDia = [];
+  const mantenimientosDia = [];
+
+  incidents.forEach(i => {
+    if (i.tipo === 'asignacion' && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO) {
+      obras.push(i);
+    } else if (i.tipo === 'mantenimiento' && i.fechaPrevistaISO === fechaISO) {
+      mantenimientosDia.push(i);
+    }
+  });
+  (Array.isArray(visitas) ? visitas : []).forEach(v => {
+    if (v.fechaPrevista === fechaISO) visitasDia.push(v);
+  });
+
+  // Separar los que no tienen operario asignado
+  const sinAsignar = []
+    .concat(obras.filter(a => !(a.instaladores||[]).length).map(a => ({ kind:'obra', data:a })))
+    .concat(visitasDia.filter(v => !v.operarioAsignado).map(v => ({ kind:'visita', data:v })))
+    .concat(mantenimientosDia.filter(m => !m.operarioAsignado).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
+
+  const conOperario = []
+    .concat(obras.filter(a => (a.instaladores||[]).length).map(a => ({ kind:'obra', data:a })))
+    .concat(visitasDia.filter(v => v.operarioAsignado).map(v => ({ kind:'visita', data:v })))
+    .concat(mantenimientosDia.filter(m => m.operarioAsignado).map(m => ({ kind: m.tipoMantenimiento === 'correctivo' ? 'correctivo' : 'mantenimiento', data:m })));
+
+  // Ordenar por hora (los sin hora al final)
+  const sortByHora = (a, b) => {
+    const ha = a.data.horaPrevista || '';
+    const hb = b.data.horaPrevista || '';
+    if (ha && hb) return ha.localeCompare(hb);
+    if (ha) return -1;
+    if (hb) return 1;
+    return 0;
+  };
+  sinAsignar.sort(sortByHora);
+  conOperario.sort(sortByHora);
+
+  if (!sinAsignar.length && !conOperario.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px">Sin trabajos planificados para este día.</div>';
+    return;
+  }
+
+  cont.innerHTML = (sinAsignar.length ? `
+    <div style="margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:11px;color:#b46b00;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">🟡 Por asignar (${sinAsignar.length})</div>
+      ${sinAsignar.map(renderTarjetaTrabajo).join('')}
+    </div>
+  ` : '') + (conOperario.length ? `
+    <div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Asignados (${conOperario.length})</div>
+      ${conOperario.map(renderTarjetaTrabajo).join('')}
+    </div>
+  ` : '');
+}
+
+function renderTarjetaTrabajo(t) {
+  const d = t.data;
+  if (t.kind === 'obra') {
+    const insts = (d.instaladores||[]).join(', ') || 'Sin asignar';
+    return `
+      <div class="parte-card" onclick="abrirModalAsignacion(${d.id})" style="border-left:3px solid #2171c7;margin-bottom:8px">
+        <div class="mov-head">
+          <div class="mov-obra">🏗 ${escapeHtml(d.idObra || '—')}</div>
+          <span class="badge badge-marca">OBRA</span>
+        </div>
+        <div class="mov-meta">
+          <span>👷 ${escapeHtml(insts)}</span>
+          ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
+          ${d.fechaDesdeISO !== d.fechaHastaISO ? `<span>📅 ${fechaIsoToEs(d.fechaDesdeISO)} → ${fechaIsoToEs(d.fechaHastaISO)}</span>` : ''}
+        </div>
+        ${d.notas ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">${escapeHtml(d.notas)}</div>` : ''}
+      </div>
+    `;
+  }
+  if (t.kind === 'visita') {
+    return `
+      <div class="parte-card" onclick="abrirVisita(${d.id})" style="border-left:3px solid #1f8a5e;margin-bottom:8px">
+        <div class="mov-head">
+          <div class="mov-obra">📋 ${escapeHtml(d.titulo || d.cliente_nombre || '—')}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            ${d.horaPrevista ? `<span class="badge badge-marca">🕒 ${escapeHtml(d.horaPrevista)}</span>` : ''}
+            <span class="badge" style="background:#e0f3e8;color:#1f7a4a">VISITA</span>
+          </div>
+        </div>
+        <div class="mov-meta">
+          <span>👷 ${escapeHtml(d.operarioAsignado || 'Sin asignar')}</span>
+          ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
+          ${d.telefono ? `<span>📞 ${escapeHtml(d.telefono)}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  // mantenimiento / correctivo
+  const tipoEtq = d.tipoMantenimiento === 'correctivo' ? 'Correctivo' : 'Preventivo';
+  const color = d.tipoMantenimiento === 'correctivo' ? '#c63d3d' : '#c97a1f';
+  const bg = d.tipoMantenimiento === 'correctivo' ? '#fbecd6' : '#f5e1c4';
+  return `
+    <div class="parte-card" onclick="abrirMantenimiento(${d.id})" style="border-left:3px solid ${color};margin-bottom:8px">
+      <div class="mov-head">
+        <div class="mov-obra">🔧 ${escapeHtml(d.idObra || '—')}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          ${d.horaPrevista ? `<span class="badge badge-marca">🕒 ${escapeHtml(d.horaPrevista)}</span>` : ''}
+          <span class="badge" style="background:${bg};color:${color}">${tipoEtq.toUpperCase()}</span>
+        </div>
+      </div>
+      <div class="mov-meta">
+        <span>👷 ${escapeHtml(d.operarioAsignado || 'Sin asignar')}</span>
+        ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
+      </div>
+      ${d.trabajosPrevistos ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">${escapeHtml(d.trabajosPrevistos.substring(0,140))}${d.trabajosPrevistos.length>140?'…':''}</div>` : ''}
+    </div>
+  `;
 }
 
 function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }

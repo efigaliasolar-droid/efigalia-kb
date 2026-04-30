@@ -1982,6 +1982,11 @@
       <button class="modal-close" onclick="cerrarModalSfItem()">✕</button>
       <div class="modal-title" id="sf-item-title">Nuevo item</div>
       <div class="form-group">
+        <label>Categoría</label>
+        <input type="text" id="sf-item-cat" list="sf-categorias-list" placeholder="Ej: Herramientas, Fijación, Protecciones...">
+        <datalist id="sf-categorias-list"></datalist>
+      </div>
+      <div class="form-group">
         <label>Descripción *</label>
         <input type="text" id="sf-item-desc" placeholder="Ej: Termorretráctil 6 mm">
       </div>
@@ -6188,15 +6193,34 @@ function renderParteMaterialFurgo() {
   if (!items.length) { sec.style.display = 'none'; return; }
   sec.style.display = 'block';
   if (countEl) countEl.textContent = `(${items.length} items)`;
-  cont.innerHTML = items.map(it => `
-    <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)">
-      <div>
-        <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
-        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">stock: ${it.cantidadActual ?? 0} ${escapeHtml(it.unidad||'')}</div>
-      </div>
-      <input type="number" step="any" inputmode="decimal" id="parte-mat-${it.id}" placeholder="0" value="">
-    </div>
-  `).join('');
+  // Agrupar por categoría
+  const porCat = {};
+  items.forEach(it => {
+    const cat = (it.categoria || 'Sin categoría').trim() || 'Sin categoría';
+    (porCat[cat] ||= []).push(it);
+  });
+  const cats = Object.keys(porCat).sort((a,b) => {
+    if (a === 'Sin categoría') return 1;
+    if (b === 'Sin categoría') return -1;
+    return a.localeCompare(b);
+  });
+  cont.innerHTML = `<div class="cat-picker">${cats.map(cat => {
+    const its = porCat[cat].sort((a,b) => (a.descripcion||'').localeCompare(b.descripcion||''));
+    return `
+      <details class="cat-group">
+        <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${its.length}</span></summary>
+        <div class="cat-items">${its.map(it => `
+          <div class="cat-item" style="grid-template-columns:1fr 80px;gap:10px;padding:8px 14px">
+            <div>
+              <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+              <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">stock: ${it.cantidadActual ?? 0} ${escapeHtml(it.unidad||'')}</div>
+            </div>
+            <input type="number" step="any" inputmode="decimal" id="parte-mat-${it.id}" placeholder="0" value="">
+          </div>
+        `).join('')}</div>
+      </details>
+    `;
+  }).join('')}</div>`;
 }
 function cerrarFormParte() {
   document.getElementById('partes-list-section').style.display = 'block';
@@ -9311,29 +9335,49 @@ function renderSfInventario() {
     cont.innerHTML = `<div class="empty-state"><div class="icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>${isAdmin() ? 'Sin items todavía. Añade el primero arriba.' : 'Esta furgoneta aún no tiene inventario configurado.'}</div>`;
     return;
   }
-  cont.innerHTML = items.map(it => {
+  // Agrupar por categoría
+  const porCat = {};
+  items.forEach(it => {
+    const cat = (it.categoria || 'Sin categoría').trim() || 'Sin categoría';
+    (porCat[cat] ||= []).push(it);
+  });
+  const cats = Object.keys(porCat).sort((a, b) => {
+    if (a === 'Sin categoría') return 1;
+    if (b === 'Sin categoría') return -1;
+    return a.localeCompare(b);
+  });
+  const renderItem = (it) => {
     const actual = it.cantidadActual ?? 0;
     const minima = it.cantidadMinima ?? 0;
     const esperada = it.cantidadEsperada ?? 0;
     const bajo = minima > 0 && actual <= minima;
     const adminBtn = isAdmin() ? `<button class="icon-btn" onclick="abrirModalSfItem(${it.id})" title="Editar">✎</button>` : '';
     return `
-      <div class="parte-card" style="padding:10px 12px">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
-            <div class="mov-meta" style="margin-top:4px">
-              <span style="${bajo?'color:var(--red);font-weight:600':''}">📦 ${actual} ${escapeHtml(it.unidad || '')}</span>
-              ${esperada ? `<span>esperada: ${esperada}</span>` : ''}
-              ${minima ? `<span>mín: ${minima}</span>` : ''}
-              ${bajo ? '<span style="color:var(--red)">⚠ por debajo del mínimo</span>' : ''}
-            </div>
+      <div class="cat-item" style="grid-template-columns:1fr auto;gap:10px;padding:10px 14px">
+        <div style="min-width:0">
+          <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+          <div class="mov-meta" style="margin-top:3px">
+            <span style="${bajo?'color:var(--red);font-weight:600':''}">📦 ${actual} ${escapeHtml(it.unidad || '')}</span>
+            ${esperada ? `<span>esp: ${esperada}</span>` : ''}
+            ${minima ? `<span>mín: ${minima}</span>` : ''}
+            ${bajo ? '<span style="color:var(--red)">⚠ bajo mínimo</span>' : ''}
           </div>
-          ${adminBtn}
         </div>
+        ${adminBtn}
       </div>
     `;
-  }).join('');
+  };
+  cont.innerHTML = `<div class="cat-picker">${cats.map(cat => {
+    const its = porCat[cat].sort((a,b) => (a.descripcion||'').localeCompare(b.descripcion||''));
+    const nBajo = its.filter(it => (it.cantidadMinima||0) > 0 && (it.cantidadActual||0) <= it.cantidadMinima).length;
+    const aviso = nBajo ? `<span style="color:var(--red);margin-left:8px;font-weight:600">⚠ ${nBajo}</span>` : '';
+    return `
+      <details class="cat-group" open>
+        <summary><span>${escapeHtml(cat)}${aviso}</span><span style="color:var(--text-muted);font-weight:400">${its.length}</span></summary>
+        <div class="cat-items">${its.map(renderItem).join('')}</div>
+      </details>
+    `;
+  }).join('')}</div>`;
 }
 
 // Modal de item (admin)
@@ -9343,15 +9387,20 @@ function abrirModalSfItem(id) {
   sfItemEnEdicion = id || null;
   document.getElementById('sf-item-title').textContent = id ? 'Editar item' : 'Nuevo item · ' + sfFurgonetaSel;
   document.getElementById('btn-sf-item-eliminar').style.display = id ? '' : 'none';
+  // Datalist con categorías ya usadas (por todas las furgonetas) ordenadas alfabéticamente
+  const cats = [...new Set(incidents.filter(i => i.tipo === 'furgo-item' && i.categoria).map(i => i.categoria))].sort((a,b) => a.localeCompare(b));
+  document.getElementById('sf-categorias-list').innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
   if (id) {
     const it = incidents.find(i => i.id === id && i.tipo === 'furgo-item');
     if (!it) return;
+    document.getElementById('sf-item-cat').value = it.categoria || '';
     document.getElementById('sf-item-desc').value = it.descripcion || '';
     document.getElementById('sf-item-unidad').value = it.unidad || '';
     document.getElementById('sf-item-esperada').value = it.cantidadEsperada ?? '';
     document.getElementById('sf-item-minima').value = it.cantidadMinima ?? '';
     document.getElementById('sf-item-actual').value = it.cantidadActual ?? '';
   } else {
+    document.getElementById('sf-item-cat').value = '';
     document.getElementById('sf-item-desc').value = '';
     document.getElementById('sf-item-unidad').value = 'ud';
     document.getElementById('sf-item-esperada').value = '';
@@ -9368,6 +9417,7 @@ function cerrarModalSfItem() {
 
 async function guardarSfItem() {
   if (!isAdmin()) return;
+  const cat = document.getElementById('sf-item-cat').value.trim();
   const desc = document.getElementById('sf-item-desc').value.trim();
   const unidad = document.getElementById('sf-item-unidad').value.trim() || 'ud';
   const esperada = parseFloat(document.getElementById('sf-item-esperada').value);
@@ -9378,6 +9428,7 @@ async function guardarSfItem() {
   if (sfItemEnEdicion) {
     const it = incidents.find(i => i.id === sfItemEnEdicion && i.tipo === 'furgo-item');
     if (!it) return;
+    it.categoria = cat;
     it.descripcion = desc;
     it.unidad = unidad;
     it.cantidadEsperada = isNaN(esperada) ? null : esperada;
@@ -9390,6 +9441,7 @@ async function guardarSfItem() {
       id: Date.now(),
       tipo: 'furgo-item',
       furgoneta: sfFurgonetaSel,
+      categoria: cat,
       descripcion: desc,
       unidad,
       cantidadEsperada: isNaN(esperada) ? null : esperada,
@@ -9501,15 +9553,34 @@ function renderSfRecuento() {
   if (!sfFurgonetaSel) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Selecciona furgoneta.</div>'; return; }
   const items = itemsFurgoneta(sfFurgonetaSel);
   if (!items.length) { cont.innerHTML = '<div class="empty-state" style="padding:18px">Sin items para esta furgoneta.</div>'; return; }
-  cont.innerHTML = items.map(it => `
-    <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)">
-      <div>
-        <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
-        <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">actual: ${it.cantidadActual ?? 0} · esperada: ${it.cantidadEsperada ?? 0} ${escapeHtml(it.unidad||'')}</div>
-      </div>
-      <input type="number" step="any" inputmode="decimal" id="sf-rec-${it.id}" value="${it.cantidadActual ?? 0}">
-    </div>
-  `).join('');
+  // Agrupar por categoría
+  const porCat = {};
+  items.forEach(it => {
+    const cat = (it.categoria || 'Sin categoría').trim() || 'Sin categoría';
+    (porCat[cat] ||= []).push(it);
+  });
+  const cats = Object.keys(porCat).sort((a,b) => {
+    if (a === 'Sin categoría') return 1;
+    if (b === 'Sin categoría') return -1;
+    return a.localeCompare(b);
+  });
+  cont.innerHTML = `<div class="cat-picker">${cats.map(cat => {
+    const its = porCat[cat].sort((a,b) => (a.descripcion||'').localeCompare(b.descripcion||''));
+    return `
+      <details class="cat-group" open>
+        <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${its.length}</span></summary>
+        <div class="cat-items">${its.map(it => `
+          <div class="cat-item" style="grid-template-columns:1fr 90px;gap:10px;padding:8px 14px">
+            <div>
+              <div style="font-weight:500;font-size:14px">${escapeHtml(it.descripcion || '—')}</div>
+              <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">actual: ${it.cantidadActual ?? 0} · esp: ${it.cantidadEsperada ?? 0} ${escapeHtml(it.unidad||'')}</div>
+            </div>
+            <input type="number" step="any" inputmode="decimal" id="sf-rec-${it.id}" value="${it.cantidadActual ?? 0}">
+          </div>
+        `).join('')}</div>
+      </details>
+    `;
+  }).join('')}</div>`;
 }
 
 async function guardarRecuentoSf() {

@@ -911,6 +911,7 @@
 
       <div class="form-group">
         <label>Materiales</label>
+        <div id="mov-pendiente-banner" style="display:none;margin-bottom:8px"></div>
         <div class="mat-search-wrap">
           <input type="text" id="mat-search" placeholder="Buscar material por referencia o descripción..." oninput="renderMatSearch()" onfocus="renderMatSearch()" onblur="setTimeout(()=>document.getElementById('mat-results').classList.remove('open'),180)">
           <div class="mat-results" id="mat-results"></div>
@@ -2766,6 +2767,7 @@ function renderEstadoObra() {
       <div class="stat-card"><div class="lbl">Solicitudes</div><div class="val">${solicitudes.length}</div></div>
     </div>
     ${instaladoresUnicos.length ? `<div style="margin-bottom:18px"><div class="section-title" style="margin-bottom:6px">Instaladores en esta obra</div><div style="display:flex;flex-wrap:wrap;gap:6px">${instaladoresUnicos.map(n => `<span class="pill on" style="cursor:default">${escapeHtml(n)}</span>`).join('')}</div></div>` : ''}
+    <div id="est-pendiente-section" style="margin-top:10px"></div>
     <div class="section-title" style="margin-top:10px">Balance de material (salidas − retornos)</div>
     ${balanceHtml}
     <div class="section-title" style="margin-top:20px">Últimos eventos</div>
@@ -2776,6 +2778,40 @@ function renderEstadoObra() {
       </div>
     `).join('') : '<div class="empty-state" style="padding:18px"><div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 2h6v4H9z"/><path d="M8 11h8M8 15h8M8 18h5"/></svg></div>Sin eventos registrados.</div>'}
   `;
+  renderPendienteEnEstado(idObra);
+}
+
+function renderPendienteEnEstado(idObra) {
+  const cont = document.getElementById('est-pendiente-section');
+  if (!cont) return;
+  const pendientes = obtenerMaterialPendienteObra(idObra);
+  if (!pendientes.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = `
+    <div class="section-title" style="margin-top:14px;color:#b46b00">⚠ Material pendiente (${pendientes.length})</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+      ${pendientes.map(p => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)">
+          <input type="checkbox" onchange="toggleMaterialPendienteEntregado(${p.parteId}, ${p.lineaIdx}, this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px">${escapeHtml(p.descripcion)}</div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">parte ${escapeHtml(p.parteFecha||'—')}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function toggleMaterialPendienteEntregado(parteId, lineaIdx, conseguido) {
+  await partesLoad();
+  const p = partes.find(x => x.id === parteId);
+  if (!p || !Array.isArray(p.materialPendiente) || !p.materialPendiente[lineaIdx]) return;
+  p.materialPendiente[lineaIdx].conseguido = !!conseguido;
+  await partesSave();
+  showToast(conseguido ? '✓ Entregado' : '↺ Marcado pendiente otra vez', 'ok');
+  // Refrescar el panel
+  const sel = document.getElementById('est-obra');
+  if (sel && sel.value) renderPendienteEnEstado(sel.value);
 }
 
 function enterSolicitud() {
@@ -5634,6 +5670,7 @@ function abrirFormMov(tipo, prefill) {
   document.getElementById('mat-results').classList.remove('open');
   refrescarDatalists();
   refreshMovPicker();
+  renderMovPendienteBanner();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarFormMov() {
@@ -5653,6 +5690,7 @@ function onTipoMovChange() {
     }
   }
   refreshMovPicker();
+  renderMovPendienteBanner();
 }
 function isoToday() {
   const d = new Date(), p = n => String(n).padStart(2,'0');
@@ -5843,6 +5881,88 @@ function onObraMovChange() {
     renderMovLineas();
   }
   refreshMovPicker();
+  renderMovPendienteBanner();
+}
+
+// ── Material pendiente desde partes ────────────────────
+function obtenerMaterialPendienteObra(idObra) {
+  const out = [];
+  if (!idObra) return out;
+  (Array.isArray(partes) ? partes : []).forEach(p => {
+    if (p.idObra !== idObra) return;
+    (p.materialPendiente || []).forEach((l, idx) => {
+      if (!l.conseguido && l.descripcion) {
+        out.push({ parteId: p.id, parteFecha: p.fecha, lineaIdx: idx, descripcion: l.descripcion });
+      }
+    });
+  });
+  return out.sort((a,b) => (a.parteFecha||'').localeCompare(b.parteFecha||''));
+}
+
+function renderMovPendienteBanner() {
+  const banner = document.getElementById('mov-pendiente-banner');
+  if (!banner) return;
+  const tipo = (document.querySelector('input[name="mov-tipo"]:checked')||{}).value;
+  const idObra = document.getElementById('mov-obra').value;
+  if (tipo !== 'salida' || !idObra) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  const pendientes = obtenerMaterialPendienteObra(idObra);
+  if (!pendientes.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  banner.style.display = 'block';
+  banner.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:13px;flex:1;min-width:0">
+        <span style="color:#b46b00;font-weight:600">⚠ Material pendiente de partes:</span>
+        <span style="color:var(--text-muted);font-size:12px"> ${pendientes.length} línea${pendientes.length===1?'':'s'}</span>
+      </div>
+      <button class="btn-secondary" type="button" onclick="cargarPendientesMov()" style="width:auto;flex:0 0 auto">Cargar pendientes</button>
+    </div>
+  `;
+}
+
+// Búsqueda aproximada en catálogo: por palabras compartidas
+function buscarMaterialEnCatalogo(descripcion) {
+  if (!descripcion || !materiales || !materiales.length) return null;
+  const target = descripcion.toLowerCase()
+    .replace(/[·,;:.()\/\\]/g, ' ')
+    .split(/\s+/).filter(w => w.length >= 3);
+  if (!target.length) return null;
+  let best = null, bestScore = 0;
+  materiales.forEach(m => {
+    const text = `${m.ref || ''} ${m.descripcion || ''}`.toLowerCase();
+    let score = 0;
+    target.forEach(w => { if (text.includes(w)) score++; });
+    if (score > bestScore) { bestScore = score; best = m; }
+  });
+  // Requiere al menos 1 palabra en común y al menos el 50% de las palabras del target
+  if (bestScore < 1 || bestScore < Math.ceil(target.length / 2)) return null;
+  return best;
+}
+
+function cargarPendientesMov() {
+  const idObra = document.getElementById('mov-obra').value;
+  if (!idObra) return;
+  const pendientes = obtenerMaterialPendienteObra(idObra);
+  if (!pendientes.length) return;
+  if (!movForm) movForm = {};
+  movForm.pendientesAplicados = movForm.pendientesAplicados || [];
+  let nMatched = 0, nLibre = 0;
+  pendientes.forEach(p => {
+    // Evitar duplicados si ya se cargó antes el mismo pendiente
+    if (movForm.pendientesAplicados.some(x => x.parteId === p.parteId && x.lineaIdx === p.lineaIdx)) return;
+    const item = buscarMaterialEnCatalogo(p.descripcion);
+    if (item) {
+      const existing = movLineas.find(l => l.ref === item.ref && (l.descripcion||'').toLowerCase() === (item.descripcion||'').toLowerCase());
+      if (existing) existing.cantidad = (parseFloat(existing.cantidad) || 0) + 1;
+      else movLineas.push({ ref: item.ref, descripcion: item.descripcion, unidad: item.unidad || 'ud', cantidad: 1, _pendiente: true });
+      nMatched++;
+    } else {
+      movLineas.push({ ref: '', descripcion: p.descripcion, unidad: 'ud', cantidad: 1, _pendiente: true });
+      nLibre++;
+    }
+    movForm.pendientesAplicados.push({ parteId: p.parteId, lineaIdx: p.lineaIdx });
+  });
+  renderMovLineas();
+  showToast(`✓ ${nMatched + nLibre} pendientes cargados${nLibre ? ` · ${nLibre} sin coincidencia (revisa)` : ''}`, 'ok');
 }
 
 function addLineaFromCatalogo(idx) { addLineaFromCatalogoQty(idx, 1); }
@@ -5953,9 +6073,24 @@ async function guardarMovimiento() {
   if (idx >= 0) movimientos[idx] = mov; else movimientos.unshift(mov);
   await movimientosSave();
 
+  // Si esta salida cargó material pendiente desde partes, marcarlo como conseguido
+  let nResueltos = 0;
+  if (mov.tipo === 'salida' && movForm && Array.isArray(movForm.pendientesAplicados) && movForm.pendientesAplicados.length) {
+    await partesLoad();
+    movForm.pendientesAplicados.forEach(({ parteId, lineaIdx }) => {
+      const p = partes.find(x => x.id === parteId);
+      if (!p || !Array.isArray(p.materialPendiente)) return;
+      if (p.materialPendiente[lineaIdx]) {
+        p.materialPendiente[lineaIdx].conseguido = true;
+        nResueltos++;
+      }
+    });
+    if (nResueltos) await partesSave();
+  }
+
   btn.disabled = false; btn.textContent = 'Guardar movimiento';
   clearDraft(DRAFT_KEYS.movimiento);
-  showToast('✓ Movimiento guardado', 'ok');
+  showToast(`✓ Movimiento guardado${nResueltos ? ` · ${nResueltos} pendiente(s) resuelto(s)` : ''}`, 'ok');
 
   cerrarFormMov();
   renderMovimientos();

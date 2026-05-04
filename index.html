@@ -1007,8 +1007,17 @@
 
       <div class="form-group">
         <label>Material pendiente para mañana</label>
-        <div id="parte-pendiente-list"></div>
-        <button class="btn-ghost" type="button" onclick="agregarLineaPendienteParte()" style="margin-top:6px">+ Añadir línea</button>
+        <div class="mat-search-wrap">
+          <input type="text" id="pp-search" placeholder="Buscar material por referencia o descripción..." oninput="renderPpSearch()" onfocus="renderPpSearch()" onblur="setTimeout(()=>document.getElementById('pp-results').classList.remove('open'),180)">
+          <div class="mat-results" id="pp-results"></div>
+        </div>
+        <details class="filtros-panel" style="margin-top:6px">
+          <summary>Catálogo por categoría</summary>
+          <div class="filtros-body">
+            <div class="cat-picker" id="pp-cat-picker"></div>
+          </div>
+        </details>
+        <div id="parte-pendiente-list" style="margin-top:10px"></div>
       </div>
 
       <details class="filtros-panel" id="parte-mat-furgo-section" style="display:none">
@@ -2793,7 +2802,8 @@ function renderPendienteEnEstado(idObra) {
         <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)">
           <input type="checkbox" onchange="toggleMaterialPendienteEntregado(${p.parteId}, ${p.lineaIdx}, this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px">${escapeHtml(p.descripcion)}</div>
+            ${p.ref ? `<div style="font-family:var(--mono);font-size:10px;color:var(--accent)">${escapeHtml(p.ref)}</div>` : ''}
+            <div style="font-size:13px"><span style="font-family:var(--mono);color:var(--text-muted);margin-right:6px">${p.cantidad} ${escapeHtml(p.unidad||'ud')}</span>${escapeHtml(p.descripcion)}</div>
             <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">parte ${escapeHtml(p.parteFecha||'—')}</div>
           </div>
         </div>
@@ -5892,7 +5902,11 @@ function obtenerMaterialPendienteObra(idObra) {
     if (p.idObra !== idObra) return;
     (p.materialPendiente || []).forEach((l, idx) => {
       if (!l.conseguido && l.descripcion) {
-        out.push({ parteId: p.id, parteFecha: p.fecha, lineaIdx: idx, descripcion: l.descripcion });
+        out.push({
+          parteId: p.id, parteFecha: p.fecha, lineaIdx: idx,
+          ref: l.ref || '', descripcion: l.descripcion,
+          unidad: l.unidad || 'ud', cantidad: l.cantidad ?? 1
+        });
       }
     });
   });
@@ -5913,7 +5927,12 @@ function renderMovPendienteBanner() {
       <summary style="color:#b46b00;font-weight:600">⚠ Material pendiente de partes (${pendientes.length})</summary>
       <div class="filtros-body">
         <div style="font-size:13px;line-height:1.6">
-          ${pendientes.map(p => `<div style="padding:4px 0;border-bottom:1px dashed var(--border)"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-right:8px">${escapeHtml(p.parteFecha||'—')}</span>${escapeHtml(p.descripcion)}</div>`).join('')}
+          ${pendientes.map(p => `<div style="padding:4px 0;border-bottom:1px dashed var(--border)">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-right:8px">${escapeHtml(p.parteFecha||'—')}</span>
+            ${p.ref ? `<span style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-right:6px">${escapeHtml(p.ref)}</span>` : ''}
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-right:6px">${p.cantidad} ${escapeHtml(p.unidad||'ud')}</span>
+            ${escapeHtml(p.descripcion)}
+          </div>`).join('')}
         </div>
         <button class="btn-secondary" type="button" onclick="cargarPendientesMov()" style="width:100%;margin-top:10px">Cargar todos como líneas de salida</button>
         <div class="calc-note" style="margin-top:8px">Cada línea se busca en el catálogo (por palabras coincidentes). Si encuentra → línea con referencia; si no → línea libre con la descripción del parte. Al guardar la salida, esos pendientes se marcan como conseguidos.</div>
@@ -5950,18 +5969,26 @@ function cargarPendientesMov() {
   movForm.pendientesAplicados = movForm.pendientesAplicados || [];
   let nMatched = 0, nLibre = 0;
   pendientes.forEach(p => {
-    // Evitar duplicados si ya se cargó antes el mismo pendiente
     if (movForm.pendientesAplicados.some(x => x.parteId === p.parteId && x.lineaIdx === p.lineaIdx)) return;
-    const item = buscarMaterialEnCatalogo(p.descripcion);
-    if (item) {
-      const existing = movLineas.find(l => l.ref === item.ref && (l.descripcion||'').toLowerCase() === (item.descripcion||'').toLowerCase());
-      if (existing) existing.cantidad = (parseFloat(existing.cantidad) || 0) + 1;
-      else movLineas.push({ ref: item.ref, descripcion: item.descripcion, unidad: item.unidad || 'ud', cantidad: 1, _pendiente: true });
+    let linea = null;
+    // Si el pendiente ya viene del catálogo (tiene ref), usarlo directamente
+    if (p.ref) {
+      linea = { ref: p.ref, descripcion: p.descripcion, unidad: p.unidad || 'ud', cantidad: p.cantidad || 1 };
       nMatched++;
     } else {
-      movLineas.push({ ref: '', descripcion: p.descripcion, unidad: 'ud', cantidad: 1, _pendiente: true });
-      nLibre++;
+      // Texto libre: intentar emparejar por palabras
+      const item = buscarMaterialEnCatalogo(p.descripcion);
+      if (item) {
+        linea = { ref: item.ref, descripcion: item.descripcion, unidad: item.unidad || 'ud', cantidad: p.cantidad || 1 };
+        nMatched++;
+      } else {
+        linea = { ref: '', descripcion: p.descripcion, unidad: p.unidad || 'ud', cantidad: p.cantidad || 1 };
+        nLibre++;
+      }
     }
+    const existing = movLineas.find(l => (linea.ref && l.ref === linea.ref) || (!linea.ref && (l.descripcion||'').toLowerCase() === linea.descripcion.toLowerCase()));
+    if (existing) existing.cantidad = (parseFloat(existing.cantidad) || 0) + (parseFloat(linea.cantidad) || 0);
+    else movLineas.push({ ...linea, _pendiente: true });
     movForm.pendientesAplicados.push({ parteId: p.parteId, lineaIdx: p.lineaIdx });
   });
   renderMovLineas();
@@ -6289,6 +6316,13 @@ function abrirFormParte(prefill) {
   // Material pendiente para mañana
   partePendienteLineas = (prefill && Array.isArray(prefill.materialPendiente)) ? prefill.materialPendiente.map(l => ({ ...l })) : [];
   renderPartePendiente();
+  // Cargar catálogo (si no está cargado) y pintar el picker
+  (async () => {
+    if (!Array.isArray(materiales) || !materiales.length) {
+      try { await materialesLoad(); } catch(e) {}
+    }
+    renderPpCatPicker();
+  })();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -6296,20 +6330,21 @@ function renderPartePendiente() {
   const cont = document.getElementById('parte-pendiente-list');
   if (!cont) return;
   if (!partePendienteLineas.length) {
-    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin material pendiente. Pulsa "+ Añadir línea" si necesitas algo para mañana.</div>';
+    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin material pendiente. Busca en el catálogo o escribe texto libre.</div>';
     return;
   }
   cont.innerHTML = partePendienteLineas.map((l, i) => `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="checkbox" ${l.conseguido?'checked':''} onchange="actualizarLineaPendienteParte(${i}, 'conseguido', this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
-      <input type="text" placeholder="Ej: 4 mm² rojo · 20 m" value="${escapeHtml(l.descripcion||'')}" oninput="actualizarLineaPendienteParte(${i}, 'descripcion', this.value)" style="flex:1;${l.conseguido?'text-decoration:line-through;color:var(--text-muted)':''}">
+    <div style="display:grid;grid-template-columns:24px 1fr 70px 60px 28px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--border)">
+      <input type="checkbox" ${l.conseguido?'checked':''} onchange="actualizarLineaPendienteParte(${i}, 'conseguido', this.checked)" style="width:18px;height:18px;accent-color:var(--accent)">
+      <div style="${l.conseguido?'text-decoration:line-through;color:var(--text-muted)':''};min-width:0">
+        ${l.ref ? `<div style="font-family:var(--mono);font-size:10px;color:var(--accent)">${escapeHtml(l.ref)}</div>` : ''}
+        <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(l.descripcion||'—')}</div>
+      </div>
+      <input type="number" step="any" inputmode="decimal" value="${l.cantidad ?? 1}" oninput="actualizarLineaPendienteParte(${i}, 'cantidad', parseFloat(this.value)||0)" style="text-align:right;font-size:12px;padding:4px 6px">
+      <input type="text" value="${escapeHtml(l.unidad || 'ud')}" oninput="actualizarLineaPendienteParte(${i}, 'unidad', this.value)" style="text-align:center;font-size:12px;padding:4px 6px">
       <button class="icon-btn" type="button" onclick="quitarLineaPendienteParte(${i})" title="Quitar">✕</button>
     </div>
   `).join('');
-}
-function agregarLineaPendienteParte() {
-  partePendienteLineas.push({ descripcion: '', conseguido: false });
-  renderPartePendiente();
 }
 function actualizarLineaPendienteParte(i, key, val) {
   if (!partePendienteLineas[i]) return;
@@ -6319,6 +6354,89 @@ function actualizarLineaPendienteParte(i, key, val) {
 function quitarLineaPendienteParte(i) {
   partePendienteLineas.splice(i, 1);
   renderPartePendiente();
+}
+
+// Buscador del catálogo para "Material pendiente"
+function renderPpSearch() {
+  const inp = document.getElementById('pp-search');
+  const box = document.getElementById('pp-results');
+  if (!inp || !box) return;
+  const q = inp.value.trim().toLowerCase();
+  if (!q) { box.classList.remove('open'); return; }
+  const results = (Array.isArray(materiales) ? materiales : []).filter(m =>
+    (m.ref||'').toLowerCase().includes(q) ||
+    (m.descripcion||'').toLowerCase().includes(q) ||
+    (m.categoria||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+  if (!results.length) {
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addPpLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.classList.add('open');
+    return;
+  }
+  box.innerHTML = results.map(m => {
+    const idx = materiales.indexOf(m);
+    return `<div class="mat-result" onmousedown="event.preventDefault();addPpFromCatalogo(${idx})">
+      <div class="ref">${escapeHtml(m.ref || '')}</div>
+      <div class="desc">${escapeHtml(m.descripcion || '')} <span class="cat">(${escapeHtml(m.unidad || 'ud')})</span></div>
+    </div>`;
+  }).join('');
+  box.classList.add('open');
+}
+
+function addPpFromCatalogo(idx) {
+  const m = materiales[idx]; if (!m) return;
+  _addPpLinea({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: 1 });
+  document.getElementById('pp-search').value = '';
+  document.getElementById('pp-results').classList.remove('open');
+  renderPartePendiente();
+}
+function addPpFromCatalogoQty(idx, cantidad) {
+  const m = materiales[idx]; if (!m) return;
+  _addPpLinea({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: parseFloat(cantidad) || 1 });
+  const inp = document.getElementById('pp-cat-qty-' + idx); if (inp) inp.value = '';
+  renderPartePendiente();
+}
+function addPpLibre(desc) {
+  const text = (desc || '').trim();
+  if (!text) return;
+  _addPpLinea({ ref: '', descripcion: text, unidad: 'ud', cantidad: 1 });
+  document.getElementById('pp-search').value = '';
+  document.getElementById('pp-results').classList.remove('open');
+  renderPartePendiente();
+}
+function _addPpLinea(linea) {
+  const existing = partePendienteLineas.find(l =>
+    (linea.ref && l.ref === linea.ref) ||
+    (!linea.ref && (l.descripcion||'').toLowerCase() === linea.descripcion.toLowerCase())
+  );
+  if (existing) existing.cantidad = (parseFloat(existing.cantidad) || 0) + (parseFloat(linea.cantidad) || 1);
+  else partePendienteLineas.push({ ...linea, conseguido: false });
+}
+
+function renderPpCatPicker() {
+  const c = document.getElementById('pp-cat-picker');
+  if (!c) return;
+  if (!materiales || !materiales.length) { c.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin catálogo cargado.</div>'; return; }
+  const porCat = {};
+  materiales.forEach((m, i) => {
+    const cat = (m.categoria || 'SIN CATEGORÍA').toUpperCase();
+    (porCat[cat] ||= []).push({ m, idx: i });
+  });
+  const cats = Object.keys(porCat).sort();
+  c.innerHTML = cats.map(cat => `
+    <details class="cat-group">
+      <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
+      <div class="cat-items">
+        ${porCat[cat].map(({ m, idx }) => `
+          <div class="cat-item">
+            <div class="cat-item-desc">${escapeHtml(m.descripcion || '—')}${m.ref ? `<small>${escapeHtml(m.ref)}</small>` : ''}</div>
+            <input type="number" min="0" step="any" class="cat-qty" id="pp-cat-qty-${idx}" placeholder="${escapeHtml(m.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addPpFromCatalogoQty(${idx}, this.value||1)}">
+            <button type="button" class="cat-add" onclick="addPpFromCatalogoQty(${idx}, document.getElementById('pp-cat-qty-${idx}').value||1)" title="Añadir">+</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `).join('');
 }
 
 function renderParteMaterialFurgo() {
@@ -6770,7 +6888,7 @@ function openParteModal(id) {
     ${p.furgoneta ? `<div class="modal-section"><div class="modal-label">Furgoneta</div><div class="modal-value">${escapeHtml(p.furgoneta)}</div></div>` : ''}
     ${(p.instaladores||[]).length ? `<div class="modal-section"><div class="modal-label">Instaladores</div><div class="modal-value">${escapeHtml((p.instaladores||[]).join(', '))}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Trabajos realizados</div><div class="modal-value">${escapeHtml(p.trabajosRealizados || '')}</div></div>
-    ${(p.materialPendiente && p.materialPendiente.length) ? `<div class="modal-section"><div class="modal-label">Material pendiente</div><div class="modal-value">${p.materialPendiente.map(l => `<div>${l.conseguido?'☑':'☐'} ${escapeHtml(l.descripcion)}</div>`).join('')}</div></div>` : ''}
+    ${(p.materialPendiente && p.materialPendiente.length) ? `<div class="modal-section"><div class="modal-label">Material pendiente</div><div class="modal-value">${p.materialPendiente.map(l => `<div>${l.conseguido?'☑':'☐'} ${l.ref ? `<span style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-right:6px">${escapeHtml(l.ref)}</span>` : ''}<span style="font-family:var(--mono);color:var(--text-muted);margin-right:6px">${l.cantidad ?? 1} ${escapeHtml(l.unidad||'ud')}</span>${escapeHtml(l.descripcion)}</div>`).join('')}</div></div>` : ''}
     ${photos}
     ${p.notas ? `<div class="modal-section"><div class="modal-label">Notas</div><div class="modal-value">${escapeHtml(p.notas)}</div></div>` : ''}
     <div class="modal-section"><div class="modal-label">Registrado por</div><div class="modal-value" style="font-size:13px;color:var(--text-muted)">${escapeHtml(p.registradoPor || '—')}</div></div>
@@ -8758,7 +8876,7 @@ function generarPDFParte(id) {
     ${_pdfFld('Instaladores', (p.instaladores||[]).join(', '))}
     ${_pdfFld('Registrado por', p.registradoPor)}
     ${_pdfBlock('Trabajos realizados', p.trabajosRealizados)}
-    ${(p.materialPendiente && p.materialPendiente.length) ? '<h2>Material pendiente para mañana</h2>' + (p.materialPendiente.map(l => `<div class="blk">${l.conseguido ? '☑' : '☐'} ${escapeHtml(l.descripcion)}</div>`).join('')) : ''}
+    ${(p.materialPendiente && p.materialPendiente.length) ? '<h2>Material pendiente para mañana</h2>' + (p.materialPendiente.map(l => `<div class="blk">${l.conseguido ? '☑' : '☐'} ${l.ref ? '<b>'+escapeHtml(l.ref)+'</b> · ' : ''}${l.cantidad ?? 1} ${escapeHtml(l.unidad||'ud')} · ${escapeHtml(l.descripcion)}</div>`).join('')) : ''}
     ${_pdfBlock('Notas', p.notas)}
     ${_pdfFotos(p.fotos)}
   `;

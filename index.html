@@ -1957,6 +1957,7 @@
     <div class="action-row">
       <button class="btn-primary" id="btn-mnt-save" onclick="guardarMantenimiento()" style="flex:1">Guardar</button>
       <button class="btn-secondary" id="btn-mnt-completar" onclick="completarMantenimiento()" style="flex:1;display:none">Marcar completado</button>
+      <button class="btn-secondary" id="btn-mnt-duplicar" onclick="duplicarMantenimientoMañana()" style="flex:1;display:none">Duplicar a mañana</button>
       <button class="btn-secondary" id="btn-mnt-pdf" onclick="generarPDFMantenimiento(mntEditando)" style="flex:1;display:none">Descargar PDF</button>
     </div>
     <div id="mnt-extra-actions" style="margin-top:10px;display:none">
@@ -8444,6 +8445,8 @@ function aplicarPermisosMantenimiento(m) {
   document.getElementById('btn-mnt-save').style.display = camposEditableFlag ? '' : 'none';
   const completarBtn = document.getElementById('btn-mnt-completar');
   completarBtn.style.display = (camposEditableFlag && m && m.estado !== 'completado') ? '' : 'none';
+  const dupBtn = document.getElementById('btn-mnt-duplicar');
+  if (dupBtn) dupBtn.style.display = (esAdminEditando && m) ? '' : 'none';
   document.getElementById('mnt-extra-actions').style.display = (esAdminEditando && m) ? 'block' : 'none';
 }
 
@@ -8594,6 +8597,44 @@ async function guardarMantenimiento(marcandoCompletado) {
 async function completarMantenimiento() {
   if (!confirm('¿Marcar este mantenimiento como completado?')) return;
   await guardarMantenimiento(true);
+}
+
+async function duplicarMantenimientoMañana() {
+  if (!isAdmin()) return;
+  if (mntEditando == null) return;
+  await sheetsLoad();
+  const m = incidents.find(i => i.id === mntEditando && i.tipo === 'mantenimiento');
+  if (!m) { showToast('⚠ Mantenimiento no encontrado', 'err'); return; }
+  if (!m.fechaPrevistaISO) { showToast('⚠ Falta la fecha prevista en el original', 'err'); return; }
+  // Calcular siguiente día respetando zona local
+  const [y, mo, d] = m.fechaPrevistaISO.split('-').map(Number);
+  const dt = new Date(y, mo - 1, d);
+  dt.setDate(dt.getDate() + 1);
+  const siguienteISO = (typeof _dateToLocalISO === 'function') ? _dateToLocalISO(dt) : `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  const [ny, nm, nd] = siguienteISO.split('-');
+  const fechaEs = `${+nd}/${+nm}/${ny}`;
+
+  const nuevo = {
+    ...m,
+    id: Date.now(),
+    fechaPrevistaISO: siguienteISO,
+    fechaPrevista: fechaEs,
+    estado: 'pendiente',
+    // Resetear bloque de campo y fechas de cierre, mantener cabecera (operarios, furgoneta, trabajos previstos…)
+    trabajosRealizados: '',
+    materialUtilizado: '',
+    observacionesCampo: '',
+    fotos: [],
+    fechaReal: '', fechaRealTs: null, completadoPor: '',
+    creadoPor: currentUser?.nombre || 'Admin',
+    creadoTs: Date.now(),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now()
+  };
+  incidents.unshift(nuevo);
+  await sheetsSave();
+  showToast(`✓ Duplicado al ${fechaEs}`, 'ok');
+  enterMantenimientos();
 }
 
 async function eliminarMantenimiento() {

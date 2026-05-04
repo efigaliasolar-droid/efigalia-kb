@@ -1553,6 +1553,24 @@
     </details>
 
     <details class="filtros-panel">
+      <summary>Contador de distribuidora</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Observaciones</label>
+          <textarea class="field" id="v-contador-obs" placeholder="Ubicación, accesibilidad, modelo si se ve..."></textarea>
+        </div>
+        <div class="form-group foto-group" data-foto-key="contadorDistribuidora">
+          <label>Foto del contador (con CGP visible si es posible)</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-contadorDistribuidora').click()">
+            <input type="file" id="vf-contadorDistribuidora" accept="image/*" multiple onchange="onVisitaFotosChange('contadorDistribuidora', event)">
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-contadorDistribuidora"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
       <summary>Cableado</summary>
       <div class="filtros-body">
         <div class="form-row">
@@ -5216,6 +5234,7 @@ function abrirFormularioVisita(v) {
     'v-aco-cerrado','v-aco-detalles',
     'v-ele-detalles','v-inv-obs','v-cuap-obs',
     'v-cug-interruptor','v-cug-toroidales','v-cug-obs',
+    'v-contador-obs',
     'v-cab-mod-inv','v-cab-inv-cua','v-cab-entrada-obs',
     'v-net-router','v-net-wifi','v-net-dist','v-net-obs',
     'v-otros'];
@@ -5301,6 +5320,9 @@ function leerFormularioVisita() {
         toroidalesDentro: chk('v-cug-toroidales'),
         observaciones: txt('v-cug-obs')
       },
+      contadorDistribuidora: {
+        observaciones: txt('v-contador-obs')
+      },
       cableado: {
         distModulosInversor: num('v-cab-mod-inv'),
         distInversorCuadro: num('v-cab-inv-cua'),
@@ -5318,7 +5340,7 @@ function leerFormularioVisita() {
 }
 
 // ── FOTOS DE LA VISITA ─────────────────────────────────
-const VISITA_FOTO_KEYS = ['cubierta','cubiertaDetalle','obstaculos','acceso','acopio','elevacion','inversorPlano','inversorEquipos','cuadroProteccion','cuadroInterruptor','cuadroGeneral','cableadoEntrada','cableadoRecorrido','router'];
+const VISITA_FOTO_KEYS = ['cubierta','cubiertaDetalle','obstaculos','acceso','acopio','elevacion','inversorPlano','inversorEquipos','cuadroProteccion','cuadroInterruptor','cuadroGeneral','contadorDistribuidora','cableadoEntrada','cableadoRecorrido','router'];
 let visitaFotoFiles = {};   // key → [File] (nuevas, pendientes de subir)
 let visitaFotoUrls = {};    // key → [URL] (ya subidas)
 let visitaEditable = false; // global computado al abrir la visita
@@ -5489,6 +5511,8 @@ function rellenarCampoVisita(campo) {
   set('v-cug-interruptor', cg.interruptor);
   setChk('v-cug-toroidales', cg.toroidalesDentro);
   set('v-cug-obs', cg.observaciones);
+
+  set('v-contador-obs', (campo.contadorDistribuidora || {}).observaciones);
 
   const cab = campo.cableado || {};
   set('v-cab-mod-inv', cab.distModulosInversor);
@@ -8719,6 +8743,7 @@ function generarPDFVisita(id) {
   const cug = c.cuadroGeneral || {};
   const cab = c.cableado || {};
   const net = c.internet || {};
+  const cdis = c.contadorDistribuidora || {};
   const fotos = c.fotos ? Object.values(c.fotos).flat().filter(Boolean) : [];
   const yn = (b) => b === true ? 'Sí' : (b === false ? 'No' : '');
 
@@ -8783,6 +8808,9 @@ function generarPDFVisita(id) {
     ${_pdfFld('Interruptor general', cug.interruptor)}
     ${_pdfFld('Toroidales dentro del cuadro', yn(cug.toroidalesDentro))}
     ${_pdfBlock('Observaciones cuadro general', cug.observaciones)}
+
+    <h2>Contador de distribuidora</h2>
+    ${_pdfBlock('Observaciones contador', cdis.observaciones)}
 
     <h2>Cableado</h2>
     ${_pdfFld('Distancia módulos–inversor (m)', cab.distModulosInversor)}

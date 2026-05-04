@@ -5909,13 +5909,16 @@ function renderMovPendienteBanner() {
   if (!pendientes.length) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
   banner.style.display = 'block';
   banner.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="font-size:13px;flex:1;min-width:0">
-        <span style="color:#b46b00;font-weight:600">⚠ Material pendiente de partes:</span>
-        <span style="color:var(--text-muted);font-size:12px"> ${pendientes.length} línea${pendientes.length===1?'':'s'}</span>
+    <details class="filtros-panel" open style="background:var(--surface2);border-color:#c97a1f">
+      <summary style="color:#b46b00;font-weight:600">⚠ Material pendiente de partes (${pendientes.length})</summary>
+      <div class="filtros-body">
+        <div style="font-size:13px;line-height:1.6">
+          ${pendientes.map(p => `<div style="padding:4px 0;border-bottom:1px dashed var(--border)"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-right:8px">${escapeHtml(p.parteFecha||'—')}</span>${escapeHtml(p.descripcion)}</div>`).join('')}
+        </div>
+        <button class="btn-secondary" type="button" onclick="cargarPendientesMov()" style="width:100%;margin-top:10px">Cargar todos como líneas de salida</button>
+        <div class="calc-note" style="margin-top:8px">Cada línea se busca en el catálogo (por palabras coincidentes). Si encuentra → línea con referencia; si no → línea libre con la descripción del parte. Al guardar la salida, esos pendientes se marcan como conseguidos.</div>
       </div>
-      <button class="btn-secondary" type="button" onclick="cargarPendientesMov()" style="width:auto;flex:0 0 auto">Cargar pendientes</button>
-    </div>
+    </details>
   `;
 }
 

@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -439,6 +439,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 21V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v15"/><path d="M3 21h11"/><path d="M5 11h7"/><path d="M14 9h3l3 3v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2"/><path d="M17 12v3"/></svg></div>
         <div class="home-title">Repostajes y tickets</div>
         <div class="home-desc">Carga de combustible y tickets o facturas pagadas por instaladores.</div>
+      </div>
+      <div class="home-card" id="home-card-almacen" onclick="enterAlmacen()" style="display:none">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v12H3z"/><path d="M3 9h18"/><path d="M9 21V13h6v8"/></svg></div>
+        <div class="home-title">Almacén</div>
+        <div class="home-desc">Pedidos de compra, recepciones y stock de catálogo.</div>
       </div>
       <div class="home-card" onclick="enterIncidencias()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-14.3 7.3L3 20l.7-3.7A9 9 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7"/><circle cx="12" cy="16.5" r="0.4" fill="currentColor" stroke="none"/></svg></div>
@@ -2158,6 +2163,11 @@
         <div class="home-title">Instaladores</div>
         <div class="home-desc">Gestionar la lista de instaladores activos.</div>
       </div>
+      <div class="home-card" onclick="enterAdminProveedores()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 7h18l-1 12H4z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M9 12h6"/></svg></div>
+        <div class="home-title">Proveedores</div>
+        <div class="home-desc">Lista de proveedores para los pedidos de compra.</div>
+      </div>
       <div class="home-card" onclick="enterAdminCatalogo()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M10 6h6M10 10h6"/></svg></div>
         <div class="home-title">Catálogo de materiales</div>
@@ -2348,6 +2358,152 @@
       <div class="section-title">Documentos subidos</div>
       <input type="text" id="adm-doc-search" placeholder="Buscar..." oninput="renderAdminDocumentos()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px">
       <div class="admin-list" id="adm-doc-list"></div>
+    </div>
+  </div>
+
+  <div id="view-admin-proveedores">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Proveedores</div>
+    <div class="action-row" style="margin-bottom:10px">
+      <button class="btn-primary" onclick="abrirModalProveedor()">+ Nuevo proveedor</button>
+    </div>
+    <div class="form-group">
+      <input type="text" id="prov-search" placeholder="Buscar proveedor..." oninput="renderProveedores()">
+    </div>
+    <div id="prov-list" class="admin-list"></div>
+  </div>
+
+  <!-- Modal de proveedor -->
+  <div class="modal-overlay" id="prov-modal">
+    <div class="modal" style="max-width:480px">
+      <button class="modal-close" onclick="cerrarModalProveedor()">✕</button>
+      <div class="modal-title" id="prov-modal-title">Nuevo proveedor</div>
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" id="pv-nombre">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="pv-telefono" inputmode="tel">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="text" id="pv-email" inputmode="email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Persona contacto</label>
+        <input type="text" id="pv-contacto">
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea class="field" id="pv-notas"></textarea>
+      </div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="btn-primary" onclick="guardarProveedor()" style="flex:1">Guardar</button>
+        <button class="btn-ghost" id="btn-prov-eliminar" onclick="eliminarProveedor()" style="flex:1;color:var(--red);border-color:var(--red);display:none">🗑 Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ALMACÉN ═══════════════ -->
+  <div id="view-almacen">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Almacén</div>
+    <div class="home-intro">Gestión de pedidos de compra, recepciones y stock del catálogo.</div>
+    <div class="home-grid">
+      <div class="home-card" onclick="enterPedidos()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>
+        <div class="home-title">Pedidos de compra</div>
+        <div class="home-desc">Crear, recibir y consultar pedidos a proveedores.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminCatalogo()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+        <div class="home-title">Stock del catálogo</div>
+        <div class="home-desc">Stock actual por item y aviso de bajo mínimo.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PEDIDOS DE COMPRA ═══════════════ -->
+  <div id="view-pedidos">
+    <div id="pedidos-list-section">
+      <button class="back-link" onclick="enterAlmacen()">← Atrás</button>
+      <div class="section-title">Pedidos de compra</div>
+      <div class="action-row">
+        <button class="btn-primary" onclick="abrirFormPedido()">+ Nuevo pedido</button>
+      </div>
+      <details class="filtros-panel">
+        <summary>Filtros<span class="filtros-badge" id="ped-filtros-count" style="display:none">0</span></summary>
+        <div class="filtros-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Proveedor</label>
+              <select id="ped-prov-filtro" onchange="renderPedidos()"></select>
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select id="ped-estado-filtro" onchange="renderPedidos()">
+                <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="recibido">Recibido</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="limpiarFiltrosPedidos()" style="width:100%;margin-top:4px">Limpiar filtros</button>
+        </div>
+      </details>
+      <div id="pedidos-container"></div>
+    </div>
+
+    <div id="pedidos-form-section" style="display:none">
+      <button class="back-link" onclick="cerrarFormPedido()">← Atrás</button>
+      <div class="section-title" id="pedido-form-title">Nuevo pedido</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha *</label>
+          <input type="date" id="ped-fecha">
+        </div>
+        <div class="form-group">
+          <label>Nº pedido / albarán</label>
+          <input type="text" id="ped-numero" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Proveedor *</label>
+        <select id="ped-proveedor"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Materiales</label>
+        <div class="mat-search-wrap">
+          <input type="text" id="ped-mat-search" placeholder="Buscar material por referencia o descripción..." oninput="renderPedMatSearch()" onfocus="renderPedMatSearch()" onblur="setTimeout(()=>document.getElementById('ped-mat-results').classList.remove('open'),180)">
+          <div class="mat-results" id="ped-mat-results"></div>
+        </div>
+        <details class="filtros-panel" style="margin-top:6px">
+          <summary>Catálogo por categoría</summary>
+          <div class="filtros-body">
+            <div class="cat-picker" id="ped-cat-picker"></div>
+          </div>
+        </details>
+        <div id="ped-lineas-container" style="margin-top:10px"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea class="field" id="ped-notas"></textarea>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" id="btn-ped-save" onclick="guardarPedido()" style="flex:1">Guardar pedido</button>
+        <button class="btn-secondary" id="btn-ped-recibir" onclick="recibirPedido()" style="flex:1;display:none">Marcar recibido</button>
+      </div>
+      <div id="ped-extra-actions" style="margin-top:10px;display:none">
+        <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarPedido()">🗑 Eliminar pedido</button>
+      </div>
     </div>
   </div>
 
@@ -2623,6 +2779,8 @@ function goHome() {
   if (adminCard) adminCard.style.display = esAdmin ? '' : 'none';
   const planCard = document.getElementById('home-card-planificacion');
   if (planCard) planCard.style.display = esAdmin ? '' : 'none';
+  const almacenCard = document.getElementById('home-card-almacen');
+  if (almacenCard) almacenCard.style.display = esAdmin ? '' : 'none';
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
@@ -10214,6 +10372,461 @@ function renderResumenAdmin() {
     ` : ''}
   `;
   banner.style.display = 'block';
+}
+
+// ── PROVEEDORES (maestro) ──────────────────────────────
+function proveedoresActivos() {
+  return incidents.filter(i => i.tipo === 'proveedor' && i.activa !== false)
+    .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+}
+
+let proveedorEnEdicion = null;
+
+function enterAdminProveedores() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-admin-proveedores').style.display = 'block';
+  sheetsLoad().then(() => renderProveedores());
+}
+
+function renderProveedores() {
+  const cont = document.getElementById('prov-list');
+  if (!cont) return;
+  const q = (document.getElementById('prov-search')?.value || '').toLowerCase();
+  let lista = incidents.filter(i => i.tipo === 'proveedor');
+  if (q) lista = lista.filter(p => [p.nombre, p.telefono, p.email, p.contacto].some(f => (f||'').toLowerCase().includes(q)));
+  lista.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px">Sin proveedores. Crea el primero arriba.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(p => `
+    <div class="admin-row">
+      <div class="nombre${p.activa===false?' inactivo':''}">${escapeHtml(p.nombre || '—')}${p.contacto ? ` · <span style="color:var(--text-muted);font-size:12px">${escapeHtml(p.contacto)}</span>` : ''}</div>
+      <div class="acciones">
+        ${p.telefono ? `<a class="btn-ghost" href="tel:${escapeHtml(p.telefono)}" style="text-decoration:none">📞</a>` : ''}
+        <button class="toggle-btn ${p.activa===false?'off':'on'}" onclick="toggleProveedor(${p.id})">${p.activa===false?'INACTIVO':'ACTIVO'}</button>
+        <button class="icon-btn" onclick="abrirModalProveedor(${p.id})" title="Editar">✎</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalProveedor(id) {
+  if (!isAdmin()) return;
+  proveedorEnEdicion = id || null;
+  const p = id ? incidents.find(i => i.id === id && i.tipo === 'proveedor') : null;
+  document.getElementById('prov-modal-title').textContent = p ? 'Editar proveedor' : 'Nuevo proveedor';
+  document.getElementById('btn-prov-eliminar').style.display = p ? '' : 'none';
+  document.getElementById('pv-nombre').value   = p ? (p.nombre || '') : '';
+  document.getElementById('pv-telefono').value = p ? (p.telefono || '') : '';
+  document.getElementById('pv-email').value    = p ? (p.email || '') : '';
+  document.getElementById('pv-contacto').value = p ? (p.contacto || '') : '';
+  document.getElementById('pv-notas').value    = p ? (p.notas || '') : '';
+  document.getElementById('prov-modal').classList.add('open');
+}
+
+function cerrarModalProveedor() {
+  document.getElementById('prov-modal').classList.remove('open');
+  proveedorEnEdicion = null;
+}
+
+async function guardarProveedor() {
+  if (!isAdmin()) return;
+  const nombre = document.getElementById('pv-nombre').value.trim();
+  if (!nombre) { showToast('⚠ El nombre es obligatorio', 'err'); return; }
+  await sheetsLoad();
+  // Comprobar duplicado
+  const dup = incidents.find(i => i.tipo === 'proveedor' && i.id !== proveedorEnEdicion && (i.nombre||'').toLowerCase() === nombre.toLowerCase());
+  if (dup) { showToast('⚠ Ya existe un proveedor con ese nombre', 'err'); return; }
+  const datos = {
+    nombre,
+    telefono: document.getElementById('pv-telefono').value.trim(),
+    email:    document.getElementById('pv-email').value.trim(),
+    contacto: document.getElementById('pv-contacto').value.trim(),
+    notas:    document.getElementById('pv-notas').value.trim(),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now()
+  };
+  if (proveedorEnEdicion) {
+    const p = incidents.find(i => i.id === proveedorEnEdicion && i.tipo === 'proveedor');
+    if (p) Object.assign(p, datos);
+  } else {
+    incidents.unshift({
+      id: Date.now(),
+      tipo: 'proveedor',
+      activa: true,
+      creadoPor: currentUser?.nombre || 'Admin',
+      creadoTs: Date.now(),
+      ...datos
+    });
+  }
+  await sheetsSave();
+  cerrarModalProveedor();
+  renderProveedores();
+  showToast('✓ Proveedor guardado', 'ok');
+}
+
+async function toggleProveedor(id) {
+  if (!isAdmin()) return;
+  await sheetsLoad();
+  const p = incidents.find(i => i.id === id && i.tipo === 'proveedor');
+  if (!p) return;
+  p.activa = p.activa === false ? true : false;
+  await sheetsSave();
+  renderProveedores();
+}
+
+async function eliminarProveedor() {
+  if (!isAdmin() || !proveedorEnEdicion) return;
+  // Comprobar si está usado en algún pedido
+  const usado = incidents.find(i => i.tipo === 'compra' && i.proveedorId === proveedorEnEdicion);
+  if (usado) { showToast('⚠ No se puede eliminar: hay pedidos con este proveedor. Márcalo como inactivo.', 'err'); return; }
+  if (!confirm('¿Eliminar este proveedor?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === proveedorEnEdicion && i.tipo === 'proveedor'));
+  await sheetsSave();
+  cerrarModalProveedor();
+  renderProveedores();
+  showToast('✓ Eliminado', 'ok');
+}
+
+// ── ALMACÉN (home del módulo) ──────────────────────────
+function enterAlmacen() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-almacen').style.display = 'block';
+}
+
+// ── PEDIDOS DE COMPRA ──────────────────────────────────
+let pedidoEnEdicion = null;
+let pedidoLineas = [];   // [{ ref, descripcion, unidad, cantidad }]
+
+function enterPedidos() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-pedidos').style.display = 'block';
+  document.getElementById('pedidos-list-section').style.display = 'block';
+  document.getElementById('pedidos-form-section').style.display = 'none';
+  Promise.all([sheetsLoad(), materialesLoad ? materialesLoad() : Promise.resolve()]).then(() => renderPedidos());
+}
+
+function fillPedFiltros() {
+  const list = incidents.filter(i => i.tipo === 'compra');
+  const provs = [...new Set(list.map(p => p.proveedor).filter(Boolean))].sort();
+  const sel = document.getElementById('ped-prov-filtro');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>' + provs.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+    sel.value = cur;
+  }
+}
+
+function limpiarFiltrosPedidos() {
+  ['ped-prov-filtro','ped-estado-filtro'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderPedidos();
+}
+
+function renderPedidos() {
+  fillPedFiltros();
+  const c = document.getElementById('pedidos-container');
+  const provF = document.getElementById('ped-prov-filtro')?.value || '';
+  const estF  = document.getElementById('ped-estado-filtro')?.value || '';
+  let list = incidents.filter(i => i.tipo === 'compra');
+  if (provF) list = list.filter(p => p.proveedor === provF);
+  if (estF)  list = list.filter(p => (p.estado || 'pendiente') === estF);
+  list.sort((a,b) => (b.fechaTs||b.creadoTs||0) - (a.fechaTs||a.creadoTs||0));
+
+  const activos = [provF, estF].filter(Boolean).length;
+  const badge = document.getElementById('ped-filtros-count');
+  if (badge) { badge.style.display = activos ? '' : 'none'; badge.textContent = activos; }
+
+  if (!list.length) {
+    c.innerHTML = '<div class="empty-state" style="padding:24px">Sin pedidos todavía. Crea el primero con el botón de arriba.</div>';
+    return;
+  }
+
+  c.innerHTML = list.map(p => {
+    const totalLineas = (p.lineas||[]).length;
+    const totalUd = (p.lineas||[]).reduce((s, l) => s + (parseFloat(l.cantidad)||0), 0);
+    const estado = p.estado || 'pendiente';
+    const estadoBadge = estado === 'recibido'
+      ? '<span class="badge badge-modelo">✓ RECIBIDO</span>'
+      : estado === 'cancelado'
+      ? '<span class="badge" style="background:var(--badge-error-bg);color:var(--red)">✗ CANCELADO</span>'
+      : '<span class="badge badge-error">⏳ PENDIENTE</span>';
+    return `
+      <div class="parte-card" onclick="abrirFormPedido(${p.id})">
+        <div class="mov-head">
+          <div class="mov-obra">${escapeHtml(p.proveedor || '—')}${p.numero ? ` · <span style="color:var(--text-muted);font-size:12px">${escapeHtml(p.numero)}</span>` : ''}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+            ${estadoBadge}
+            <span class="badge badge-marca">${escapeHtml(p.fecha || '—')}</span>
+          </div>
+        </div>
+        <div class="mov-meta">
+          <span>📦 ${totalLineas} línea(s)</span>
+          ${totalUd ? `<span>⚖ ${totalUd}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function fillPedidoProveedorSelect(valor) {
+  const sel = document.getElementById('ped-proveedor');
+  if (!sel) return;
+  const lista = proveedoresActivos();
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' + lista.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)}</option>`).join('');
+  if (valor && !lista.some(p => p.id === valor)) {
+    // proveedor inactivo: añadirlo igualmente
+    const p = incidents.find(i => i.id === valor && i.tipo === 'proveedor');
+    if (p) { const op = document.createElement('option'); op.value = p.id; op.textContent = p.nombre + ' (inactivo)'; sel.appendChild(op); }
+  }
+  sel.value = valor != null ? String(valor) : '';
+}
+
+function abrirFormPedido(id) {
+  pedidoEnEdicion = id || null;
+  pedidoLineas = [];
+  document.getElementById('pedidos-list-section').style.display = 'none';
+  document.getElementById('pedidos-form-section').style.display = 'block';
+  document.getElementById('pedido-form-title').textContent = id ? 'Editar pedido' : 'Nuevo pedido';
+  document.getElementById('ped-extra-actions').style.display = id ? 'block' : 'none';
+
+  if (id) {
+    const p = incidents.find(i => i.id === id && i.tipo === 'compra');
+    if (!p) return;
+    document.getElementById('ped-fecha').value = p.fechaISO || '';
+    document.getElementById('ped-numero').value = p.numero || '';
+    fillPedidoProveedorSelect(p.proveedorId || null);
+    pedidoLineas = (p.lineas || []).map(l => ({ ...l }));
+    document.getElementById('ped-notas').value = p.notas || '';
+    const yaRecibido = p.estado === 'recibido';
+    document.getElementById('btn-ped-recibir').style.display = yaRecibido ? 'none' : '';
+  } else {
+    document.getElementById('ped-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('ped-numero').value = '';
+    fillPedidoProveedorSelect(null);
+    document.getElementById('ped-notas').value = '';
+    document.getElementById('btn-ped-recibir').style.display = 'none';
+  }
+  renderPedidoLineas();
+  renderPedCatPicker();
+  document.getElementById('ped-mat-search').value = '';
+  document.getElementById('ped-mat-results').classList.remove('open');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cerrarFormPedido() {
+  document.getElementById('pedidos-list-section').style.display = 'block';
+  document.getElementById('pedidos-form-section').style.display = 'none';
+  pedidoEnEdicion = null;
+  pedidoLineas = [];
+  renderPedidos();
+}
+
+function renderPedidoLineas() {
+  const cont = document.getElementById('ped-lineas-container');
+  if (!cont) return;
+  if (!pedidoLineas.length) {
+    cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin líneas. Busca o elige del catálogo arriba.</div>';
+    return;
+  }
+  cont.innerHTML = `
+    <div class="lineas-table">
+      <div class="lh"><div class="col-ref">Ref</div><div>Descripción</div><div style="text-align:right">Cant.</div><div style="text-align:right">Ud</div><div></div></div>
+      ${pedidoLineas.map((l, i) => `
+        <div class="lr">
+          <div class="ref col-ref">${escapeHtml(l.ref || '')}</div>
+          <div>${escapeHtml(l.descripcion || '')}</div>
+          <input class="qty" type="number" step="any" inputmode="decimal" value="${l.cantidad ?? 1}" oninput="actualizarLineaPedido(${i}, 'cantidad', parseFloat(this.value)||0)">
+          <div class="un">${escapeHtml(l.unidad || 'ud')}</div>
+          <button class="del" type="button" onclick="quitarLineaPedido(${i})" title="Quitar">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+function actualizarLineaPedido(i, key, val) {
+  if (!pedidoLineas[i]) return;
+  pedidoLineas[i][key] = val;
+}
+function quitarLineaPedido(i) { pedidoLineas.splice(i, 1); renderPedidoLineas(); }
+
+function renderPedMatSearch() {
+  const inp = document.getElementById('ped-mat-search');
+  const box = document.getElementById('ped-mat-results');
+  if (!inp || !box) return;
+  const q = inp.value.trim().toLowerCase();
+  if (!q) { box.classList.remove('open'); return; }
+  const results = (Array.isArray(materiales) ? materiales : []).filter(m =>
+    (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+  if (!results.length) {
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addLineaPedidoLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.classList.add('open');
+    return;
+  }
+  box.innerHTML = results.map(m => {
+    const idx = materiales.indexOf(m);
+    return `<div class="mat-result" onmousedown="event.preventDefault();addLineaPedidoCatalogo(${idx})">
+      <div class="ref">${escapeHtml(m.ref || '')}</div>
+      <div class="desc">${escapeHtml(m.descripcion || '')} <span class="cat">(${escapeHtml(m.unidad || 'ud')})</span></div>
+    </div>`;
+  }).join('');
+  box.classList.add('open');
+}
+function addLineaPedidoCatalogo(idx) {
+  const m = materiales[idx]; if (!m) return;
+  _addLineaPed({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: 1 });
+  document.getElementById('ped-mat-search').value = '';
+  document.getElementById('ped-mat-results').classList.remove('open');
+  renderPedidoLineas();
+}
+function addLineaPedidoCatalogoQty(idx, cantidad) {
+  const m = materiales[idx]; if (!m) return;
+  _addLineaPed({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: parseFloat(cantidad) || 1 });
+  const inp = document.getElementById('ped-cat-qty-' + idx); if (inp) inp.value = '';
+  renderPedidoLineas();
+}
+function addLineaPedidoLibre(desc) {
+  const t = (desc || '').trim(); if (!t) return;
+  _addLineaPed({ ref: '', descripcion: t, unidad: 'ud', cantidad: 1 });
+  document.getElementById('ped-mat-search').value = '';
+  document.getElementById('ped-mat-results').classList.remove('open');
+  renderPedidoLineas();
+}
+function _addLineaPed(linea) {
+  const existing = pedidoLineas.find(l => (linea.ref && l.ref === linea.ref) || (!linea.ref && (l.descripcion||'').toLowerCase() === linea.descripcion.toLowerCase()));
+  if (existing) existing.cantidad = (parseFloat(existing.cantidad)||0) + (parseFloat(linea.cantidad)||1);
+  else pedidoLineas.push({ ...linea });
+}
+
+function renderPedCatPicker() {
+  const c = document.getElementById('ped-cat-picker');
+  if (!c) return;
+  if (!materiales || !materiales.length) { c.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin catálogo cargado.</div>'; return; }
+  const porCat = {};
+  materiales.forEach((m, i) => {
+    const cat = (m.categoria || 'SIN CATEGORÍA').toUpperCase();
+    (porCat[cat] ||= []).push({ m, idx: i });
+  });
+  const cats = Object.keys(porCat).sort();
+  c.innerHTML = cats.map(cat => `
+    <details class="cat-group">
+      <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
+      <div class="cat-items">
+        ${porCat[cat].map(({ m, idx }) => `
+          <div class="cat-item">
+            <div class="cat-item-desc">${escapeHtml(m.descripcion || '—')}${m.ref ? `<small>${escapeHtml(m.ref)}</small>` : ''}</div>
+            <input type="number" min="0" step="any" class="cat-qty" id="ped-cat-qty-${idx}" placeholder="${escapeHtml(m.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addLineaPedidoCatalogoQty(${idx}, this.value||1)}">
+            <button type="button" class="cat-add" onclick="addLineaPedidoCatalogoQty(${idx}, document.getElementById('ped-cat-qty-${idx}').value||1)" title="Añadir">+</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `).join('');
+}
+
+async function guardarPedido() {
+  if (!isAdmin()) return;
+  const fechaISO = document.getElementById('ped-fecha').value;
+  const numero = document.getElementById('ped-numero').value.trim();
+  const proveedorId = document.getElementById('ped-proveedor').value;
+  if (!fechaISO) { showToast('⚠ Indica la fecha', 'err'); return; }
+  if (!proveedorId) { showToast('⚠ Selecciona proveedor', 'err'); return; }
+  if (!pedidoLineas.length) { showToast('⚠ Añade al menos una línea', 'err'); return; }
+
+  const proveedor = incidents.find(i => i.id === parseInt(proveedorId, 10) && i.tipo === 'proveedor');
+
+  await sheetsLoad();
+  const [y,m,d] = fechaISO.split('-');
+  const fechaEs = `${+d}/${+m}/${y}`;
+
+  const reg = {
+    id: pedidoEnEdicion || Date.now(),
+    tipo: 'compra',
+    fecha: fechaEs,
+    fechaISO,
+    fechaTs: new Date(fechaISO).getTime(),
+    numero,
+    proveedorId: proveedor ? proveedor.id : null,
+    proveedor: proveedor ? proveedor.nombre : '',
+    lineas: pedidoLineas.map(l => ({ ref: l.ref || '', descripcion: l.descripcion || '', unidad: l.unidad || 'ud', cantidad: parseFloat(l.cantidad) || 0 })).filter(l => l.descripcion && l.cantidad > 0),
+    notas: document.getElementById('ped-notas').value.trim(),
+    estado: 'pendiente',
+    creadoPor: pedidoEnEdicion ? undefined : (currentUser?.nombre || 'Admin'),
+    creadoTs: pedidoEnEdicion ? undefined : Date.now(),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now()
+  };
+
+  const idx = incidents.findIndex(i => i.id === reg.id && i.tipo === 'compra');
+  if (idx >= 0) {
+    // Conservar campos de creación y estado existente
+    const prev = incidents[idx];
+    incidents[idx] = { ...prev, ...reg, creadoPor: prev.creadoPor, creadoTs: prev.creadoTs, estado: prev.estado || 'pendiente' };
+  } else {
+    incidents.unshift(reg);
+  }
+  await sheetsSave();
+  showToast('✓ Pedido guardado', 'ok');
+  cerrarFormPedido();
+}
+
+async function recibirPedido() {
+  if (!isAdmin() || pedidoEnEdicion == null) return;
+  if (!confirm('¿Marcar este pedido como RECIBIDO?\nLas cantidades de cada línea se sumarán al stock central del catálogo.')) return;
+  await sheetsLoad();
+  const p = incidents.find(i => i.id === pedidoEnEdicion && i.tipo === 'compra');
+  if (!p) return;
+  if (p.estado === 'recibido') { showToast('⚠ Ya está recibido', 'err'); return; }
+
+  // Sumar al stock central
+  let nSumadas = 0;
+  (p.lineas || []).forEach(l => {
+    if (!l.ref) return;
+    const item = materiales.find(it => it.ref === l.ref);
+    if (!item) return;
+    const cant = parseFloat(l.cantidad) || 0;
+    if (!cant) return;
+    item.cantidadStock = (item.cantidadStock ?? 0) + cant;
+    nSumadas++;
+  });
+  p.estado = 'recibido';
+  p.fechaRecibidoTs = Date.now();
+  p.recibidoPor = currentUser?.nombre || 'Admin';
+
+  await Promise.all([sheetsSave(), nSumadas ? materialesSave() : Promise.resolve()]);
+  showToast(`✓ Pedido recibido · ${nSumadas} línea(s) sumada(s) al stock`, 'ok');
+  cerrarFormPedido();
+}
+
+async function eliminarPedido() {
+  if (!isAdmin() || pedidoEnEdicion == null) return;
+  const p = incidents.find(i => i.id === pedidoEnEdicion && i.tipo === 'compra');
+  if (!p) return;
+  if (p.estado === 'recibido') {
+    if (!confirm('Este pedido está RECIBIDO. Si lo eliminas, las cantidades se restarán del stock. ¿Continuar?')) return;
+    // Revertir stock
+    (p.lineas || []).forEach(l => {
+      if (!l.ref) return;
+      const item = materiales.find(it => it.ref === l.ref);
+      if (!item) return;
+      const cant = parseFloat(l.cantidad) || 0;
+      if (!cant) return;
+      item.cantidadStock = Math.max(0, (item.cantidadStock ?? 0) - cant);
+    });
+    await materialesSave();
+  } else {
+    if (!confirm('¿Eliminar este pedido?')) return;
+  }
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === pedidoEnEdicion && i.tipo === 'compra'));
+  await sheetsSave();
+  showToast('✓ Eliminado', 'ok');
+  cerrarFormPedido();
 }
 
 // Limpiar cache local para evitar quota exceeded

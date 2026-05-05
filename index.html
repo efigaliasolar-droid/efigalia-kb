@@ -2367,6 +2367,9 @@
       <label>Filtrar</label>
       <input type="text" id="cat-search" placeholder="Buscar por categoría, referencia o descripción..." oninput="renderCatalogo()">
     </div>
+    <div class="action-row" style="margin-bottom:10px">
+      <button class="btn-primary" onclick="abrirModalCatItem()">+ Nuevo item</button>
+    </div>
     <div id="cat-list"></div>
   </div>
 </main>
@@ -3411,19 +3414,20 @@ function renderCatalogo() {
 let catItemEnEdicion = null;
 function abrirModalCatItem(i) {
   if (!isAdmin()) return;
-  const m = materiales[i];
-  if (!m) return;
-  catItemEnEdicion = i;
-  document.getElementById('cat-item-title').textContent = 'Editar item';
+  const esNuevo = (i == null || i === undefined);
+  const m = esNuevo ? null : materiales[i];
+  if (!esNuevo && !m) return;
+  catItemEnEdicion = esNuevo ? null : i;
+  document.getElementById('cat-item-title').textContent = esNuevo ? 'Nuevo item' : 'Editar item';
   // Datalist con categorías ya usadas
   const cats = [...new Set(materiales.map(x => x.categoria).filter(Boolean))].sort();
   document.getElementById('ci-cats-list').innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
-  document.getElementById('ci-cat').value = m.categoria || '';
-  document.getElementById('ci-desc').value = m.descripcion || '';
-  document.getElementById('ci-ref').value = m.ref || '';
-  document.getElementById('ci-unidad').value = m.unidad || 'ud';
-  document.getElementById('ci-stock').value = m.cantidadStock ?? '';
-  document.getElementById('ci-min').value = m.cantidadMinima ?? '';
+  document.getElementById('ci-cat').value     = m ? (m.categoria || '') : '';
+  document.getElementById('ci-desc').value    = m ? (m.descripcion || '') : '';
+  document.getElementById('ci-ref').value     = m ? (m.ref || '') : '';
+  document.getElementById('ci-unidad').value  = m ? (m.unidad || 'ud') : 'ud';
+  document.getElementById('ci-stock').value   = m ? (m.cantidadStock ?? '') : '';
+  document.getElementById('ci-min').value     = m ? (m.cantidadMinima ?? '') : '';
   document.getElementById('cat-item-modal').classList.add('open');
 }
 function cerrarModalCatItem() {
@@ -3431,23 +3435,31 @@ function cerrarModalCatItem() {
   catItemEnEdicion = null;
 }
 async function guardarCatItem() {
-  if (!isAdmin() || catItemEnEdicion == null) return;
-  const m = materiales[catItemEnEdicion];
-  if (!m) return;
+  if (!isAdmin()) return;
   const desc = document.getElementById('ci-desc').value.trim();
   if (!desc) { showToast('⚠ La descripción es obligatoria', 'err'); return; }
-  m.categoria = document.getElementById('ci-cat').value.trim() || 'SIN CATEGORÍA';
-  m.descripcion = desc;
-  m.ref = document.getElementById('ci-ref').value.trim();
-  m.unidad = document.getElementById('ci-unidad').value.trim() || 'ud';
   const stockV = parseFloat(document.getElementById('ci-stock').value);
   const minV = parseFloat(document.getElementById('ci-min').value);
-  m.cantidadStock = isNaN(stockV) ? null : stockV;
-  m.cantidadMinima = isNaN(minV) ? null : minV;
+  const datos = {
+    categoria:    document.getElementById('ci-cat').value.trim() || 'SIN CATEGORÍA',
+    descripcion:  desc,
+    ref:          document.getElementById('ci-ref').value.trim(),
+    unidad:       document.getElementById('ci-unidad').value.trim() || 'ud',
+    cantidadStock:  isNaN(stockV) ? null : stockV,
+    cantidadMinima: isNaN(minV)   ? null : minV
+  };
+  if (catItemEnEdicion == null) {
+    // Nuevo item
+    materiales.unshift({ id: Date.now(), ...datos });
+  } else {
+    const m = materiales[catItemEnEdicion];
+    if (!m) return;
+    Object.assign(m, datos);
+  }
   await materialesSave();
   cerrarModalCatItem();
   renderCatalogo();
-  showToast('✓ Item guardado', 'ok');
+  showToast(catItemEnEdicion == null ? '✓ Item creado' : '✓ Item guardado', 'ok');
 }
 
 // ── MAESTROS (obras / furgonetas / instaladores) en /data ──

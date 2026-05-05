@@ -2438,7 +2438,9 @@
   <div id="view-almacen">
     <button class="back-link" onclick="goHome()">← Atrás</button>
     <div class="section-title">Almacén</div>
-    <div class="home-intro">Gestión de pedidos de compra, recepciones y stock del catálogo.</div>
+    <div class="home-intro">Resumen de actividad del almacén. Toca cualquier tarjeta para ver el detalle.</div>
+    <div class="stat-grid" id="almacen-dashboard"></div>
+    <div class="section-title" style="margin-top:18px">Accesos</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterPedidos()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg></div>
@@ -2449,6 +2451,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
         <div class="home-title">Stock del catálogo</div>
         <div class="home-desc">Stock actual por item y aviso de bajo mínimo.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminProveedores()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 7h18l-1 12H4z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M9 12h6"/></svg></div>
+        <div class="home-title">Proveedores</div>
+        <div class="home-desc">Gestionar la lista de proveedores.</div>
       </div>
     </div>
   </div>
@@ -3563,19 +3570,24 @@ async function eliminarMaterial(i) {
 function renderCatalogo() {
   const c = document.getElementById('cat-list');
   if (!c) return;
-  const q = (document.getElementById('cat-search')?.value || '').toLowerCase();
-  const list = q
-    ? materiales.filter(m => [m.categoria, m.ref, m.descripcion].some(f => (f||'').toLowerCase().includes(q)))
-    : materiales;
+  const inp = document.getElementById('cat-search');
+  const q = (inp?.value || '').toLowerCase();
+  const soloBajo = inp?.dataset?.bajoMin === '1';
+  let list = materiales;
+  if (q) list = list.filter(m => [m.categoria, m.ref, m.descripcion].some(f => (f||'').toLowerCase().includes(q)));
+  if (soloBajo) list = list.filter(m => (m.cantidadMinima||0) > 0 && (m.cantidadStock??0) <= m.cantidadMinima);
+  const filtroChip = soloBajo
+    ? '<div style="margin-bottom:10px"><button class="btn-ghost" onclick="quitarFiltroBajoMinimo()" style="background:var(--badge-error-bg);border-color:var(--red);color:var(--red)">⚠ Solo bajo mínimo · ✕</button></div>'
+    : '';
   if (!list.length) {
-    c.innerHTML = '<div class="empty-state" style="padding:20px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Sin resultados.</div>';
+    c.innerHTML = filtroChip + '<div class="empty-state" style="padding:20px"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12l2-2h14l2 2v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/><path d="M3 12h5v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2h5"/><path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/></svg></div>Sin resultados.</div>';
     return;
   }
   // Agrupar por categoría
   const grupos = {};
   list.forEach(m => { (grupos[m.categoria || 'SIN CATEGORÍA'] ||= []).push(m); });
   const cats = Object.keys(grupos).sort();
-  c.innerHTML = cats.map(cat => `
+  c.innerHTML = filtroChip + cats.map(cat => `
     <div style="margin-top:16px">
       <div class="section-title" style="margin-bottom:6px">${escapeHtml(cat)} · ${grupos[cat].length}</div>
       <div class="admin-list">
@@ -10528,6 +10540,93 @@ function enterAlmacen() {
   if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
   hideAllViews();
   document.getElementById('view-almacen').style.display = 'block';
+  // Pintar el dashboard con lo que tengamos en memoria, después refrescar tras carga
+  renderAlmacenDashboard();
+  Promise.all([
+    sheetsLoad(),
+    typeof materialesLoad === 'function' ? materialesLoad() : Promise.resolve(),
+    typeof movimientosLoad === 'function' ? movimientosLoad() : Promise.resolve()
+  ]).then(() => renderAlmacenDashboard());
+}
+
+function renderAlmacenDashboard() {
+  const cont = document.getElementById('almacen-dashboard');
+  if (!cont) return;
+  const hoy = (typeof hoyISO === 'function') ? hoyISO() : new Date().toISOString().split('T')[0];
+
+  // Recepciones (pedidos pendientes / parciales)
+  const pedidosArr = incidents.filter(i => i.tipo === 'compra' && i.estado !== 'cancelado');
+  let recPendientes = 0, recParciales = 0, recRetrasadas = 0;
+  pedidosArr.forEach(p => {
+    const est = (typeof computarEstadoPedido === 'function') ? computarEstadoPedido(p) : (p.estado || 'pendiente');
+    if (est === 'pendiente') recPendientes++;
+    if (est === 'parcial') recParciales++;
+    if ((est === 'pendiente' || est === 'parcial') && p.fechaISO && p.fechaISO < hoy) recRetrasadas++;
+  });
+  const recTotal = recPendientes + recParciales;
+
+  // Solicitudes de material pendientes (movimientos tipo='solicitud' sin convertir)
+  const solicitudes = (Array.isArray(movimientos) ? movimientos : []).filter(m => m.tipo === 'solicitud' && m.estado !== 'completada' && m.estado !== 'cancelada');
+  const solicNum = solicitudes.length;
+
+  // Material en obras sin retornar (balance global de salida - retorno)
+  let enObras = 0;
+  if (typeof balanceObra === 'function') {
+    const idsObras = [...new Set((Array.isArray(movimientos) ? movimientos : []).map(m => m.idObra).filter(Boolean))];
+    idsObras.forEach(id => {
+      try {
+        const bal = balanceObra(id);
+        Object.values(bal).forEach(it => { if (it.pending > 0) enObras += it.pending; });
+      } catch(e) {}
+    });
+    enObras = Math.round(enObras * 100) / 100;
+  }
+
+  // Items del catálogo bajo mínimo
+  const itemsBajo = (Array.isArray(materiales) ? materiales : []).filter(m => (m.cantidadMinima||0) > 0 && (m.cantidadStock??0) <= m.cantidadMinima).length;
+
+  const card = (color, icono, label, valor, sub, onclick) => `
+    <div class="stat-card" style="cursor:pointer;border-left:3px solid ${color}" onclick="${onclick}">
+      <div class="lbl">${icono} ${label}</div>
+      <div class="val" style="color:${color}">${valor}</div>
+      ${sub ? `<div class="sub">${sub}</div>` : ''}
+    </div>
+  `;
+
+  cont.innerHTML =
+    card('#1560a8', '📥', 'Recepciones', recTotal,
+      [recPendientes ? `${recPendientes} pdte` : '', recParciales ? `${recParciales} parcial` : '', recRetrasadas ? `${recRetrasadas} retrasadas` : ''].filter(Boolean).join(' · ') || 'Al día',
+      "abrirPedidosFiltrado('pendiente')")
+    +
+    card('#c97a1f', '📋', 'Solicitudes', solicNum,
+      solicNum ? 'pendientes de salida' : 'Sin solicitudes',
+      "enterMateriales()")
+    +
+    card('#1f7a4a', '↩', 'En obras', enObras || 0,
+      enObras ? 'unidades sin retornar' : 'Todo retornado',
+      "enterEstadoObras()")
+    +
+    card(itemsBajo ? '#c63d3d' : 'var(--text-muted)', '⚠', 'Bajo mínimo', itemsBajo,
+      itemsBajo ? 'items por debajo' : 'Stock sano',
+      "abrirCatalogoBajoMinimo()");
+}
+
+// Helpers de navegación con prefiltro
+let _pedFiltroPreset = null;
+function abrirPedidosFiltrado(estado) {
+  _pedFiltroPreset = estado || null;
+  enterPedidos();
+}
+function abrirCatalogoBajoMinimo() {
+  enterAdminCatalogo();
+  setTimeout(() => {
+    const inp = document.getElementById('cat-search');
+    if (inp) { inp.dataset.bajoMin = '1'; renderCatalogo(); }
+  }, 100);
+}
+function quitarFiltroBajoMinimo() {
+  const inp = document.getElementById('cat-search');
+  if (inp) { delete inp.dataset.bajoMin; renderCatalogo(); }
 }
 
 // ── PEDIDOS DE COMPRA ──────────────────────────────────
@@ -10540,7 +10639,15 @@ function enterPedidos() {
   document.getElementById('view-pedidos').style.display = 'block';
   document.getElementById('pedidos-list-section').style.display = 'block';
   document.getElementById('pedidos-form-section').style.display = 'none';
-  Promise.all([sheetsLoad(), materialesLoad ? materialesLoad() : Promise.resolve()]).then(() => renderPedidos());
+  Promise.all([sheetsLoad(), materialesLoad ? materialesLoad() : Promise.resolve()]).then(() => {
+    // Aplicar prefiltro si se pidió desde el dashboard
+    if (_pedFiltroPreset) {
+      const sel = document.getElementById('ped-estado-filtro');
+      if (sel) sel.value = _pedFiltroPreset;
+      _pedFiltroPreset = null;
+    }
+    renderPedidos();
+  });
 }
 
 function fillPedFiltros() {

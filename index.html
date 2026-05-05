@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -2400,34 +2400,32 @@
     </div>
   </div>
 
-  <!-- Modal de reserva de material para una obra -->
-  <div class="modal-overlay" id="reserva-modal">
-    <div class="modal" style="max-width:560px">
-      <button class="modal-close" onclick="cerrarReservaObra()">✕</button>
-      <div class="modal-title">Reservar material<span id="rsv-obra-label-wrap" style="display:none"> · <span id="rsv-obra-label"></span></span></div>
-      <div class="calc-note" style="margin-top:0">El material reservado aparecerá como "pendiente" en Estado de obras y se cargará automáticamente al hacer la salida a esa obra.</div>
-      <div class="form-group" id="rsv-obra-picker-wrap" style="margin-top:10px;display:none">
-        <label>Obra *</label>
-        <select id="rsv-obra-select" class="select-obra" onchange="rsvObraSel = this.value;"></select>
+  <!-- Vista de reserva de material para una obra -->
+  <div id="view-reserva">
+    <button class="back-link" onclick="cerrarReservaObra()">← Atrás</button>
+    <div class="section-title">Reservar material<span id="rsv-obra-label-wrap" style="display:none"> · <span id="rsv-obra-label"></span></span></div>
+    <div class="calc-note" style="margin-top:0">El material reservado aparecerá como "pendiente" en Estado de obras y se cargará automáticamente al hacer la salida a esa obra.</div>
+    <div class="form-group" id="rsv-obra-picker-wrap" style="margin-top:10px;display:none">
+      <label>Obra *</label>
+      <select id="rsv-obra-select" class="select-obra" onchange="rsvObraSel = this.value;"></select>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Materiales</label>
+      <div class="mat-search-wrap">
+        <input type="text" id="rsv-search" placeholder="Buscar por ref o descripción..." oninput="renderRsvSearch()" onfocus="renderRsvSearch()" onblur="setTimeout(()=>document.getElementById('rsv-results').classList.remove('open'),180)">
+        <div class="mat-results" id="rsv-results"></div>
       </div>
-      <div class="form-group" style="margin-top:10px">
-        <label>Buscar en catálogo</label>
-        <div class="mat-search-wrap">
-          <input type="text" id="rsv-search" placeholder="Buscar por ref o descripción..." oninput="renderRsvSearch()" onfocus="renderRsvSearch()" onblur="setTimeout(()=>document.getElementById('rsv-results').classList.remove('open'),180)">
-          <div class="mat-results" id="rsv-results"></div>
+      <details class="filtros-panel" style="margin-top:6px">
+        <summary>Catálogo por categoría</summary>
+        <div class="filtros-body">
+          <div class="cat-picker" id="rsv-cat-picker"></div>
         </div>
-        <details class="filtros-panel" style="margin-top:6px">
-          <summary>Catálogo por categoría</summary>
-          <div class="filtros-body">
-            <div class="cat-picker" id="rsv-cat-picker"></div>
-          </div>
-        </details>
-      </div>
-      <div id="rsv-lineas" style="margin-top:6px"></div>
-      <div class="action-row" style="margin-top:10px">
-        <button class="btn-primary" onclick="guardarReservaObra()" style="flex:1">Guardar reserva</button>
-        <button class="btn-ghost" onclick="cerrarReservaObra()" style="flex:1">Cancelar</button>
-      </div>
+      </details>
+      <div id="rsv-lineas" style="margin-top:10px"></div>
+    </div>
+    <div class="action-row" style="margin-top:10px">
+      <button class="btn-primary" id="btn-rsv-save" onclick="guardarReservaObra()" style="flex:1">Guardar reserva</button>
+      <button class="btn-ghost" onclick="cerrarReservaObra()" style="flex:1">Cancelar</button>
     </div>
   </div>
 
@@ -11005,11 +11003,15 @@ async function guardarPedido() {
 // ── RESERVA DE MATERIAL PARA OBRA ───────────────────────
 let rsvObraSel = '';
 let rsvLineas = [];
+let rsvOrigen = 'almacen';   // 'almacen' | 'estado'
 
 function abrirReservaObra(idObra) {
   if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
   rsvObraSel = idObra || '';
   rsvLineas = [];
+  rsvOrigen = idObra ? 'estado' : 'almacen';
+  hideAllViews();
+  document.getElementById('view-reserva').style.display = 'block';
   // Si viene con obra prefijada, ocultar el picker; si no, mostrarlo
   const pickerWrap = document.getElementById('rsv-obra-picker-wrap');
   const labelWrap = document.getElementById('rsv-obra-label-wrap');
@@ -11031,12 +11033,22 @@ function abrirReservaObra(idObra) {
     renderRsvCatPicker();
     renderRsvLineas();
   })();
-  document.getElementById('reserva-modal').classList.add('open');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function cerrarReservaObra() {
-  document.getElementById('reserva-modal').classList.remove('open');
+  const obra = rsvObraSel;
+  const origen = rsvOrigen;
   rsvObraSel = '';
   rsvLineas = [];
+  if (origen === 'estado') {
+    enterEstadoObras();
+    setTimeout(() => {
+      const sel = document.getElementById('est-obra');
+      if (sel && obra) { sel.value = obra; renderEstadoObra(); }
+    }, 100);
+  } else {
+    enterAlmacen();
+  }
 }
 
 function renderRsvSearch() {
@@ -11093,7 +11105,10 @@ function quitarRsvLinea(i) { rsvLineas.splice(i, 1); renderRsvLineas(); }
 function renderRsvLineas() {
   const cont = document.getElementById('rsv-lineas');
   if (!cont) return;
-  if (!rsvLineas.length) { cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin líneas. Busca o usa el catálogo arriba.</div>'; return; }
+  // Actualizar el botón de guardar con el contador
+  const btn = document.getElementById('btn-rsv-save');
+  if (btn) btn.textContent = rsvLineas.length ? `Guardar reserva (${rsvLineas.length} línea${rsvLineas.length===1?'':'s'})` : 'Guardar reserva';
+  if (!rsvLineas.length) { cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin líneas. Busca o usa el catálogo arriba para añadirlas.</div>'; return; }
   cont.innerHTML = `
     <div class="lineas-table">
       <div class="lh"><div class="col-ref">Ref</div><div>Descripción</div><div style="text-align:right">Cant.</div><div style="text-align:right">Ud</div><div></div></div>
@@ -11163,8 +11178,6 @@ async function guardarReservaObra() {
   await sheetsSave();
   showToast(`✓ Reservadas ${limpias.length} línea(s) para ${rsvObraSel}`, 'ok');
   cerrarReservaObra();
-  // Refrescar el panel de pendientes en estado de obras
-  renderPendienteEnEstado(rsvObraSel);
 }
 
 // Busca el item del catálogo correspondiente a una línea (por ref, o por descripción exacta como fallback)

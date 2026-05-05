@@ -410,6 +410,7 @@
   </div>
 
   <div id="view-home">
+    <div id="resumen-admin-banner" class="mi-dia" style="display:none"></div>
     <div id="mi-dia-banner" class="mi-dia" style="display:none"></div>
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
@@ -2588,6 +2589,14 @@ function goHome() {
   if (cardMnt) cardMnt.style.display = tieneMnt ? '' : 'none';
   // Mi día (solo para instaladores con asignaciones)
   renderMiDia();
+  renderResumenAdmin();
+  // Cargar datos auxiliares para el resumen y refrescar al terminar
+  if (esAdmin) {
+    Promise.all([
+      typeof partesLoad === 'function' ? partesLoad().catch(() => {}) : Promise.resolve(),
+      typeof movimientosLoad === 'function' ? movimientosLoad().catch(() => {}) : Promise.resolve()
+    ]).then(() => renderResumenAdmin());
+  }
 }
 function enterIncidencias() {
   hideAllViews();
@@ -9981,6 +9990,102 @@ function renderSfHistorial() {
       </div>
     `;
   }).join('');
+}
+
+// ── RESUMEN DIARIO (admin home) ────────────────────────
+let resumenPeriodo = 'hoy';   // 'hoy' | 'ayer' | '7dias'
+try { resumenPeriodo = localStorage.getItem('efigalia_resumen_periodo') || 'hoy'; } catch(e) {}
+
+function _rangoPeriodo(p) {
+  const ahora = new Date();
+  const hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime();
+  if (p === 'hoy')   return { desde: hoy0, hasta: hoy0 + 24 * 3600 * 1000 };
+  if (p === 'ayer')  return { desde: hoy0 - 24 * 3600 * 1000, hasta: hoy0 };
+  /* 7dias */         return { desde: hoy0 - 6 * 24 * 3600 * 1000, hasta: hoy0 + 24 * 3600 * 1000 };
+}
+function _enRango(ts, r) { return ts && ts >= r.desde && ts < r.hasta; }
+function _tsRecord(rec) { return rec.creadoTs || rec.timestamp || rec.fechaTs || 0; }
+
+function cambiarResumenPeriodo(p) {
+  resumenPeriodo = p;
+  try { localStorage.setItem('efigalia_resumen_periodo', p); } catch(e) {}
+  renderResumenAdmin();
+}
+
+function renderResumenAdmin() {
+  const banner = document.getElementById('resumen-admin-banner');
+  if (!banner) return;
+  if (!isAdmin()) { banner.style.display = 'none'; return; }
+  const r = _rangoPeriodo(resumenPeriodo);
+
+  const partesArr = (Array.isArray(partes) ? partes : []);
+  const movArr    = (Array.isArray(movimientos) ? movimientos : []);
+  const visArr    = (Array.isArray(visitas) ? visitas : []);
+
+  const nPartes      = partesArr.filter(p => _enRango(_tsRecord(p), r)).length;
+  const movsRango    = movArr.filter(m => _enRango(_tsRecord(m), r));
+  const nSalidas     = movsRango.filter(m => m.tipo === 'salida').length;
+  const nRetornos    = movsRango.filter(m => m.tipo === 'entrada').length;
+  const nSolic       = movsRango.filter(m => m.tipo === 'solicitud').length;
+  const nPuestas     = incidents.filter(i => i.tipo === 'puesta' && _enRango(_tsRecord(i), r)).length;
+  const visCompletadas = visArr.filter(v => v.fechaRealTs && _enRango(v.fechaRealTs, r) && v.estado === 'completada').length;
+  const visCreadas   = visArr.filter(v => _enRango(v.creadoTs || 0, r)).length;
+  const mntCompletados = incidents.filter(i => i.tipo === 'mantenimiento' && i.fechaRealTs && _enRango(i.fechaRealTs, r) && i.estado === 'completado').length;
+  const mntCreados     = incidents.filter(i => i.tipo === 'mantenimiento' && _enRango(_tsRecord(i), r)).length;
+  const nReposts     = incidents.filter(i => i.tipo === 'repostaje' && _enRango(_tsRecord(i), r)).length;
+  const nTickets     = incidents.filter(i => i.tipo === 'ticket' && _enRango(_tsRecord(i), r)).length;
+
+  // Pendientes (acumulado, no por periodo)
+  const matPendienteCount = partesArr.reduce((s, p) => s + ((p.materialPendiente||[]).filter(l => l && !l.conseguido && l.descripcion).length), 0);
+  const visSinOp = visArr.filter(v => !v.operarioAsignado && (v.estado === 'pendiente' || !v.estado)).length;
+  const mntSinOp = incidents.filter(i => i.tipo === 'mantenimiento' && !obtenerOperariosMnt(i).length && i.estado !== 'completado').length;
+  const stockBajo = incidents.filter(i => i.tipo === 'furgo-item' && (i.cantidadMinima||0) > 0 && (i.cantidadActual||0) <= i.cantidadMinima).length;
+
+  const totalActividad = nPartes + nSalidas + nRetornos + nSolic + nPuestas + visCompletadas + visCreadas + mntCompletados + mntCreados + nReposts + nTickets;
+  const totalPendientes = matPendienteCount + visSinOp + mntSinOp + stockBajo;
+
+  if (!totalActividad && !totalPendientes) {
+    // No hay nada interesante: aún así pintamos el banner con "Sin actividad" por información
+  }
+
+  const tabBtn = (key, label) => `<button type="button" class="tab${resumenPeriodo===key?' active':''}" onclick="cambiarResumenPeriodo('${key}')">${label}</button>`;
+  const row = (icon, label, value, action, extra) => value
+    ? `<div class="mi-dia-proximo" onclick="${action}" style="cursor:pointer">
+         <span class="o">${icon} ${label}${extra ? ` <span style="color:var(--text-muted);font-size:11px">· ${extra}</span>` : ''}</span>
+         <span class="f" style="color:var(--accent);font-weight:600">${value}</span>
+       </div>` : '';
+
+  const labelPeriodo = resumenPeriodo === 'hoy' ? 'Hoy' : (resumenPeriodo === 'ayer' ? 'Ayer' : 'Últimos 7 días');
+
+  banner.innerHTML = `
+    <h3>Actividad · ${escapeHtml(labelPeriodo)}</h3>
+    <div class="tab-bar" style="display:flex;gap:6px;margin-bottom:10px">
+      ${tabBtn('hoy','Hoy')}${tabBtn('ayer','Ayer')}${tabBtn('7dias','7 días')}
+    </div>
+    <div class="mi-dia-card" style="padding:8px 12px">
+      ${totalActividad ? `
+        ${row('📋', 'Partes diarios', nPartes, "enterPartes()")}
+        ${row('📦', 'Salidas a obra', nSalidas, "enterMateriales()")}
+        ${row('↩', 'Retornos', nRetornos, "enterMateriales()")}
+        ${row('📥', 'Solicitudes de material', nSolic, "enterMateriales()")}
+        ${row('✅', 'Puestas en marcha', nPuestas, "enterPuestas()")}
+        ${row('📋', 'Visitas completadas', visCompletadas, "enterVisitas()", visCreadas ? `${visCreadas} creadas` : '')}
+        ${row('🔧', 'Mantenimientos completados', mntCompletados, "enterMantenimientos()", mntCreados ? `${mntCreados} creados` : '')}
+        ${row('⛽', 'Repostajes', nReposts, "enterRepostajes()")}
+        ${row('🧾', 'Tickets', nTickets, "enterRepostajes()")}
+      ` : '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin actividad en este periodo.</div>'}
+    </div>
+    ${totalPendientes ? `
+      <div class="mi-dia-proximos">
+        <div class="lbl" style="color:#b46b00">⚠ Pendientes acumulados</div>
+        ${matPendienteCount ? `<div class="mi-dia-proximo" onclick="enterEstadoObras()" style="cursor:pointer"><span class="o">📦 Material pendiente sin entregar</span><span class="f" style="color:#b46b00;font-weight:600">${matPendienteCount}</span></div>` : ''}
+        ${visSinOp ? `<div class="mi-dia-proximo" onclick="enterPlanificacion()" style="cursor:pointer"><span class="o">📋 Visitas sin operario</span><span class="f" style="color:#b46b00;font-weight:600">${visSinOp}</span></div>` : ''}
+        ${mntSinOp ? `<div class="mi-dia-proximo" onclick="enterPlanificacion()" style="cursor:pointer"><span class="o">🔧 Mantenimientos sin operario</span><span class="f" style="color:#b46b00;font-weight:600">${mntSinOp}</span></div>` : ''}
+        ${stockBajo ? `<div class="mi-dia-proximo" onclick="enterStockFurgoneta()" style="cursor:pointer"><span class="o">⚠ Items de stock bajo mínimo</span><span class="f" style="color:#b46b00;font-weight:600">${stockBajo}</span></div>` : ''}
+      </div>
+    ` : ''}
+  `;
+  banner.style.display = 'block';
 }
 
 // Limpiar cache local para evitar quota exceeded

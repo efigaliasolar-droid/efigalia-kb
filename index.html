@@ -2404,8 +2404,12 @@
   <div class="modal-overlay" id="reserva-modal">
     <div class="modal" style="max-width:560px">
       <button class="modal-close" onclick="cerrarReservaObra()">✕</button>
-      <div class="modal-title">Reservar material · <span id="rsv-obra-label"></span></div>
-      <div class="calc-note" style="margin-top:0">El material reservado aparecerá como "pendiente" en Estado de obras y se cargará automáticamente al hacer la salida a esta obra.</div>
+      <div class="modal-title">Reservar material<span id="rsv-obra-label-wrap" style="display:none"> · <span id="rsv-obra-label"></span></span></div>
+      <div class="calc-note" style="margin-top:0">El material reservado aparecerá como "pendiente" en Estado de obras y se cargará automáticamente al hacer la salida a esa obra.</div>
+      <div class="form-group" id="rsv-obra-picker-wrap" style="margin-top:10px;display:none">
+        <label>Obra *</label>
+        <select id="rsv-obra-select" class="select-obra" onchange="rsvObraSel = this.value;"></select>
+      </div>
       <div class="form-group" style="margin-top:10px">
         <label>Buscar en catálogo</label>
         <div class="mat-search-wrap">
@@ -2467,6 +2471,10 @@
     <div class="section-title">Almacén</div>
     <div class="home-intro">Resumen de actividad del almacén. Toca cualquier tarjeta para ver el detalle.</div>
     <div class="stat-grid" id="almacen-dashboard"></div>
+    <div class="action-row" style="margin-top:14px">
+      <button class="btn-primary" onclick="abrirReservaObra()">+ Reservar material para obra</button>
+      <button class="btn-secondary" onclick="abrirNuevoPedidoDesdeAlmacen()">+ Nuevo pedido</button>
+    </div>
     <div class="section-title" style="margin-top:18px">Accesos</div>
     <div class="home-grid">
       <div class="home-card" onclick="enterPedidos()">
@@ -10679,6 +10687,10 @@ function quitarFiltroBajoMinimo() {
   const inp = document.getElementById('cat-search');
   if (inp) { delete inp.dataset.bajoMin; renderCatalogo(); }
 }
+function abrirNuevoPedidoDesdeAlmacen() {
+  enterPedidos();
+  setTimeout(() => abrirFormPedido(), 150);
+}
 
 // ── PEDIDOS DE COMPRA ──────────────────────────────────
 let pedidoEnEdicion = null;
@@ -10998,10 +11010,22 @@ function abrirReservaObra(idObra) {
   if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
   rsvObraSel = idObra || '';
   rsvLineas = [];
-  document.getElementById('rsv-obra-label').textContent = idObra || '';
+  // Si viene con obra prefijada, ocultar el picker; si no, mostrarlo
+  const pickerWrap = document.getElementById('rsv-obra-picker-wrap');
+  const labelWrap = document.getElementById('rsv-obra-label-wrap');
+  if (idObra) {
+    pickerWrap.style.display = 'none';
+    labelWrap.style.display = '';
+    document.getElementById('rsv-obra-label').textContent = idObra;
+  } else {
+    pickerWrap.style.display = '';
+    labelWrap.style.display = 'none';
+    fillObraSelects();
+    const sel = document.getElementById('rsv-obra-select');
+    if (sel) sel.value = '';
+  }
   document.getElementById('rsv-search').value = '';
   document.getElementById('rsv-results').classList.remove('open');
-  // Cargar catálogo si hace falta
   (async () => {
     if (!Array.isArray(materiales) || !materiales.length) { try { await materialesLoad(); } catch(e) {} }
     renderRsvCatPicker();
@@ -11113,7 +11137,11 @@ function renderRsvCatPicker() {
 }
 
 async function guardarReservaObra() {
-  if (!isAdmin() || !rsvObraSel) return;
+  if (!isAdmin()) return;
+  // Si el modal mostró el picker, leer la obra seleccionada
+  const sel = document.getElementById('rsv-obra-select');
+  if (sel && sel.offsetParent !== null) rsvObraSel = sel.value;
+  if (!rsvObraSel) { showToast('⚠ Selecciona una obra', 'err'); return; }
   const limpias = rsvLineas
     .map(l => ({ ref: (l.ref||'').trim(), descripcion: (l.descripcion||'').trim(), unidad: (l.unidad||'ud').trim(), cantidad: parseFloat(l.cantidad) || 0, conseguido: false }))
     .filter(l => l.descripcion && l.cantidad > 0);

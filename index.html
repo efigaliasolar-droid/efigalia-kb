@@ -6441,8 +6441,7 @@ async function guardarMovimiento() {
     if (!m || (m.tipo !== 'salida' && m.tipo !== 'entrada')) return;
     const signo = (m.tipo === 'salida' ? -1 : +1) * signoExtra;
     (m.lineas || []).forEach(l => {
-      if (!l.ref) return;
-      const item = materiales.find(it => it.ref === l.ref);
+      const item = _findCatalogItemByLine(l);
       if (!item) return;
       const cant = parseFloat(l.cantidad) || 0;
       if (!cant) return;
@@ -10833,6 +10832,18 @@ async function guardarPedido() {
   cerrarFormPedido();
 }
 
+// Busca el item del catálogo correspondiente a una línea (por ref, o por descripción exacta como fallback)
+function _findCatalogItemByLine(line) {
+  if (!line) return null;
+  if (line.ref) {
+    const byRef = materiales.find(it => (it.ref||'') === line.ref);
+    if (byRef) return byRef;
+  }
+  const desc = (line.descripcion || '').trim().toLowerCase();
+  if (!desc) return null;
+  return materiales.find(it => (it.descripcion || '').trim().toLowerCase() === desc) || null;
+}
+
 function renderHistorialRecepciones(p) {
   const panel = document.getElementById('ped-historial-panel');
   const body = document.getElementById('ped-historial-body');
@@ -10917,21 +10928,24 @@ async function confirmarRecepcion() {
   if (totalDelta <= 0) { showToast('⚠ No has anotado ninguna cantidad', 'err'); return; }
 
   await sheetsLoad();
+  if (typeof materialesLoad === 'function') { try { await materialesLoad(); } catch(e) {} }
   const p = incidents.find(i => i.id === pedidoEnEdicion && i.tipo === 'compra');
   if (!p) return;
 
   // Aplicar deltas a líneas + stock
   let nSumadas = 0;
+  let nSinItem = 0;
   (p.lineas || []).forEach((l, i) => {
     const d = deltas[i] || 0;
     if (d <= 0) return;
     l.cantidadRecibida = (parseFloat(l.cantidadRecibida) || 0) + d;
-    if (l.ref) {
-      const item = materiales.find(it => it.ref === l.ref);
-      if (item) {
-        item.cantidadStock = (item.cantidadStock ?? 0) + d;
-        nSumadas++;
-      }
+    const item = _findCatalogItemByLine(l);
+    if (item) {
+      item.cantidadStock = (item.cantidadStock ?? 0) + d;
+      nSumadas++;
+    } else {
+      nSinItem++;
+      console.warn('[recepción] línea sin coincidencia en catálogo, no se actualiza stock:', l);
     }
   });
   // Reflejar también en estado local
@@ -10956,7 +10970,10 @@ async function confirmarRecepcion() {
 
   await Promise.all([sheetsSave(), nSumadas ? materialesSave() : Promise.resolve()]);
   cerrarModalRecepcion();
-  showToast(`✓ Recepción registrada${nSumadas ? ` · ${nSumadas} línea(s) sumada(s) al stock` : ''}`, 'ok');
+  let msg = '✓ Recepción registrada';
+  if (nSumadas) msg += ` · ${nSumadas} línea(s) sumada(s) al stock`;
+  if (nSinItem) msg += ` · ⚠ ${nSinItem} sin item en catálogo`;
+  showToast(msg, nSinItem && !nSumadas ? 'err' : 'ok');
   cerrarFormPedido();
 }
 
@@ -10969,8 +10986,7 @@ async function eliminarPedido() {
     if (!confirm('Este pedido tiene material recibido. Si lo eliminas, esas cantidades se restarán del stock. ¿Continuar?')) return;
     // Revertir solo lo recibido (no lo pedido)
     (p.lineas || []).forEach(l => {
-      if (!l.ref) return;
-      const item = materiales.find(it => it.ref === l.ref);
+      const item = _findCatalogItemByLine(l);
       if (!item) return;
       const cant = parseFloat(l.cantidadRecibida) || 0;
       if (!cant) return;

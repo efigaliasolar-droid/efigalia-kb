@@ -59,7 +59,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -2398,6 +2398,14 @@
         <button class="btn-primary" onclick="confirmarRecepcion()" style="flex:1">Confirmar recepción</button>
       </div>
     </div>
+  </div>
+
+  <!-- Listado de reservas activas agrupadas por obra -->
+  <div id="view-reservas-list">
+    <button class="back-link" onclick="enterAlmacen()">← Atrás</button>
+    <div class="section-title">Reservas por obra</div>
+    <div class="home-intro">Material reservado pendiente de salir hacia cada obra.</div>
+    <div id="reservas-list-cont"></div>
   </div>
 
   <!-- Vista de reserva de material para una obra -->
@@ -10646,6 +10654,11 @@ function renderAlmacenDashboard() {
   // Items del catálogo bajo mínimo
   const itemsBajo = (Array.isArray(materiales) ? materiales : []).filter(m => (m.cantidadMinima||0) > 0 && (m.cantidadStock??0) <= m.cantidadMinima).length;
 
+  // Reservas activas (con al menos una línea sin conseguir)
+  const reservasActivas = incidents.filter(i => i.tipo === 'reserva' && (i.lineas||[]).some(l => !l.conseguido));
+  const obrasReservadas = new Set(reservasActivas.map(r => r.idObra).filter(Boolean));
+  const lineasReservadasPdte = reservasActivas.reduce((s, r) => s + (r.lineas||[]).filter(l => !l.conseguido).length, 0);
+
   const card = (color, icono, label, valor, sub, onclick) => `
     <div class="stat-card" style="cursor:pointer;border-left:3px solid ${color}" onclick="${onclick}">
       <div class="lbl">${icono} ${label}</div>
@@ -10659,6 +10672,10 @@ function renderAlmacenDashboard() {
       [recPendientes ? `${recPendientes} pdte` : '', recParciales ? `${recParciales} parcial` : '', recRetrasadas ? `${recRetrasadas} retrasadas` : ''].filter(Boolean).join(' · ') || 'Al día',
       "abrirPedidosFiltrado('pendiente')")
     +
+    card('#1f7a4a', '📦', 'Reservas', obrasReservadas.size,
+      lineasReservadasPdte ? `${lineasReservadasPdte} línea${lineasReservadasPdte===1?'':'s'} en ${obrasReservadas.size} obra${obrasReservadas.size===1?'':'s'}` : 'Sin reservas',
+      "enterReservasList()")
+    +
     card('#c97a1f', '📋', 'Solicitudes', solicNum,
       solicNum ? 'pendientes de salida' : 'Sin solicitudes',
       "enterMateriales()")
@@ -10666,6 +10683,65 @@ function renderAlmacenDashboard() {
     card(itemsBajo ? '#c63d3d' : 'var(--text-muted)', '⚠', 'Bajo mínimo', itemsBajo,
       itemsBajo ? 'items por debajo' : 'Stock sano',
       "abrirCatalogoBajoMinimo()");
+}
+
+function enterReservasList() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-reservas-list').style.display = 'block';
+  Promise.all([sheetsLoad(), typeof partesLoad === 'function' ? partesLoad() : Promise.resolve()]).then(() => renderReservasList());
+}
+
+function renderReservasList() {
+  const cont = document.getElementById('reservas-list-cont');
+  if (!cont) return;
+  const reservas = incidents.filter(i => i.tipo === 'reserva');
+  // Agrupar por obra y mantener solo las que tienen líneas pendientes
+  const porObra = {};
+  reservas.forEach(r => {
+    const pdte = (r.lineas||[]).filter(l => !l.conseguido);
+    if (!pdte.length) return;
+    (porObra[r.idObra || '—'] ||= []).push({ r, pdte });
+  });
+  const obras = Object.keys(porObra).sort();
+  if (!obras.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px">No hay reservas activas. Crea una desde el dashboard del Almacén o desde Estado de obras.</div>';
+    return;
+  }
+  cont.innerHTML = obras.map(obra => {
+    const rs = porObra[obra];
+    const totalLineas = rs.reduce((s, x) => s + x.pdte.length, 0);
+    const reservasHtml = rs.map(({r, pdte}) => `
+      <div style="background:var(--surface2);border-radius:6px;padding:8px 10px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px">
+          <span>📅 ${escapeHtml(r.fecha || '—')}</span>
+          <span>${escapeHtml(r.creadoPor || '')}</span>
+        </div>
+        ${pdte.map(l => `<div style="font-size:13px;padding:2px 0">${l.ref ? `<span style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-right:6px">${escapeHtml(l.ref)}</span>` : ''}<span style="font-family:var(--mono);color:var(--text-muted);margin-right:6px">${l.cantidad} ${escapeHtml(l.unidad||'ud')}</span>${escapeHtml(l.descripcion)}</div>`).join('')}
+      </div>
+    `).join('');
+    return `
+      <div class="parte-card" style="margin-bottom:10px">
+        <div class="mov-head">
+          <div class="mov-obra">🏗 ${escapeHtml(obra)}</div>
+          <span class="badge badge-error">${totalLineas} pdte</span>
+        </div>
+        ${reservasHtml}
+        <div class="action-row" style="margin-top:8px">
+          <button class="btn-ghost" onclick="abrirEstadoObraDe('${escapeAttr(obra)}')" style="flex:1">Ver en Estado de obras</button>
+          <button class="btn-ghost" onclick="abrirReservaObra('${escapeAttr(obra)}')" style="flex:1">+ Añadir reserva</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function abrirEstadoObraDe(obra) {
+  enterEstadoObras();
+  setTimeout(() => {
+    const sel = document.getElementById('est-obra');
+    if (sel && obra) { sel.value = obra; renderEstadoObra(); }
+  }, 100);
 }
 
 // Helpers de navegación con prefiltro
@@ -11009,7 +11085,9 @@ function abrirReservaObra(idObra) {
   if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
   rsvObraSel = idObra || '';
   rsvLineas = [];
-  rsvOrigen = idObra ? 'estado' : 'almacen';
+  // Determinar origen para volver bien
+  const enListado = document.getElementById('view-reservas-list')?.style.display === 'block';
+  rsvOrigen = enListado ? 'list' : (idObra ? 'estado' : 'almacen');
   hideAllViews();
   document.getElementById('view-reserva').style.display = 'block';
   // Si viene con obra prefijada, ocultar el picker; si no, mostrarlo
@@ -11046,6 +11124,8 @@ function cerrarReservaObra() {
       const sel = document.getElementById('est-obra');
       if (sel && obra) { sel.value = obra; renderEstadoObra(); }
     }, 100);
+  } else if (origen === 'list') {
+    enterReservasList();
   } else {
     enterAlmacen();
   }

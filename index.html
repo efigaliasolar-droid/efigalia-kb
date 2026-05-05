@@ -2373,6 +2373,23 @@
     <div id="prov-list" class="admin-list"></div>
   </div>
 
+  <!-- Modal de recepción parcial/total de pedido -->
+  <div class="modal-overlay" id="recepcion-modal">
+    <div class="modal" style="max-width:560px">
+      <button class="modal-close" onclick="cerrarModalRecepcion()">✕</button>
+      <div class="modal-title">Registrar recepción</div>
+      <div class="calc-note" style="margin-top:0">Anota cuánto llega ahora de cada línea. Lo que pongas se sumará a lo ya recibido y al stock central. Deja en 0 las que aún no han llegado.</div>
+      <div id="recepcion-list" style="margin-top:12px"></div>
+      <div class="action-row" style="margin-top:10px">
+        <button class="btn-secondary" type="button" onclick="recepcionRellenarRestante()" style="flex:1">Rellenar restante</button>
+        <button class="btn-secondary" type="button" onclick="recepcionLimpiar()" style="flex:1">Limpiar</button>
+      </div>
+      <div class="action-row" style="margin-top:6px">
+        <button class="btn-primary" onclick="confirmarRecepcion()" style="flex:1">Confirmar recepción</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de proveedor -->
   <div class="modal-overlay" id="prov-modal">
     <div class="modal" style="max-width:480px">
@@ -2447,6 +2464,7 @@
               <select id="ped-estado-filtro" onchange="renderPedidos()">
                 <option value="">Todos</option>
                 <option value="pendiente">Pendiente</option>
+                <option value="parcial">Parcial</option>
                 <option value="recibido">Recibido</option>
                 <option value="cancelado">Cancelado</option>
               </select>
@@ -2499,7 +2517,7 @@
 
       <div class="action-row">
         <button class="btn-primary" id="btn-ped-save" onclick="guardarPedido()" style="flex:1">Guardar pedido</button>
-        <button class="btn-secondary" id="btn-ped-recibir" onclick="recibirPedido()" style="flex:1;display:none">Marcar recibido</button>
+        <button class="btn-secondary" id="btn-ped-recibir" onclick="abrirModalRecepcion()" style="flex:1;display:none">Registrar recepción</button>
       </div>
       <div id="ped-extra-actions" style="margin-top:10px;display:none">
         <button class="btn-ghost" style="width:100%;color:var(--red);border-color:var(--red)" onclick="eliminarPedido()">🗑 Eliminar pedido</button>
@@ -10534,7 +10552,7 @@ function renderPedidos() {
   const estF  = document.getElementById('ped-estado-filtro')?.value || '';
   let list = incidents.filter(i => i.tipo === 'compra');
   if (provF) list = list.filter(p => p.proveedor === provF);
-  if (estF)  list = list.filter(p => (p.estado || 'pendiente') === estF);
+  if (estF)  list = list.filter(p => computarEstadoPedido(p) === estF);
   list.sort((a,b) => (b.fechaTs||b.creadoTs||0) - (a.fechaTs||a.creadoTs||0));
 
   const activos = [provF, estF].filter(Boolean).length;
@@ -10547,11 +10565,15 @@ function renderPedidos() {
   }
 
   c.innerHTML = list.map(p => {
-    const totalLineas = (p.lineas||[]).length;
-    const totalUd = (p.lineas||[]).reduce((s, l) => s + (parseFloat(l.cantidad)||0), 0);
-    const estado = p.estado || 'pendiente';
+    const lineas = p.lineas || [];
+    const totalLineas = lineas.length;
+    const totalPedido = lineas.reduce((s, l) => s + (parseFloat(l.cantidad)||0), 0);
+    const totalRecibido = lineas.reduce((s, l) => s + (parseFloat(l.cantidadRecibida)||0), 0);
+    const estado = computarEstadoPedido(p);
     const estadoBadge = estado === 'recibido'
       ? '<span class="badge badge-modelo">✓ RECIBIDO</span>'
+      : estado === 'parcial'
+      ? '<span class="badge" style="background:#f5e1c4;color:#b46b00">⏳ PARCIAL</span>'
       : estado === 'cancelado'
       ? '<span class="badge" style="background:var(--badge-error-bg);color:var(--red)">✗ CANCELADO</span>'
       : '<span class="badge badge-error">⏳ PENDIENTE</span>';
@@ -10566,11 +10588,24 @@ function renderPedidos() {
         </div>
         <div class="mov-meta">
           <span>📦 ${totalLineas} línea(s)</span>
-          ${totalUd ? `<span>⚖ ${totalUd}</span>` : ''}
+          ${totalPedido ? `<span>⚖ ${totalRecibido} / ${totalPedido}</span>` : ''}
         </div>
       </div>
     `;
   }).join('');
+}
+
+// Calcula el estado real del pedido a partir de lo recibido por línea
+function computarEstadoPedido(p) {
+  if (!p) return 'pendiente';
+  if (p.estado === 'cancelado') return 'cancelado';
+  const lineas = p.lineas || [];
+  if (!lineas.length) return p.estado || 'pendiente';
+  const totalPed = lineas.reduce((s, l) => s + (parseFloat(l.cantidad)||0), 0);
+  const totalRec = lineas.reduce((s, l) => s + (parseFloat(l.cantidadRecibida)||0), 0);
+  if (totalRec <= 0) return 'pendiente';
+  if (totalRec >= totalPed) return 'recibido';
+  return 'parcial';
 }
 
 function fillPedidoProveedorSelect(valor) {
@@ -10600,10 +10635,11 @@ function abrirFormPedido(id) {
     document.getElementById('ped-fecha').value = p.fechaISO || '';
     document.getElementById('ped-numero').value = p.numero || '';
     fillPedidoProveedorSelect(p.proveedorId || null);
-    pedidoLineas = (p.lineas || []).map(l => ({ ...l }));
+    pedidoLineas = (p.lineas || []).map(l => ({ ...l, cantidadRecibida: l.cantidadRecibida ?? 0 }));
     document.getElementById('ped-notas').value = p.notas || '';
-    const yaRecibido = p.estado === 'recibido';
-    document.getElementById('btn-ped-recibir').style.display = yaRecibido ? 'none' : '';
+    const estado = computarEstadoPedido(p);
+    // Botón recibir visible si aún queda algo por recibir y no está cancelado
+    document.getElementById('btn-ped-recibir').style.display = (estado === 'pendiente' || estado === 'parcial') ? '' : 'none';
   } else {
     document.getElementById('ped-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('ped-numero').value = '';
@@ -10636,15 +10672,20 @@ function renderPedidoLineas() {
   cont.innerHTML = `
     <div class="lineas-table">
       <div class="lh"><div class="col-ref">Ref</div><div>Descripción</div><div style="text-align:right">Cant.</div><div style="text-align:right">Ud</div><div></div></div>
-      ${pedidoLineas.map((l, i) => `
+      ${pedidoLineas.map((l, i) => {
+        const rec = parseFloat(l.cantidadRecibida)||0;
+        const ped = parseFloat(l.cantidad)||0;
+        const recibidoTxt = rec > 0 ? `<div style="font-family:var(--mono);font-size:10px;color:${rec>=ped?'#1f7a4a':'#b46b00'}">recibido ${rec}/${ped}</div>` : '';
+        return `
         <div class="lr">
           <div class="ref col-ref">${escapeHtml(l.ref || '')}</div>
-          <div>${escapeHtml(l.descripcion || '')}</div>
+          <div>${escapeHtml(l.descripcion || '')}${recibidoTxt}</div>
           <input class="qty" type="number" step="any" inputmode="decimal" value="${l.cantidad ?? 1}" oninput="actualizarLineaPedido(${i}, 'cantidad', parseFloat(this.value)||0)">
           <div class="un">${escapeHtml(l.unidad || 'ud')}</div>
           <button class="del" type="button" onclick="quitarLineaPedido(${i})" title="Quitar">✕</button>
         </div>
-      `).join('')}
+        `;
+      }).join('')}
     </div>
   `;
 }
@@ -10753,7 +10794,7 @@ async function guardarPedido() {
     numero,
     proveedorId: proveedor ? proveedor.id : null,
     proveedor: proveedor ? proveedor.nombre : '',
-    lineas: pedidoLineas.map(l => ({ ref: l.ref || '', descripcion: l.descripcion || '', unidad: l.unidad || 'ud', cantidad: parseFloat(l.cantidad) || 0 })).filter(l => l.descripcion && l.cantidad > 0),
+    lineas: pedidoLineas.map(l => ({ ref: l.ref || '', descripcion: l.descripcion || '', unidad: l.unidad || 'ud', cantidad: parseFloat(l.cantidad) || 0, cantidadRecibida: parseFloat(l.cantidadRecibida) || 0 })).filter(l => l.descripcion && l.cantidad > 0),
     notas: document.getElementById('ped-notas').value.trim(),
     estado: 'pendiente',
     creadoPor: pedidoEnEdicion ? undefined : (currentUser?.nombre || 'Admin'),
@@ -10775,31 +10816,96 @@ async function guardarPedido() {
   cerrarFormPedido();
 }
 
-async function recibirPedido() {
+// Modal de recepción parcial/total
+function abrirModalRecepcion() {
   if (!isAdmin() || pedidoEnEdicion == null) return;
-  if (!confirm('¿Marcar este pedido como RECIBIDO?\nLas cantidades de cada línea se sumarán al stock central del catálogo.')) return;
+  const cont = document.getElementById('recepcion-list');
+  const filas = pedidoLineas.map((l, i) => {
+    const ped = parseFloat(l.cantidad) || 0;
+    const rec = parseFloat(l.cantidadRecibida) || 0;
+    const restante = Math.max(0, ped - rec);
+    const cls = restante <= 0 ? 'on' : 'off';
+    return `
+      <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)">
+        <div style="min-width:0">
+          <div style="font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(l.descripcion || '—')}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">${l.ref ? escapeHtml(l.ref) + ' · ' : ''}pedido ${ped} · recibido ${rec} ${escapeHtml(l.unidad||'ud')}${restante <= 0 ? ' <span style="color:#1f7a4a">✓ completo</span>' : ''}</div>
+        </div>
+        <input type="number" step="any" inputmode="decimal" min="0" max="${restante}" id="rec-${i}" placeholder="0" data-rest="${restante}" ${restante <= 0 ? 'disabled' : ''} style="text-align:right">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);text-align:right">/${restante}</div>
+      </div>
+    `;
+  }).join('');
+  cont.innerHTML = filas;
+  document.getElementById('recepcion-modal').classList.add('open');
+}
+function cerrarModalRecepcion() {
+  document.getElementById('recepcion-modal').classList.remove('open');
+}
+function recepcionRellenarRestante() {
+  pedidoLineas.forEach((l, i) => {
+    const inp = document.getElementById('rec-' + i);
+    if (!inp || inp.disabled) return;
+    inp.value = parseFloat(inp.dataset.rest) || 0;
+  });
+}
+function recepcionLimpiar() {
+  pedidoLineas.forEach((_, i) => { const inp = document.getElementById('rec-' + i); if (inp) inp.value = ''; });
+}
+
+async function confirmarRecepcion() {
+  if (!isAdmin() || pedidoEnEdicion == null) return;
+  // Recopilar deltas
+  const deltas = [];
+  let totalDelta = 0;
+  pedidoLineas.forEach((l, i) => {
+    const inp = document.getElementById('rec-' + i);
+    if (!inp) return;
+    const rest = parseFloat(inp.dataset.rest) || 0;
+    let v = parseFloat(inp.value) || 0;
+    if (v > rest) v = rest;
+    if (v < 0) v = 0;
+    deltas.push(v);
+    totalDelta += v;
+  });
+  if (totalDelta <= 0) { showToast('⚠ No has anotado ninguna cantidad', 'err'); return; }
+
   await sheetsLoad();
   const p = incidents.find(i => i.id === pedidoEnEdicion && i.tipo === 'compra');
   if (!p) return;
-  if (p.estado === 'recibido') { showToast('⚠ Ya está recibido', 'err'); return; }
 
-  // Sumar al stock central
+  // Aplicar deltas a líneas + stock
   let nSumadas = 0;
-  (p.lineas || []).forEach(l => {
-    if (!l.ref) return;
-    const item = materiales.find(it => it.ref === l.ref);
-    if (!item) return;
-    const cant = parseFloat(l.cantidad) || 0;
-    if (!cant) return;
-    item.cantidadStock = (item.cantidadStock ?? 0) + cant;
-    nSumadas++;
+  (p.lineas || []).forEach((l, i) => {
+    const d = deltas[i] || 0;
+    if (d <= 0) return;
+    l.cantidadRecibida = (parseFloat(l.cantidadRecibida) || 0) + d;
+    if (l.ref) {
+      const item = materiales.find(it => it.ref === l.ref);
+      if (item) {
+        item.cantidadStock = (item.cantidadStock ?? 0) + d;
+        nSumadas++;
+      }
+    }
   });
-  p.estado = 'recibido';
-  p.fechaRecibidoTs = Date.now();
-  p.recibidoPor = currentUser?.nombre || 'Admin';
+  // Reflejar también en estado local
+  pedidoLineas.forEach((l, i) => { l.cantidadRecibida = (parseFloat(l.cantidadRecibida) || 0) + (deltas[i] || 0); });
+
+  // Historial de recepciones (para auditoría)
+  p.recepciones = p.recepciones || [];
+  p.recepciones.push({
+    ts: Date.now(),
+    por: currentUser?.nombre || 'Admin',
+    deltas: pedidoLineas.map((l, i) => ({ ref: l.ref, descripcion: l.descripcion, unidad: l.unidad, cantidad: deltas[i] || 0 })).filter(d => d.cantidad > 0)
+  });
+  // Recalcular estado
+  p.estado = computarEstadoPedido(p);
+  p.modificadoPor = currentUser?.nombre || 'Admin';
+  p.modificadoTs = Date.now();
 
   await Promise.all([sheetsSave(), nSumadas ? materialesSave() : Promise.resolve()]);
-  showToast(`✓ Pedido recibido · ${nSumadas} línea(s) sumada(s) al stock`, 'ok');
+  cerrarModalRecepcion();
+  showToast(`✓ Recepción registrada${nSumadas ? ` · ${nSumadas} línea(s) sumada(s) al stock` : ''}`, 'ok');
   cerrarFormPedido();
 }
 
@@ -10807,14 +10913,15 @@ async function eliminarPedido() {
   if (!isAdmin() || pedidoEnEdicion == null) return;
   const p = incidents.find(i => i.id === pedidoEnEdicion && i.tipo === 'compra');
   if (!p) return;
-  if (p.estado === 'recibido') {
-    if (!confirm('Este pedido está RECIBIDO. Si lo eliminas, las cantidades se restarán del stock. ¿Continuar?')) return;
-    // Revertir stock
+  const totalRec = (p.lineas||[]).reduce((s, l) => s + (parseFloat(l.cantidadRecibida)||0), 0);
+  if (totalRec > 0) {
+    if (!confirm('Este pedido tiene material recibido. Si lo eliminas, esas cantidades se restarán del stock. ¿Continuar?')) return;
+    // Revertir solo lo recibido (no lo pedido)
     (p.lineas || []).forEach(l => {
       if (!l.ref) return;
       const item = materiales.find(it => it.ref === l.ref);
       if (!item) return;
-      const cant = parseFloat(l.cantidad) || 0;
+      const cant = parseFloat(l.cantidadRecibida) || 0;
       if (!cant) return;
       item.cantidadStock = Math.max(0, (item.cantidadStock ?? 0) - cant);
     });

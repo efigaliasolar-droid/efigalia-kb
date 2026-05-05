@@ -2378,7 +2378,17 @@
     <div class="modal" style="max-width:560px">
       <button class="modal-close" onclick="cerrarModalRecepcion()">✕</button>
       <div class="modal-title">Registrar recepción</div>
-      <div class="calc-note" style="margin-top:0">Anota cuánto llega ahora de cada línea. Lo que pongas se sumará a lo ya recibido y al stock central. Deja en 0 las que aún no han llegado.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha de recepción *</label>
+          <input type="date" id="rec-fecha">
+        </div>
+        <div class="form-group">
+          <label>Nº albarán *</label>
+          <input type="text" id="rec-albaran" placeholder="Ej: ALB-2026-0123">
+        </div>
+      </div>
+      <div class="calc-note" style="margin-top:0">Anota cuánto llega ahora de cada línea. Lo que pongas se sumará a lo ya recibido y al stock central.</div>
       <div id="recepcion-list" style="margin-top:12px"></div>
       <div class="action-row" style="margin-top:10px">
         <button class="btn-secondary" type="button" onclick="recepcionRellenarRestante()" style="flex:1">Rellenar restante</button>
@@ -2514,6 +2524,11 @@
         <label>Notas</label>
         <textarea class="field" id="ped-notas"></textarea>
       </div>
+
+      <details class="filtros-panel" id="ped-historial-panel" style="display:none">
+        <summary>Historial de recepciones <span id="ped-historial-count" style="color:var(--text-muted);font-weight:normal;font-size:12px;margin-left:8px"></span></summary>
+        <div class="filtros-body" id="ped-historial-body"></div>
+      </details>
 
       <div class="action-row">
         <button class="btn-primary" id="btn-ped-save" onclick="guardarPedido()" style="flex:1">Guardar pedido</button>
@@ -10640,12 +10655,14 @@ function abrirFormPedido(id) {
     const estado = computarEstadoPedido(p);
     // Botón recibir visible si aún queda algo por recibir y no está cancelado
     document.getElementById('btn-ped-recibir').style.display = (estado === 'pendiente' || estado === 'parcial') ? '' : 'none';
+    renderHistorialRecepciones(p);
   } else {
     document.getElementById('ped-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('ped-numero').value = '';
     fillPedidoProveedorSelect(null);
     document.getElementById('ped-notas').value = '';
     document.getElementById('btn-ped-recibir').style.display = 'none';
+    document.getElementById('ped-historial-panel').style.display = 'none';
   }
   renderPedidoLineas();
   renderPedCatPicker();
@@ -10816,9 +10833,34 @@ async function guardarPedido() {
   cerrarFormPedido();
 }
 
+function renderHistorialRecepciones(p) {
+  const panel = document.getElementById('ped-historial-panel');
+  const body = document.getElementById('ped-historial-body');
+  const countEl = document.getElementById('ped-historial-count');
+  if (!panel || !body) return;
+  const recs = (p && Array.isArray(p.recepciones)) ? p.recepciones.slice().sort((a,b) => (b.ts||0) - (a.ts||0)) : [];
+  if (!recs.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (countEl) countEl.textContent = `(${recs.length})`;
+  body.innerHTML = recs.map(r => `
+    <div style="padding:8px 0;border-bottom:1px dashed var(--border)">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+        <div style="font-weight:600;font-size:13px">📅 ${escapeHtml(r.fecha || '')} · Albarán <span style="font-family:var(--mono)">${escapeHtml(r.albaran || '—')}</span></div>
+        <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(r.por || '')}</div>
+      </div>
+      <div style="font-size:12px;margin-top:4px;line-height:1.5">
+        ${(r.deltas||[]).map(d => `<div>${d.ref ? `<span style="font-family:var(--mono);color:var(--accent);margin-right:6px">${escapeHtml(d.ref)}</span>` : ''}${escapeHtml(d.descripcion)} · <b>${d.cantidad} ${escapeHtml(d.unidad||'ud')}</b></div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
 // Modal de recepción parcial/total
 function abrirModalRecepcion() {
   if (!isAdmin() || pedidoEnEdicion == null) return;
+  // Defaults: fecha hoy, albarán vacío
+  document.getElementById('rec-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rec-albaran').value = '';
   const cont = document.getElementById('recepcion-list');
   const filas = pedidoLineas.map((l, i) => {
     const ped = parseFloat(l.cantidad) || 0;
@@ -10855,6 +10897,10 @@ function recepcionLimpiar() {
 
 async function confirmarRecepcion() {
   if (!isAdmin() || pedidoEnEdicion == null) return;
+  const fechaISO = document.getElementById('rec-fecha').value;
+  const albaran = document.getElementById('rec-albaran').value.trim();
+  if (!fechaISO) { showToast('⚠ Indica la fecha de recepción', 'err'); return; }
+  if (!albaran)  { showToast('⚠ Indica el nº de albarán', 'err'); return; }
   // Recopilar deltas
   const deltas = [];
   let totalDelta = 0;
@@ -10892,9 +10938,14 @@ async function confirmarRecepcion() {
   pedidoLineas.forEach((l, i) => { l.cantidadRecibida = (parseFloat(l.cantidadRecibida) || 0) + (deltas[i] || 0); });
 
   // Historial de recepciones (para auditoría)
+  const [yy, mm, dd] = fechaISO.split('-');
+  const fechaEs = `${+dd}/${+mm}/${yy}`;
   p.recepciones = p.recepciones || [];
   p.recepciones.push({
     ts: Date.now(),
+    fechaISO,
+    fecha: fechaEs,
+    albaran,
     por: currentUser?.nombre || 'Admin',
     deltas: pedidoLineas.map((l, i) => ({ ref: l.ref, descripcion: l.descripcion, unidad: l.unidad, cantidad: deltas[i] || 0 })).filter(d => d.cantidad > 0)
   });

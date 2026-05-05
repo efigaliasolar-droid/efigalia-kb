@@ -10569,19 +10569,6 @@ function renderAlmacenDashboard() {
   const solicitudes = (Array.isArray(movimientos) ? movimientos : []).filter(m => m.tipo === 'solicitud' && m.estado !== 'completada' && m.estado !== 'cancelada');
   const solicNum = solicitudes.length;
 
-  // Material en obras sin retornar (balance global de salida - retorno)
-  let enObras = 0;
-  if (typeof balanceObra === 'function') {
-    const idsObras = [...new Set((Array.isArray(movimientos) ? movimientos : []).map(m => m.idObra).filter(Boolean))];
-    idsObras.forEach(id => {
-      try {
-        const bal = balanceObra(id);
-        Object.values(bal).forEach(it => { if (it.pending > 0) enObras += it.pending; });
-      } catch(e) {}
-    });
-    enObras = Math.round(enObras * 100) / 100;
-  }
-
   // Items del catálogo bajo mínimo
   const itemsBajo = (Array.isArray(materiales) ? materiales : []).filter(m => (m.cantidadMinima||0) > 0 && (m.cantidadStock??0) <= m.cantidadMinima).length;
 
@@ -10601,10 +10588,6 @@ function renderAlmacenDashboard() {
     card('#c97a1f', '📋', 'Solicitudes', solicNum,
       solicNum ? 'pendientes de salida' : 'Sin solicitudes',
       "enterMateriales()")
-    +
-    card('#1f7a4a', '↩', 'En obras', enObras || 0,
-      enObras ? 'unidades sin retornar' : 'Todo retornado',
-      "enterEstadoObras()")
     +
     card(itemsBajo ? '#c63d3d' : 'var(--text-muted)', '⚠', 'Bajo mínimo', itemsBajo,
       itemsBajo ? 'items por debajo' : 'Stock sano',

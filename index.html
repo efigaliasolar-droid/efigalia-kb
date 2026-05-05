@@ -2371,6 +2371,47 @@
   </div>
 </main>
 
+<!-- Modal de edición de item del catálogo -->
+<div class="modal-overlay" id="cat-item-modal">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="cerrarModalCatItem()">✕</button>
+    <div class="modal-title" id="cat-item-title">Editar item</div>
+    <div class="form-group">
+      <label>Categoría</label>
+      <input type="text" id="ci-cat" list="ci-cats-list">
+      <datalist id="ci-cats-list"></datalist>
+    </div>
+    <div class="form-group">
+      <label>Descripción *</label>
+      <input type="text" id="ci-desc">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Referencia</label>
+        <input type="text" id="ci-ref">
+      </div>
+      <div class="form-group">
+        <label>Unidad *</label>
+        <input type="text" id="ci-unidad" placeholder="ud, m, kg...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Stock actual</label>
+        <input type="number" step="any" inputmode="decimal" id="ci-stock">
+      </div>
+      <div class="form-group">
+        <label>Stock mínimo</label>
+        <input type="number" step="any" inputmode="decimal" id="ci-min">
+      </div>
+    </div>
+    <div class="action-row" style="margin-top:8px">
+      <button class="btn-primary" onclick="guardarCatItem()" style="flex:1">Guardar</button>
+      <button class="btn-ghost" onclick="cerrarModalCatItem()" style="flex:1">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- PIN modal -->
 <div class="modal-overlay" id="pin-modal" style="display:none">
   <div class="modal" style="max-width:320px">
@@ -3346,11 +3387,18 @@ function renderCatalogo() {
       <div class="admin-list">
         ${grupos[cat].map(m => {
           const i = materiales.indexOf(m);
+          const stock = m.cantidadStock ?? null;
+          const min = m.cantidadMinima ?? 0;
+          const bajo = stock != null && min > 0 && stock <= min;
+          const stockBadge = stock != null
+            ? `<span class="toggle-btn ${bajo?'off':'on'}" style="cursor:default;${bajo?'background:var(--badge-error-bg);color:var(--red);border-color:var(--red)':''}" title="Stock${min?' / mín '+min:''}">${stock} ${escapeHtml(m.unidad || 'ud')}${bajo?' ⚠':''}</span>`
+            : `<span class="toggle-btn off" style="cursor:default">${escapeHtml(m.unidad || 'ud')}</span>`;
           return `
             <div class="admin-row">
               <div class="nombre" style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.descripcion || '—')}${m.ref ? ` <span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">· ${escapeHtml(m.ref)}</span>` : ''}</div>
               <div class="acciones">
-                <span class="toggle-btn on" style="cursor:default">${escapeHtml(m.unidad || 'ud')}</span>
+                ${stockBadge}
+                <button class="icon-btn" onclick="abrirModalCatItem(${i})" title="Editar">✎</button>
                 <button class="icon-btn" onclick="eliminarMaterial(${i})" title="Eliminar">🗑</button>
               </div>
             </div>`;
@@ -3358,6 +3406,48 @@ function renderCatalogo() {
       </div>
     </div>
   `).join('');
+}
+
+let catItemEnEdicion = null;
+function abrirModalCatItem(i) {
+  if (!isAdmin()) return;
+  const m = materiales[i];
+  if (!m) return;
+  catItemEnEdicion = i;
+  document.getElementById('cat-item-title').textContent = 'Editar item';
+  // Datalist con categorías ya usadas
+  const cats = [...new Set(materiales.map(x => x.categoria).filter(Boolean))].sort();
+  document.getElementById('ci-cats-list').innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+  document.getElementById('ci-cat').value = m.categoria || '';
+  document.getElementById('ci-desc').value = m.descripcion || '';
+  document.getElementById('ci-ref').value = m.ref || '';
+  document.getElementById('ci-unidad').value = m.unidad || 'ud';
+  document.getElementById('ci-stock').value = m.cantidadStock ?? '';
+  document.getElementById('ci-min').value = m.cantidadMinima ?? '';
+  document.getElementById('cat-item-modal').classList.add('open');
+}
+function cerrarModalCatItem() {
+  document.getElementById('cat-item-modal').classList.remove('open');
+  catItemEnEdicion = null;
+}
+async function guardarCatItem() {
+  if (!isAdmin() || catItemEnEdicion == null) return;
+  const m = materiales[catItemEnEdicion];
+  if (!m) return;
+  const desc = document.getElementById('ci-desc').value.trim();
+  if (!desc) { showToast('⚠ La descripción es obligatoria', 'err'); return; }
+  m.categoria = document.getElementById('ci-cat').value.trim() || 'SIN CATEGORÍA';
+  m.descripcion = desc;
+  m.ref = document.getElementById('ci-ref').value.trim();
+  m.unidad = document.getElementById('ci-unidad').value.trim() || 'ud';
+  const stockV = parseFloat(document.getElementById('ci-stock').value);
+  const minV = parseFloat(document.getElementById('ci-min').value);
+  m.cantidadStock = isNaN(stockV) ? null : stockV;
+  m.cantidadMinima = isNaN(minV) ? null : minV;
+  await materialesSave();
+  cerrarModalCatItem();
+  renderCatalogo();
+  showToast('✓ Item guardado', 'ok');
 }
 
 // ── MAESTROS (obras / furgonetas / instaladores) en /data ──
@@ -6134,8 +6224,34 @@ async function guardarMovimiento() {
 
   await movimientosLoad();
   const idx = movimientos.findIndex(m => m.id === mov.id);
+  const movPrev = idx >= 0 ? { ...movimientos[idx], lineas: (movimientos[idx].lineas||[]).map(l => ({...l})) } : null;
   if (idx >= 0) movimientos[idx] = mov; else movimientos.unshift(mov);
   await movimientosSave();
+
+  // Ajuste del stock central del catálogo:
+  //   salida   → resta del stock las cantidades por ref
+  //   entrada  → suma al stock
+  //   solicitud → no toca stock
+  // Si era edición, primero revertimos el efecto del movimiento previo y luego aplicamos el nuevo.
+  let stockTocado = false;
+  const aplicarAjuste = (m, signoExtra) => {
+    if (!m || (m.tipo !== 'salida' && m.tipo !== 'entrada')) return;
+    const signo = (m.tipo === 'salida' ? -1 : +1) * signoExtra;
+    (m.lineas || []).forEach(l => {
+      if (!l.ref) return;
+      const item = materiales.find(it => it.ref === l.ref);
+      if (!item) return;
+      const cant = parseFloat(l.cantidad) || 0;
+      if (!cant) return;
+      item.cantidadStock = Math.max(0, (item.cantidadStock ?? 0) + signo * cant);
+      stockTocado = true;
+    });
+  };
+  // Revertir efecto del movimiento previo (si era una edición)
+  if (movPrev) aplicarAjuste(movPrev, -1);
+  // Aplicar efecto del nuevo
+  aplicarAjuste(mov, +1);
+  if (stockTocado) await materialesSave();
 
   // Si esta salida cargó material pendiente desde partes, marcarlo como conseguido
   let nResueltos = 0;

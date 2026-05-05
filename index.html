@@ -2400,6 +2400,33 @@
     </div>
   </div>
 
+  <!-- Modal de reserva de material para una obra -->
+  <div class="modal-overlay" id="reserva-modal">
+    <div class="modal" style="max-width:560px">
+      <button class="modal-close" onclick="cerrarReservaObra()">✕</button>
+      <div class="modal-title">Reservar material · <span id="rsv-obra-label"></span></div>
+      <div class="calc-note" style="margin-top:0">El material reservado aparecerá como "pendiente" en Estado de obras y se cargará automáticamente al hacer la salida a esta obra.</div>
+      <div class="form-group" style="margin-top:10px">
+        <label>Buscar en catálogo</label>
+        <div class="mat-search-wrap">
+          <input type="text" id="rsv-search" placeholder="Buscar por ref o descripción..." oninput="renderRsvSearch()" onfocus="renderRsvSearch()" onblur="setTimeout(()=>document.getElementById('rsv-results').classList.remove('open'),180)">
+          <div class="mat-results" id="rsv-results"></div>
+        </div>
+        <details class="filtros-panel" style="margin-top:6px">
+          <summary>Catálogo por categoría</summary>
+          <div class="filtros-body">
+            <div class="cat-picker" id="rsv-cat-picker"></div>
+          </div>
+        </details>
+      </div>
+      <div id="rsv-lineas" style="margin-top:6px"></div>
+      <div class="action-row" style="margin-top:10px">
+        <button class="btn-primary" onclick="guardarReservaObra()" style="flex:1">Guardar reserva</button>
+        <button class="btn-ghost" onclick="cerrarReservaObra()" style="flex:1">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de proveedor -->
   <div class="modal-overlay" id="prov-modal">
     <div class="modal" style="max-width:480px">
@@ -3064,17 +3091,23 @@ function renderPendienteEnEstado(idObra) {
   const cont = document.getElementById('est-pendiente-section');
   if (!cont) return;
   const pendientes = obtenerMaterialPendienteObra(idObra);
-  if (!pendientes.length) { cont.innerHTML = ''; return; }
+  const cabecera = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <div class="section-title" style="margin:0;color:${pendientes.length?'#b46b00':'var(--text-muted)'}">${pendientes.length ? '⚠ Material pendiente (' + pendientes.length + ')' : 'Material pendiente'}</div>
+      ${isAdmin() ? `<button class="btn-ghost" onclick="abrirReservaObra('${escapeAttr(idObra)}')">+ Reservar material</button>` : ''}
+    </div>
+  `;
+  if (!pendientes.length) { cont.innerHTML = cabecera; return; }
   cont.innerHTML = `
-    <div class="section-title" style="margin-top:14px;color:#b46b00">⚠ Material pendiente (${pendientes.length})</div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px">
+    ${cabecera}
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:8px">
       ${pendientes.map(p => `
         <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--border)">
-          <input type="checkbox" onchange="toggleMaterialPendienteEntregado(${p.parteId}, ${p.lineaIdx}, this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
+          <input type="checkbox" onchange="toggleMaterialPendienteEntregado('${p.origen||'parte'}', ${p.parteId}, ${p.lineaIdx}, this.checked)" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--accent)">
           <div style="flex:1;min-width:0">
             ${p.ref ? `<div style="font-family:var(--mono);font-size:10px;color:var(--accent)">${escapeHtml(p.ref)}</div>` : ''}
             <div style="font-size:13px"><span style="font-family:var(--mono);color:var(--text-muted);margin-right:6px">${p.cantidad} ${escapeHtml(p.unidad||'ud')}</span>${escapeHtml(p.descripcion)}</div>
-            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">parte ${escapeHtml(p.parteFecha||'—')}</div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">${p.origen === 'reserva' ? 'reserva' : 'parte'} ${escapeHtml(p.parteFecha||'—')}</div>
           </div>
         </div>
       `).join('')}
@@ -3082,14 +3115,21 @@ function renderPendienteEnEstado(idObra) {
   `;
 }
 
-async function toggleMaterialPendienteEntregado(parteId, lineaIdx, conseguido) {
-  await partesLoad();
-  const p = partes.find(x => x.id === parteId);
-  if (!p || !Array.isArray(p.materialPendiente) || !p.materialPendiente[lineaIdx]) return;
-  p.materialPendiente[lineaIdx].conseguido = !!conseguido;
-  await partesSave();
+async function toggleMaterialPendienteEntregado(origen, recordId, lineaIdx, conseguido) {
+  if (origen === 'reserva') {
+    await sheetsLoad();
+    const r = incidents.find(x => x.id === recordId && x.tipo === 'reserva');
+    if (!r || !Array.isArray(r.lineas) || !r.lineas[lineaIdx]) return;
+    r.lineas[lineaIdx].conseguido = !!conseguido;
+    await sheetsSave();
+  } else {
+    await partesLoad();
+    const p = partes.find(x => x.id === recordId);
+    if (!p || !Array.isArray(p.materialPendiente) || !p.materialPendiente[lineaIdx]) return;
+    p.materialPendiente[lineaIdx].conseguido = !!conseguido;
+    await partesSave();
+  }
   showToast(conseguido ? '✓ Entregado' : '↺ Marcado pendiente otra vez', 'ok');
-  // Refrescar el panel
   const sel = document.getElementById('est-obra');
   if (sel && sel.value) renderPendienteEnEstado(sel.value);
 }
@@ -6237,11 +6277,27 @@ function onObraMovChange() {
 function obtenerMaterialPendienteObra(idObra) {
   const out = [];
   if (!idObra) return out;
+  // 1) Reservas: material añadido por admin antes/durante la obra
+  incidents.forEach(r => {
+    if (r.tipo !== 'reserva' || r.idObra !== idObra) return;
+    (r.lineas || []).forEach((l, idx) => {
+      if (!l.conseguido && l.descripcion) {
+        out.push({
+          origen: 'reserva',
+          parteId: r.id, parteFecha: r.fecha, lineaIdx: idx,
+          ref: l.ref || '', descripcion: l.descripcion,
+          unidad: l.unidad || 'ud', cantidad: l.cantidad ?? 1
+        });
+      }
+    });
+  });
+  // 2) Material pendiente registrado al cierre de partes diarios
   (Array.isArray(partes) ? partes : []).forEach(p => {
     if (p.idObra !== idObra) return;
     (p.materialPendiente || []).forEach((l, idx) => {
       if (!l.conseguido && l.descripcion) {
         out.push({
+          origen: 'parte',
           parteId: p.id, parteFecha: p.fecha, lineaIdx: idx,
           ref: l.ref || '', descripcion: l.descripcion,
           unidad: l.unidad || 'ud', cantidad: l.cantidad ?? 1
@@ -6308,7 +6364,7 @@ function cargarPendientesMov() {
   movForm.pendientesAplicados = movForm.pendientesAplicados || [];
   let nMatched = 0, nLibre = 0;
   pendientes.forEach(p => {
-    if (movForm.pendientesAplicados.some(x => x.parteId === p.parteId && x.lineaIdx === p.lineaIdx)) return;
+    if (movForm.pendientesAplicados.some(x => x.origen === (p.origen||'parte') && x.parteId === p.parteId && x.lineaIdx === p.lineaIdx)) return;
     let linea = null;
     // Si el pendiente ya viene del catálogo (tiene ref), usarlo directamente
     if (p.ref) {
@@ -6328,7 +6384,7 @@ function cargarPendientesMov() {
     const existing = movLineas.find(l => (linea.ref && l.ref === linea.ref) || (!linea.ref && (l.descripcion||'').toLowerCase() === linea.descripcion.toLowerCase()));
     if (existing) existing.cantidad = (parseFloat(existing.cantidad) || 0) + (parseFloat(linea.cantidad) || 0);
     else movLineas.push({ ...linea, _pendiente: true });
-    movForm.pendientesAplicados.push({ parteId: p.parteId, lineaIdx: p.lineaIdx });
+    movForm.pendientesAplicados.push({ origen: p.origen || 'parte', parteId: p.parteId, lineaIdx: p.lineaIdx });
   });
   renderMovLineas();
   showToast(`✓ ${nMatched + nLibre} pendientes cargados${nLibre ? ` · ${nLibre} sin coincidencia (revisa)` : ''}`, 'ok');
@@ -6467,19 +6523,31 @@ async function guardarMovimiento() {
   aplicarAjuste(mov, +1);
   if (stockTocado) await materialesSave();
 
-  // Si esta salida cargó material pendiente desde partes, marcarlo como conseguido
+  // Si esta salida cargó material pendiente (reservas o partes), marcarlo como conseguido
   let nResueltos = 0;
+  let partesTocados = false, reservasTocadas = false;
   if (mov.tipo === 'salida' && movForm && Array.isArray(movForm.pendientesAplicados) && movForm.pendientesAplicados.length) {
     await partesLoad();
-    movForm.pendientesAplicados.forEach(({ parteId, lineaIdx }) => {
-      const p = partes.find(x => x.id === parteId);
-      if (!p || !Array.isArray(p.materialPendiente)) return;
-      if (p.materialPendiente[lineaIdx]) {
-        p.materialPendiente[lineaIdx].conseguido = true;
-        nResueltos++;
+    await sheetsLoad();
+    movForm.pendientesAplicados.forEach(({ origen, parteId, lineaIdx }) => {
+      if (origen === 'reserva') {
+        const r = incidents.find(x => x.id === parteId && x.tipo === 'reserva');
+        if (!r || !Array.isArray(r.lineas)) return;
+        if (r.lineas[lineaIdx]) {
+          r.lineas[lineaIdx].conseguido = true;
+          nResueltos++; reservasTocadas = true;
+        }
+      } else {
+        const p = partes.find(x => x.id === parteId);
+        if (!p || !Array.isArray(p.materialPendiente)) return;
+        if (p.materialPendiente[lineaIdx]) {
+          p.materialPendiente[lineaIdx].conseguido = true;
+          nResueltos++; partesTocados = true;
+        }
       }
     });
-    if (nResueltos) await partesSave();
+    if (partesTocados) await partesSave();
+    if (reservasTocadas) await sheetsSave();
   }
 
   btn.disabled = false; btn.textContent = 'Guardar movimiento';
@@ -10920,6 +10988,155 @@ async function guardarPedido() {
   await sheetsSave();
   showToast('✓ Pedido guardado', 'ok');
   cerrarFormPedido();
+}
+
+// ── RESERVA DE MATERIAL PARA OBRA ───────────────────────
+let rsvObraSel = '';
+let rsvLineas = [];
+
+function abrirReservaObra(idObra) {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  rsvObraSel = idObra || '';
+  rsvLineas = [];
+  document.getElementById('rsv-obra-label').textContent = idObra || '';
+  document.getElementById('rsv-search').value = '';
+  document.getElementById('rsv-results').classList.remove('open');
+  // Cargar catálogo si hace falta
+  (async () => {
+    if (!Array.isArray(materiales) || !materiales.length) { try { await materialesLoad(); } catch(e) {} }
+    renderRsvCatPicker();
+    renderRsvLineas();
+  })();
+  document.getElementById('reserva-modal').classList.add('open');
+}
+function cerrarReservaObra() {
+  document.getElementById('reserva-modal').classList.remove('open');
+  rsvObraSel = '';
+  rsvLineas = [];
+}
+
+function renderRsvSearch() {
+  const inp = document.getElementById('rsv-search');
+  const box = document.getElementById('rsv-results');
+  if (!inp || !box) return;
+  const q = inp.value.trim().toLowerCase();
+  if (!q) { box.classList.remove('open'); return; }
+  const results = (Array.isArray(materiales) ? materiales : []).filter(m =>
+    (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+  if (!results.length) {
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addRsvLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Texto libre</button></div></div>`;
+    box.classList.add('open');
+    return;
+  }
+  box.innerHTML = results.map(m => {
+    const idx = materiales.indexOf(m);
+    return `<div class="mat-result" onmousedown="event.preventDefault();addRsvCatalogo(${idx})">
+      <div class="ref">${escapeHtml(m.ref || '')}</div>
+      <div class="desc">${escapeHtml(m.descripcion || '')} <span class="cat">(${escapeHtml(m.unidad || 'ud')})</span></div>
+    </div>`;
+  }).join('');
+  box.classList.add('open');
+}
+function addRsvCatalogo(idx) {
+  const m = materiales[idx]; if (!m) return;
+  _addRsvLinea({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: 1 });
+  document.getElementById('rsv-search').value = '';
+  document.getElementById('rsv-results').classList.remove('open');
+  renderRsvLineas();
+}
+function addRsvCatalogoQty(idx, cantidad) {
+  const m = materiales[idx]; if (!m) return;
+  _addRsvLinea({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: parseFloat(cantidad) || 1 });
+  const inp = document.getElementById('rsv-cat-qty-' + idx); if (inp) inp.value = '';
+  renderRsvLineas();
+}
+function addRsvLibre(desc) {
+  const t = (desc || '').trim(); if (!t) return;
+  _addRsvLinea({ ref: '', descripcion: t, unidad: 'ud', cantidad: 1 });
+  document.getElementById('rsv-search').value = '';
+  document.getElementById('rsv-results').classList.remove('open');
+  renderRsvLineas();
+}
+function _addRsvLinea(l) {
+  const e = rsvLineas.find(x => (l.ref && x.ref === l.ref) || (!l.ref && (x.descripcion||'').toLowerCase() === l.descripcion.toLowerCase()));
+  if (e) e.cantidad = (parseFloat(e.cantidad)||0) + (parseFloat(l.cantidad)||1);
+  else rsvLineas.push({ ...l });
+}
+function actualizarRsvLinea(i, key, val) { if (rsvLineas[i]) rsvLineas[i][key] = val; }
+function quitarRsvLinea(i) { rsvLineas.splice(i, 1); renderRsvLineas(); }
+
+function renderRsvLineas() {
+  const cont = document.getElementById('rsv-lineas');
+  if (!cont) return;
+  if (!rsvLineas.length) { cont.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:6px 0">Sin líneas. Busca o usa el catálogo arriba.</div>'; return; }
+  cont.innerHTML = `
+    <div class="lineas-table">
+      <div class="lh"><div class="col-ref">Ref</div><div>Descripción</div><div style="text-align:right">Cant.</div><div style="text-align:right">Ud</div><div></div></div>
+      ${rsvLineas.map((l, i) => `
+        <div class="lr">
+          <div class="ref col-ref">${escapeHtml(l.ref || '')}</div>
+          <div>${escapeHtml(l.descripcion || '')}</div>
+          <input class="qty" type="number" step="any" inputmode="decimal" value="${l.cantidad ?? 1}" oninput="actualizarRsvLinea(${i}, 'cantidad', parseFloat(this.value)||0)">
+          <div class="un">${escapeHtml(l.unidad || 'ud')}</div>
+          <button class="del" type="button" onclick="quitarRsvLinea(${i})" title="Quitar">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderRsvCatPicker() {
+  const c = document.getElementById('rsv-cat-picker');
+  if (!c) return;
+  if (!materiales || !materiales.length) { c.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px">Sin catálogo cargado.</div>'; return; }
+  const porCat = {};
+  materiales.forEach((m, i) => {
+    const cat = (m.categoria || 'SIN CATEGORÍA').toUpperCase();
+    (porCat[cat] ||= []).push({ m, idx: i });
+  });
+  const cats = Object.keys(porCat).sort();
+  c.innerHTML = cats.map(cat => `
+    <details class="cat-group">
+      <summary><span>${escapeHtml(cat)}</span><span style="color:var(--text-muted);font-weight:400">${porCat[cat].length}</span></summary>
+      <div class="cat-items">
+        ${porCat[cat].map(({ m, idx }) => `
+          <div class="cat-item">
+            <div class="cat-item-desc">${escapeHtml(m.descripcion || '—')}${m.ref ? `<small>${escapeHtml(m.ref)}</small>` : ''}</div>
+            <input type="number" min="0" step="any" class="cat-qty" id="rsv-cat-qty-${idx}" placeholder="${escapeHtml(m.unidad || 'ud')}" onkeydown="if(event.key==='Enter'){event.preventDefault();addRsvCatalogoQty(${idx}, this.value||1)}">
+            <button type="button" class="cat-add" onclick="addRsvCatalogoQty(${idx}, document.getElementById('rsv-cat-qty-${idx}').value||1)" title="Añadir">+</button>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `).join('');
+}
+
+async function guardarReservaObra() {
+  if (!isAdmin() || !rsvObraSel) return;
+  const limpias = rsvLineas
+    .map(l => ({ ref: (l.ref||'').trim(), descripcion: (l.descripcion||'').trim(), unidad: (l.unidad||'ud').trim(), cantidad: parseFloat(l.cantidad) || 0, conseguido: false }))
+    .filter(l => l.descripcion && l.cantidad > 0);
+  if (!limpias.length) { showToast('⚠ Añade al menos una línea con cantidad', 'err'); return; }
+  await sheetsLoad();
+  const fechaISO = new Date().toISOString().split('T')[0];
+  const [y, mm, dd] = fechaISO.split('-');
+  incidents.unshift({
+    id: Date.now(),
+    tipo: 'reserva',
+    idObra: rsvObraSel,
+    fecha: `${+dd}/${+mm}/${y}`,
+    fechaISO,
+    fechaTs: Date.now(),
+    lineas: limpias,
+    creadoPor: currentUser?.nombre || 'Admin',
+    creadoTs: Date.now()
+  });
+  await sheetsSave();
+  showToast(`✓ Reservadas ${limpias.length} línea(s) para ${rsvObraSel}`, 'ok');
+  cerrarReservaObra();
+  // Refrescar el panel de pendientes en estado de obras
+  renderPendienteEnEstado(rsvObraSel);
 }
 
 // Busca el item del catálogo correspondiente a una línea (por ref, o por descripción exacta como fallback)

@@ -39,6 +39,13 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+  /* ── Accesibilidad: tres tamaños de letra ──────────── */
+  body.fs-l  { zoom: 1.12; -moz-transform: scale(1.12); -moz-transform-origin: 0 0; }
+  body.fs-xl { zoom: 1.25; -moz-transform: scale(1.25); -moz-transform-origin: 0 0; }
+  /* Bumps base de los textos más pequeños para que sean más legibles */
+  .badge { font-size: 11px; }
+  .card-meta, .mov-meta { font-size: 11px; }
+  .calc-row .k, .calc-note { font-size: 12px; }
 
   header { border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 64px; background: var(--surface); position: sticky; top: 0; z-index: 100; }
   .logo { font-family: var(--mono); font-weight: 600; font-size: 20px; color: var(--accent); letter-spacing: 0.08em; padding: 10px 4px; }
@@ -384,6 +391,7 @@
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-label">–</span>
     </div>
+    <button class="user-chip" id="font-toggle" onclick="toggleFontSize()" title="Tamaño de letra" aria-label="Tamaño de letra" style="padding:5px 10px;font-size:14px;font-weight:600">A</button>
     <button class="user-chip" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema" style="padding:5px 8px">🌙</button>
     <div class="tab-bar" id="tab-bar-incidencias" style="display:none">
       <button class="tab active" onclick="switchTab('consultar',this)">Consultar</button>
@@ -11479,6 +11487,24 @@ function toggleTheme() {
   applyTheme(nuevo);
 }
 try { applyTheme(localStorage.getItem('efigalia_theme') || 'dark'); } catch(e) { applyTheme('dark'); }
+
+// ── Tamaño de letra (3 niveles) ──────────
+function applyFontSize(level) {
+  const lvl = (level === 'xl' || level === 'l') ? level : '';
+  document.body.classList.remove('fs-l', 'fs-xl');
+  if (lvl === 'l') document.body.classList.add('fs-l');
+  if (lvl === 'xl') document.body.classList.add('fs-xl');
+  const btn = document.getElementById('font-toggle');
+  if (btn) btn.textContent = lvl === 'xl' ? 'A++' : (lvl === 'l' ? 'A+' : 'A');
+}
+function toggleFontSize() {
+  const cur = localStorage.getItem('efigalia_fs') || '';
+  const next = cur === '' ? 'l' : (cur === 'l' ? 'xl' : '');
+  try { localStorage.setItem('efigalia_fs', next); } catch(e) {}
+  applyFontSize(next);
+  showToast(next === 'xl' ? '✓ Letra extra grande' : (next === 'l' ? '✓ Letra grande' : '✓ Letra normal'), 'ok');
+}
+try { applyFontSize(localStorage.getItem('efigalia_fs') || ''); } catch(e) {}
 
 // Bootstrap: login primero, después home
 (async () => {

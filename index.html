@@ -10946,7 +10946,9 @@ function renderAlmacenDashboard() {
 function calcularDeficitCatalogo() {
   const out = [];
   if (!Array.isArray(materiales)) return out;
-  // Reservado: agrupado por item del catálogo
+  // Usamos el propio objeto del catálogo como clave del Map: _findCatalogItemByLine
+  // devuelve la referencia exacta del array materiales, así que la identidad por
+  // referencia agrupa correctamente sin depender de un id (que muchos items no tienen).
   const reservadoMap = new Map();
   incidents.forEach(r => {
     if (r.tipo !== 'reserva') return;
@@ -10954,7 +10956,7 @@ function calcularDeficitCatalogo() {
       if (l.conseguido) return;
       const item = (typeof _findCatalogItemByLine === 'function') ? _findCatalogItemByLine(l) : null;
       if (!item) return;
-      reservadoMap.set(item.id, (reservadoMap.get(item.id)||0) + (parseFloat(l.cantidad)||0));
+      reservadoMap.set(item, (reservadoMap.get(item)||0) + (parseFloat(l.cantidad)||0));
     });
   });
   // Pendiente de recepción: pedidos pendientes/parciales no cancelados
@@ -10967,14 +10969,14 @@ function calcularDeficitCatalogo() {
       const ped = parseFloat(l.cantidad) || 0;
       const rec = parseFloat(l.cantidadRecibida) || 0;
       const pendiente = Math.max(0, ped - rec);
-      if (pendiente > 0) enPedidoMap.set(item.id, (enPedidoMap.get(item.id)||0) + pendiente);
+      if (pendiente > 0) enPedidoMap.set(item, (enPedidoMap.get(item)||0) + pendiente);
     });
   });
   materiales.forEach(item => {
-    const reservado = reservadoMap.get(item.id) || 0;
+    const reservado = reservadoMap.get(item) || 0;
     if (reservado <= 0) return;
     const stock = item.cantidadStock || 0;
-    const enPedido = enPedidoMap.get(item.id) || 0;
+    const enPedido = enPedidoMap.get(item) || 0;
     const deficit = reservado - stock - enPedido;
     if (deficit > 0) out.push({ item, stock, reservado, enPedido, deficit });
   });
@@ -11001,6 +11003,7 @@ function renderPorPedir() {
   }
   cont.innerHTML = deficits.map(d => {
     const u = d.item.unidad || 'ud';
+    const idx = materiales.indexOf(d.item);
     return `
       <div class="parte-card" style="padding:12px 14px;margin-bottom:10px;border-left:3px solid #c63d3d">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px">
@@ -11013,15 +11016,15 @@ function renderPorPedir() {
           <span style="color:#1f7a4a">🟢 reservado: ${d.reservado} ${escapeHtml(u)}</span>
         </div>
         <div class="action-row">
-          <button class="btn-secondary" onclick="crearPedidoConItem(${d.item.id}, ${d.deficit})" style="flex:1">+ Crear pedido con este item</button>
+          <button class="btn-secondary" onclick="crearPedidoConItem(${idx}, ${d.deficit})" style="flex:1">+ Crear pedido con este item</button>
         </div>
       </div>
     `;
   }).join('');
 }
 
-function crearPedidoConItem(itemId, cantidad) {
-  const m = materiales.find(x => x.id === itemId);
+function crearPedidoConItem(idx, cantidad) {
+  const m = materiales[idx];
   if (!m) { showToast('⚠ Item no encontrado', 'err'); return; }
   // Abrir el form de pedido y meter la línea
   enterPedidos();

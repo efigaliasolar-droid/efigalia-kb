@@ -66,7 +66,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-por-pedir, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -2598,6 +2598,14 @@
         <button class="btn-primary" onclick="confirmarRecepcion()" style="flex:1">Confirmar recepción</button>
       </div>
     </div>
+  </div>
+
+  <!-- Listado de items con déficit (reservados sin cobertura de stock + pedidos) -->
+  <div id="view-por-pedir">
+    <button class="back-link" onclick="enterAlmacen()">← Atrás</button>
+    <div class="section-title">Por pedir</div>
+    <div class="home-intro">Items reservados para obras en los que no hay suficiente stock + pedidos pendientes para cubrirlos. Hay que comprar la diferencia.</div>
+    <div id="por-pedir-list"></div>
   </div>
 
   <!-- Listado de reservas activas agrupadas por obra -->
@@ -10884,6 +10892,10 @@ function renderAlmacenDashboard() {
   // Items del catálogo bajo mínimo
   const itemsBajo = (Array.isArray(materiales) ? materiales : []).filter(m => (m.cantidadMinima||0) > 0 && (m.cantidadStock??0) <= m.cantidadMinima).length;
 
+  // Items reservados sin cobertura: faltan unidades por comprar
+  const deficits = calcularDeficitCatalogo();
+  const nPorPedir = deficits.length;
+
   // Reservas activas (con al menos una línea sin conseguir)
   const reservasActivas = incidents.filter(i => i.tipo === 'reserva' && (i.lineas||[]).some(l => !l.conseguido));
   const obrasReservadas = new Set(reservasActivas.map(r => r.idObra).filter(Boolean));
@@ -10912,7 +10924,104 @@ function renderAlmacenDashboard() {
     +
     card(itemsBajo ? '#c63d3d' : 'var(--text-muted)', '⚠', 'Bajo mínimo', itemsBajo,
       itemsBajo ? 'items por debajo' : 'Stock sano',
-      "abrirCatalogoBajoMinimo()");
+      "abrirCatalogoBajoMinimo()")
+    +
+    card(nPorPedir ? '#c63d3d' : 'var(--text-muted)', '🔔', 'Por pedir', nPorPedir,
+      nPorPedir ? 'items reservados sin cobertura' : 'Todo cubierto',
+      "enterPorPedir()");
+}
+
+// Calcula el déficit por item: lo reservado en obras que ni el stock ni los
+// pedidos pendientes pueden cubrir. Devuelve array { item, stock, reservado, enPedido, deficit }.
+function calcularDeficitCatalogo() {
+  const out = [];
+  if (!Array.isArray(materiales)) return out;
+  // Reservado: agrupado por item del catálogo
+  const reservadoMap = new Map();
+  incidents.forEach(r => {
+    if (r.tipo !== 'reserva') return;
+    (r.lineas||[]).forEach(l => {
+      if (l.conseguido) return;
+      const item = (typeof _findCatalogItemByLine === 'function') ? _findCatalogItemByLine(l) : null;
+      if (!item) return;
+      reservadoMap.set(item.id, (reservadoMap.get(item.id)||0) + (parseFloat(l.cantidad)||0));
+    });
+  });
+  // Pendiente de recepción: pedidos pendientes/parciales no cancelados
+  const enPedidoMap = new Map();
+  incidents.forEach(p => {
+    if (p.tipo !== 'compra' || p.estado === 'cancelado') return;
+    (p.lineas||[]).forEach(l => {
+      const item = (typeof _findCatalogItemByLine === 'function') ? _findCatalogItemByLine(l) : null;
+      if (!item) return;
+      const ped = parseFloat(l.cantidad) || 0;
+      const rec = parseFloat(l.cantidadRecibida) || 0;
+      const pendiente = Math.max(0, ped - rec);
+      if (pendiente > 0) enPedidoMap.set(item.id, (enPedidoMap.get(item.id)||0) + pendiente);
+    });
+  });
+  materiales.forEach(item => {
+    const reservado = reservadoMap.get(item.id) || 0;
+    if (reservado <= 0) return;
+    const stock = item.cantidadStock || 0;
+    const enPedido = enPedidoMap.get(item.id) || 0;
+    const deficit = reservado - stock - enPedido;
+    if (deficit > 0) out.push({ item, stock, reservado, enPedido, deficit });
+  });
+  return out.sort((a,b) => b.deficit - a.deficit);
+}
+
+function enterPorPedir() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-por-pedir').style.display = 'block';
+  Promise.all([
+    sheetsLoad(),
+    typeof materialesLoad === 'function' ? materialesLoad() : Promise.resolve()
+  ]).then(() => renderPorPedir());
+}
+
+function renderPorPedir() {
+  const cont = document.getElementById('por-pedir-list');
+  if (!cont) return;
+  const deficits = calcularDeficitCatalogo();
+  if (!deficits.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px"><div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div>Todas las reservas están cubiertas con stock o pedidos pendientes. Nada que pedir.</div>';
+    return;
+  }
+  cont.innerHTML = deficits.map(d => {
+    const u = d.item.unidad || 'ud';
+    return `
+      <div class="parte-card" style="padding:12px 14px;margin-bottom:10px;border-left:3px solid #c63d3d">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:6px">
+          <div style="font-weight:600;font-size:14px">${escapeHtml(d.item.descripcion || '—')}${d.item.ref ? ` <span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">· ${escapeHtml(d.item.ref)}</span>` : ''}</div>
+          <span class="badge" style="background:var(--badge-error-bg);color:var(--red);font-weight:700">FALTAN ${d.deficit} ${escapeHtml(u)}</span>
+        </div>
+        <div class="mov-meta" style="margin-bottom:6px">
+          <span>📦 stock: ${d.stock} ${escapeHtml(u)}</span>
+          <span>⏳ en pedido: ${d.enPedido} ${escapeHtml(u)}</span>
+          <span style="color:#1f7a4a">🟢 reservado: ${d.reservado} ${escapeHtml(u)}</span>
+        </div>
+        <div class="action-row">
+          <button class="btn-secondary" onclick="crearPedidoConItem(${d.item.id}, ${d.deficit})" style="flex:1">+ Crear pedido con este item</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function crearPedidoConItem(itemId, cantidad) {
+  const m = materiales.find(x => x.id === itemId);
+  if (!m) { showToast('⚠ Item no encontrado', 'err'); return; }
+  // Abrir el form de pedido y meter la línea
+  enterPedidos();
+  setTimeout(() => {
+    abrirFormPedido();
+    setTimeout(() => {
+      pedidoLineas.push({ ref: m.ref || '', descripcion: m.descripcion || '', unidad: m.unidad || 'ud', cantidad: parseFloat(cantidad) || 1, cantidadRecibida: 0 });
+      if (typeof renderPedidoLineas === 'function') renderPedidoLineas();
+    }, 150);
+  }, 100);
 }
 
 function enterReservasList() {

@@ -423,11 +423,6 @@
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
     <div class="home-grid">
-      <div class="home-card" id="home-card-nuevo-proyecto" onclick="enterNuevoProyecto()" style="display:none">
-        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 11v6M9 14h6"/></svg></div>
-        <div class="home-title">Nuevo proyecto</div>
-        <div class="home-desc">Alta de proyecto con cliente, datos técnicos y código auto-generado.</div>
-      </div>
       <div class="home-card" id="home-card-planificacion" onclick="enterPlanificacion()" style="display:none">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/><rect x="7" y="12" width="3" height="3"/><rect x="12" y="12" width="3" height="3"/></svg></div>
         <div class="home-title">Planificación</div>
@@ -2186,6 +2181,11 @@
         <div class="home-title">Clientes</div>
         <div class="home-desc">Base de datos de clientes para los proyectos.</div>
       </div>
+      <div class="home-card" onclick="enterNuevoProyecto()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 11v6M9 14h6"/></svg></div>
+        <div class="home-title">Nuevo proyecto</div>
+        <div class="home-desc">Alta de proyecto con cliente, datos técnicos y código auto-generado.</div>
+      </div>
       <div class="home-card" onclick="enterAdminComerciales()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M16 11l4 4-4 4"/><path d="M20 15H8a4 4 0 1 1 0-8h8"/></svg></div>
         <div class="home-title">Comerciales</div>
@@ -3062,8 +3062,6 @@ function goHome() {
   if (planCard) planCard.style.display = esAdmin ? '' : 'none';
   const almacenCard = document.getElementById('home-card-almacen');
   if (almacenCard) almacenCard.style.display = esAdmin ? '' : 'none';
-  const nuevoProyCard = document.getElementById('home-card-nuevo-proyecto');
-  if (nuevoProyCard) nuevoProyCard.style.display = esAdmin ? '' : 'none';
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));

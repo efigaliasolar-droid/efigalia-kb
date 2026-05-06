@@ -10896,10 +10896,20 @@ function renderAlmacenDashboard() {
   const deficits = calcularDeficitCatalogo();
   const nPorPedir = deficits.length;
 
-  // Reservas activas (con al menos una línea sin conseguir)
+  // Reservas activas: items reservados (distintos) + obras + unidades totales
   const reservasActivas = incidents.filter(i => i.tipo === 'reserva' && (i.lineas||[]).some(l => !l.conseguido));
   const obrasReservadas = new Set(reservasActivas.map(r => r.idObra).filter(Boolean));
-  const lineasReservadasPdte = reservasActivas.reduce((s, r) => s + (r.lineas||[]).filter(l => !l.conseguido).length, 0);
+  const itemsReservadosSet = new Set();
+  let unidadesReservadasTotal = 0;
+  reservasActivas.forEach(r => {
+    (r.lineas||[]).forEach(l => {
+      if (l.conseguido) return;
+      unidadesReservadasTotal += parseFloat(l.cantidad) || 0;
+      const item = (typeof _findCatalogItemByLine === 'function') ? _findCatalogItemByLine(l) : null;
+      // si el item está en el catálogo, dedupea por id; si no, usa la descripción tal cual
+      itemsReservadosSet.add(item ? `id:${item.id}` : `d:${(l.descripcion||'').toLowerCase()}`);
+    });
+  });
 
   const card = (color, icono, label, valor, sub, onclick) => `
     <div class="stat-card" style="cursor:pointer;border-left:3px solid ${color}" onclick="${onclick}">
@@ -10914,8 +10924,8 @@ function renderAlmacenDashboard() {
       [recPendientes ? `${recPendientes} pdte` : '', recParciales ? `${recParciales} parcial` : '', recRetrasadas ? `${recRetrasadas} retrasadas` : ''].filter(Boolean).join(' · ') || 'Al día',
       "abrirPedidosFiltrado('pendiente')")
     +
-    card('#1f7a4a', '📦', 'Reservas', obrasReservadas.size,
-      lineasReservadasPdte ? `${lineasReservadasPdte} línea${lineasReservadasPdte===1?'':'s'} en ${obrasReservadas.size} obra${obrasReservadas.size===1?'':'s'}` : 'Sin reservas',
+    card('#1f7a4a', '📦', 'Reservas', itemsReservadosSet.size,
+      itemsReservadosSet.size ? `${unidadesReservadasTotal} ud · ${obrasReservadas.size} obra${obrasReservadas.size===1?'':'s'}` : 'Sin reservas',
       "enterReservasList()")
     +
     card('#c97a1f', '📋', 'Solicitudes', solicNum,

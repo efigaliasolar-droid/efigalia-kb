@@ -66,7 +66,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -423,6 +423,11 @@
     <div class="section-title">¿Qué quieres hacer?</div>
     <div class="home-intro">Elige la herramienta para empezar. Puedes volver aquí en cualquier momento pulsando el logo.</div>
     <div class="home-grid">
+      <div class="home-card" id="home-card-nuevo-proyecto" onclick="enterNuevoProyecto()" style="display:none">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 11v6M9 14h6"/></svg></div>
+        <div class="home-title">Nuevo proyecto</div>
+        <div class="home-desc">Alta de proyecto con cliente, datos técnicos y código auto-generado.</div>
+      </div>
       <div class="home-card" id="home-card-planificacion" onclick="enterPlanificacion()" style="display:none">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/><rect x="7" y="12" width="3" height="3"/><rect x="12" y="12" width="3" height="3"/></svg></div>
         <div class="home-title">Planificación</div>
@@ -2176,6 +2181,16 @@
         <div class="home-title">Proveedores</div>
         <div class="home-desc">Lista de proveedores para los pedidos de compra.</div>
       </div>
+      <div class="home-card" onclick="enterAdminClientes()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></div>
+        <div class="home-title">Clientes</div>
+        <div class="home-desc">Base de datos de clientes para los proyectos.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminComerciales()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M16 11l4 4-4 4"/><path d="M20 15H8a4 4 0 1 1 0-8h8"/></svg></div>
+        <div class="home-title">Comerciales</div>
+        <div class="home-desc">Comerciales internos y externos que captan proyectos.</div>
+      </div>
       <div class="home-card" onclick="enterAdminCatalogo()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M10 6h6M10 10h6"/></svg></div>
         <div class="home-title">Catálogo de materiales</div>
@@ -2366,6 +2381,183 @@
       <div class="section-title">Documentos subidos</div>
       <input type="text" id="adm-doc-search" placeholder="Buscar..." oninput="renderAdminDocumentos()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px">
       <div class="admin-list" id="adm-doc-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CLIENTES (admin) ═══════════════ -->
+  <div id="view-admin-clientes">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Clientes</div>
+    <div class="action-row" style="margin-bottom:10px">
+      <button class="btn-primary" onclick="abrirModalCliente()">+ Nuevo cliente</button>
+    </div>
+    <div class="form-group">
+      <input type="text" id="cli-search" placeholder="Buscar cliente por nombre, NIF o teléfono..." oninput="renderClientes()">
+    </div>
+    <div id="cli-list" class="admin-list"></div>
+  </div>
+
+  <!-- Modal de cliente -->
+  <div class="modal-overlay" id="cli-modal">
+    <div class="modal" style="max-width:520px">
+      <button class="modal-close" onclick="cerrarModalCliente()">✕</button>
+      <div class="modal-title" id="cli-modal-title">Nuevo cliente</div>
+      <div class="form-group">
+        <label>Nombre / Razón social *</label>
+        <input type="text" id="cl-nombre">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>NIF/CIF *</label>
+          <input type="text" id="cl-nif">
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <input type="text" id="cl-telefono" inputmode="tel">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="text" id="cl-email" inputmode="email">
+      </div>
+      <div class="form-group">
+        <label>Dirección de contacto</label>
+        <input type="text" id="cl-direccion">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Representante</label>
+          <input type="text" id="cl-rep" placeholder="Persona física que firma">
+        </div>
+        <div class="form-group">
+          <label>NIF representante</label>
+          <input type="text" id="cl-rep-nif">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observaciones</label>
+        <textarea class="field" id="cl-notas"></textarea>
+      </div>
+      <div id="cli-proyectos-asociados" style="margin-top:6px"></div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="btn-primary" onclick="guardarCliente()" style="flex:1">Guardar</button>
+        <button class="btn-ghost" id="btn-cli-eliminar" onclick="eliminarCliente()" style="flex:1;color:var(--red);border-color:var(--red);display:none">🗑 Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ COMERCIALES (admin) ═══════════════ -->
+  <div id="view-admin-comerciales">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Comerciales</div>
+    <div class="form-group">
+      <label>Añadir comercial</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="adm-comercial-nombre" placeholder="Nombre" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none">
+        <button class="btn-primary" style="width:auto;flex:0 0 auto" onclick="addMaestro('comercial')">+ Añadir</button>
+      </div>
+    </div>
+    <div class="admin-list" id="adm-comerciales-list"></div>
+  </div>
+
+  <!-- ═══════════════ NUEVO PROYECTO ═══════════════ -->
+  <div id="view-nuevo-proyecto">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Nuevo proyecto</div>
+    <div class="home-intro">Código de proyecto: <span id="np-codigo" style="font-family:var(--mono);color:var(--accent);font-weight:600">FV-25-001</span></div>
+
+    <div class="form-group">
+      <label>Cliente *</label>
+      <select id="np-cliente" onchange="onClienteProyectoChange()"></select>
+    </div>
+    <div id="np-cliente-info" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px"></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Comercial</label>
+        <select id="np-comercial"></select>
+      </div>
+      <div class="form-group">
+        <label>Tipología *</label>
+        <select id="np-tipologia">
+          <option value="">— Seleccionar —</option>
+          <option>Industrial</option>
+          <option>Agrícola</option>
+          <option>Residencial</option>
+          <option>Comunidad</option>
+          <option>Público</option>
+          <option>Punto de Recarga</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Municipio *</label>
+        <input type="text" id="np-municipio">
+      </div>
+      <div class="form-group">
+        <label>Provincia</label>
+        <input type="text" id="np-provincia">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tarifa</label>
+        <input type="text" id="np-tarifa" placeholder="3.0TD, 6.1TD…">
+      </div>
+      <div class="form-group">
+        <label>kWp objetivo</label>
+        <input type="number" step="any" inputmode="decimal" id="np-kwp">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>CUPS</label>
+      <input type="text" id="np-cups" placeholder="ES0021000000000000XX0F">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Modalidad</label>
+        <select id="np-modalidad">
+          <option value="">— Seleccionar —</option>
+          <option>Sin excedentes</option>
+          <option>Con excedentes</option>
+          <option>Registrar sin excedentes primero</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Distribuidora</label>
+        <select id="np-distribuidora">
+          <option value="">— Seleccionar —</option>
+          <option>UFD</option>
+          <option>VIESGO</option>
+          <option>EDP</option>
+          <option>Otra</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="np-oca" style="width:18px;height:18px;accent-color:var(--accent)">OCA necesaria</label>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="np-permiso-distrib" style="width:18px;height:18px;accent-color:var(--accent)">Permiso distribuidora</label>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="np-permiso-ayto" style="width:18px;height:18px;accent-color:var(--accent)">Permiso ayuntamiento</label>
+    </div>
+
+    <div class="form-group">
+      <label>Notas técnicas</label>
+      <textarea class="field" id="np-notas" placeholder="Detalles técnicos, pendientes, observaciones..."></textarea>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-primary" id="btn-np-save" onclick="guardarNuevoProyecto()" style="flex:1">Crear proyecto</button>
+      <button class="btn-ghost" onclick="goHome()" style="flex:1">Cancelar</button>
     </div>
   </div>
 
@@ -2870,6 +3062,8 @@ function goHome() {
   if (planCard) planCard.style.display = esAdmin ? '' : 'none';
   const almacenCard = document.getElementById('home-card-almacen');
   if (almacenCard) almacenCard.style.display = esAdmin ? '' : 'none';
+  const nuevoProyCard = document.getElementById('home-card-nuevo-proyecto');
+  if (nuevoProyCard) nuevoProyCard.style.display = esAdmin ? '' : 'none';
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
@@ -3815,7 +4009,8 @@ async function eliminarMaestro(id) {
 }
 
 function renderAdminMaestros(tipo) {
-  const plural = tipo === 'instalador' ? 'instaladores' : `${tipo}s`;
+  const PLURAL = { instalador: 'instaladores', comercial: 'comerciales' };
+  const plural = PLURAL[tipo] || `${tipo}s`;
   const cont = document.getElementById(`adm-${plural}-list`);
   if (!cont) return;
   const list = maestrosDe(tipo);
@@ -11466,6 +11661,283 @@ async function eliminarPedido() {
   await sheetsSave();
   showToast('✓ Eliminado', 'ok');
   cerrarFormPedido();
+}
+
+// ── CLIENTES (maestro) ─────────────────────────────────
+let clienteEnEdicion = null;
+
+function clientesActivos() {
+  return incidents.filter(i => i.tipo === 'cliente' && i.activa !== false)
+    .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+}
+
+function enterAdminClientes() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-admin-clientes').style.display = 'block';
+  sheetsLoad().then(() => renderClientes());
+}
+
+function renderClientes() {
+  const cont = document.getElementById('cli-list');
+  if (!cont) return;
+  const q = (document.getElementById('cli-search')?.value || '').toLowerCase();
+  let lista = incidents.filter(i => i.tipo === 'cliente');
+  if (q) lista = lista.filter(c => [c.nombre, c.nif, c.telefono, c.email, c.representante].some(f => (f||'').toLowerCase().includes(q)));
+  lista.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px">Sin clientes. Crea el primero arriba.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(c => `
+    <div class="admin-row">
+      <div class="nombre${c.activa===false?' inactivo':''}" style="min-width:0;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.nombre || '—')}${c.nif ? ` <span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">· ${escapeHtml(c.nif)}</span>` : ''}</div>
+      <div class="acciones">
+        ${c.telefono ? `<a class="btn-ghost" href="tel:${escapeHtml(c.telefono)}" style="text-decoration:none">📞</a>` : ''}
+        <button class="toggle-btn ${c.activa===false?'off':'on'}" onclick="toggleCliente(${c.id})">${c.activa===false?'INACTIVO':'ACTIVO'}</button>
+        <button class="icon-btn" onclick="abrirModalCliente(${c.id})" title="Editar">✎</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function abrirModalCliente(id) {
+  if (!isAdmin()) return;
+  clienteEnEdicion = id || null;
+  const c = id ? incidents.find(i => i.id === id && i.tipo === 'cliente') : null;
+  document.getElementById('cli-modal-title').textContent = c ? 'Editar cliente' : 'Nuevo cliente';
+  document.getElementById('btn-cli-eliminar').style.display = c ? '' : 'none';
+  document.getElementById('cl-nombre').value     = c ? (c.nombre || '') : '';
+  document.getElementById('cl-nif').value        = c ? (c.nif || '') : '';
+  document.getElementById('cl-telefono').value   = c ? (c.telefono || '') : '';
+  document.getElementById('cl-email').value      = c ? (c.email || '') : '';
+  document.getElementById('cl-direccion').value  = c ? (c.direccion || '') : '';
+  document.getElementById('cl-rep').value        = c ? (c.representante || '') : '';
+  document.getElementById('cl-rep-nif').value    = c ? (c.repNif || '') : '';
+  document.getElementById('cl-notas').value      = c ? (c.notas || '') : '';
+  // Listar proyectos asociados
+  const proyAsoc = document.getElementById('cli-proyectos-asociados');
+  if (c) {
+    const obras = incidents.filter(i => i.tipo === 'obra' && i.clienteId === c.id);
+    proyAsoc.innerHTML = obras.length
+      ? `<div style="font-size:12px;color:var(--text-muted);margin-top:8px;padding:8px;background:var(--surface2);border-radius:6px"><b>${obras.length} proyecto(s) asociado(s):</b> ${obras.map(o => escapeHtml(o.codigoProyecto || o.nombre)).join(' · ')}</div>`
+      : '';
+  } else {
+    proyAsoc.innerHTML = '';
+  }
+  document.getElementById('cli-modal').classList.add('open');
+}
+
+function cerrarModalCliente() {
+  document.getElementById('cli-modal').classList.remove('open');
+  clienteEnEdicion = null;
+}
+
+async function guardarCliente() {
+  if (!isAdmin()) return;
+  const nombre = document.getElementById('cl-nombre').value.trim();
+  const nif = document.getElementById('cl-nif').value.trim();
+  if (!nombre) { showToast('⚠ El nombre es obligatorio', 'err'); return; }
+  if (!nif)    { showToast('⚠ El NIF/CIF es obligatorio', 'err'); return; }
+  await sheetsLoad();
+  // Comprobar duplicado por NIF
+  const dup = incidents.find(i => i.tipo === 'cliente' && i.id !== clienteEnEdicion && (i.nif||'').toLowerCase() === nif.toLowerCase());
+  if (dup) { showToast('⚠ Ya existe un cliente con ese NIF', 'err'); return; }
+  const datos = {
+    nombre, nif,
+    telefono:   document.getElementById('cl-telefono').value.trim(),
+    email:      document.getElementById('cl-email').value.trim(),
+    direccion:  document.getElementById('cl-direccion').value.trim(),
+    representante: document.getElementById('cl-rep').value.trim(),
+    repNif:        document.getElementById('cl-rep-nif').value.trim(),
+    notas:      document.getElementById('cl-notas').value.trim(),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now()
+  };
+  if (clienteEnEdicion) {
+    const c = incidents.find(i => i.id === clienteEnEdicion && i.tipo === 'cliente');
+    if (c) Object.assign(c, datos);
+  } else {
+    incidents.unshift({
+      id: Date.now(), tipo: 'cliente', activa: true,
+      creadoPor: currentUser?.nombre || 'Admin', creadoTs: Date.now(),
+      ...datos
+    });
+  }
+  await sheetsSave();
+  cerrarModalCliente();
+  renderClientes();
+  showToast('✓ Cliente guardado', 'ok');
+}
+
+async function toggleCliente(id) {
+  if (!isAdmin()) return;
+  await sheetsLoad();
+  const c = incidents.find(i => i.id === id && i.tipo === 'cliente');
+  if (!c) return;
+  c.activa = c.activa === false ? true : false;
+  await sheetsSave();
+  renderClientes();
+}
+
+async function eliminarCliente() {
+  if (!isAdmin() || !clienteEnEdicion) return;
+  const usado = incidents.find(i => i.tipo === 'obra' && i.clienteId === clienteEnEdicion);
+  if (usado) { showToast('⚠ No se puede eliminar: hay proyectos con este cliente. Márcalo como inactivo.', 'err'); return; }
+  if (!confirm('¿Eliminar este cliente?')) return;
+  await sheetsLoad();
+  incidents = incidents.filter(i => !(i.id === clienteEnEdicion && i.tipo === 'cliente'));
+  await sheetsSave();
+  cerrarModalCliente();
+  renderClientes();
+  showToast('✓ Eliminado', 'ok');
+}
+
+// ── COMERCIALES (maestro simple) ────────────────────────
+function comercialesActivos() {
+  return maestrosDe('comercial').filter(i => i.activa !== false).map(i => i.nombre);
+}
+
+function enterAdminComerciales() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-admin-comerciales').style.display = 'block';
+  sheetsLoad().then(() => renderAdminMaestros('comercial'));
+}
+
+// ── NUEVO PROYECTO (form + alta de obra) ────────────────
+function generarCodigoProyecto() {
+  const yy = String(new Date().getFullYear()).slice(2);
+  const prefix = `FV-${yy}-`;
+  const max = Math.max(0, ...incidents
+    .filter(i => i.tipo === 'obra' && (i.codigoProyecto||'').startsWith(prefix))
+    .map(i => parseInt((i.codigoProyecto||'').slice(prefix.length), 10) || 0));
+  return `${prefix}${String(max + 1).padStart(3, '0')}`;
+}
+
+function enterNuevoProyecto() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('view-nuevo-proyecto').style.display = 'block';
+  sheetsLoad().then(() => {
+    // Código autogenerado
+    document.getElementById('np-codigo').textContent = generarCodigoProyecto();
+    // Cargar dropdowns
+    rellenarSelectClientes();
+    rellenarSelectComerciales();
+    // Limpiar campos
+    document.getElementById('np-cliente').value = '';
+    document.getElementById('np-cliente-info').style.display = 'none';
+    document.getElementById('np-comercial').value = '';
+    document.getElementById('np-tipologia').value = '';
+    document.getElementById('np-municipio').value = '';
+    document.getElementById('np-provincia').value = '';
+    document.getElementById('np-tarifa').value = '';
+    document.getElementById('np-kwp').value = '';
+    document.getElementById('np-cups').value = '';
+    document.getElementById('np-modalidad').value = '';
+    document.getElementById('np-distribuidora').value = '';
+    document.getElementById('np-oca').checked = false;
+    document.getElementById('np-permiso-distrib').checked = false;
+    document.getElementById('np-permiso-ayto').checked = false;
+    document.getElementById('np-notas').value = '';
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function rellenarSelectClientes() {
+  const sel = document.getElementById('np-cliente');
+  if (!sel) return;
+  const lista = clientesActivos();
+  sel.innerHTML = '<option value="">— Elige cliente —</option>' +
+    lista.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}${c.nif ? ' · ' + escapeHtml(c.nif) : ''}</option>`).join('') +
+    '<option value="__new__">+ Crear cliente nuevo…</option>';
+}
+
+function rellenarSelectComerciales() {
+  const sel = document.getElementById('np-comercial');
+  if (!sel) return;
+  const lista = comercialesActivos();
+  sel.innerHTML = '<option value="">— sin asignar —</option>' +
+    lista.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function onClienteProyectoChange() {
+  const sel = document.getElementById('np-cliente');
+  const v = sel.value;
+  const info = document.getElementById('np-cliente-info');
+  if (v === '__new__') {
+    sel.value = '';
+    abrirModalCliente();
+    info.style.display = 'none';
+    // Tras guardar el cliente, refrescar el select y preseleccionarlo
+    return;
+  }
+  if (!v) { info.style.display = 'none'; return; }
+  const c = incidents.find(i => i.id === parseInt(v,10) && i.tipo === 'cliente');
+  if (!c) { info.style.display = 'none'; return; }
+  const obras = incidents.filter(i => i.tipo === 'obra' && i.clienteId === c.id);
+  info.style.display = 'block';
+  info.innerHTML = `
+    <div style="font-weight:600;margin-bottom:4px">${escapeHtml(c.nombre)}</div>
+    <div style="color:var(--text-muted);font-size:12px;line-height:1.6">
+      ${c.nif ? `NIF: ${escapeHtml(c.nif)} · ` : ''}
+      ${c.telefono ? `📞 ${escapeHtml(c.telefono)} · ` : ''}
+      ${c.email ? `✉ ${escapeHtml(c.email)}` : ''}
+    </div>
+    ${obras.length ? `<div style="margin-top:6px;font-size:12px">📋 <b>${obras.length} proyecto(s) anterior(es):</b> ${obras.map(o => escapeHtml(o.codigoProyecto || o.nombre)).join(' · ')}</div>` : '<div style="margin-top:6px;font-size:12px;color:var(--green)">✓ Cliente nuevo (sin proyectos previos)</div>'}
+  `;
+}
+
+async function guardarNuevoProyecto() {
+  if (!isAdmin()) return;
+  const clienteId = document.getElementById('np-cliente').value;
+  const tipologia = document.getElementById('np-tipologia').value;
+  const municipio = document.getElementById('np-municipio').value.trim();
+  if (!clienteId || clienteId === '__new__') { showToast('⚠ Selecciona el cliente', 'err'); return; }
+  if (!tipologia) { showToast('⚠ Selecciona la tipología', 'err'); return; }
+  if (!municipio) { showToast('⚠ Indica el municipio', 'err'); return; }
+
+  await sheetsLoad();
+  const cliente = incidents.find(i => i.id === parseInt(clienteId, 10) && i.tipo === 'cliente');
+  if (!cliente) { showToast('⚠ Cliente no encontrado', 'err'); return; }
+
+  const codigo = generarCodigoProyecto();
+  const nombreObra = `${codigo} · ${cliente.nombre}${municipio ? ' · ' + municipio : ''}`;
+
+  const obra = {
+    id: Date.now(),
+    tipo: 'obra',
+    activa: true,
+    estadoObra: 'activa',
+    nombre: nombreObra,
+    codigoProyecto: codigo,
+    clienteId: cliente.id,
+    clienteNombre: cliente.nombre,
+    telefono: cliente.telefono || '',
+    email: cliente.email || '',
+    direccion: [municipio, document.getElementById('np-provincia').value.trim()].filter(Boolean).join(', '),
+    municipio,
+    provincia: document.getElementById('np-provincia').value.trim(),
+    comercial: document.getElementById('np-comercial').value,
+    tipologia,
+    tarifa: document.getElementById('np-tarifa').value.trim(),
+    kwpObjetivo: parseFloat(document.getElementById('np-kwp').value) || null,
+    cups: document.getElementById('np-cups').value.trim(),
+    modalidad: document.getElementById('np-modalidad').value,
+    distribuidora: document.getElementById('np-distribuidora').value,
+    ocaNecesaria: document.getElementById('np-oca').checked,
+    permisoDistribuidora: document.getElementById('np-permiso-distrib').checked,
+    permisoAyuntamiento: document.getElementById('np-permiso-ayto').checked,
+    notasTecnicas: document.getElementById('np-notas').value.trim(),
+    creadoPor: currentUser?.nombre || 'Admin',
+    creadoTs: Date.now()
+  };
+
+  incidents.unshift(obra);
+  await sheetsSave();
+  showToast(`✓ Proyecto creado: ${codigo}`, 'ok');
+  abrirFichaObra(obra.id, 'estado');
 }
 
 // Limpiar cache local para evitar quota exceeded

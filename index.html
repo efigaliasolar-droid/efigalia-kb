@@ -10896,7 +10896,11 @@ function renderAlmacenDashboard() {
   const deficits = calcularDeficitCatalogo();
   const nPorPedir = deficits.length;
 
-  // Reservas activas: items reservados (distintos) + obras + unidades totales
+  // Reservas activas: items reservados (distintos) + obras + unidades totales.
+  // Usamos la referencia del objeto del catálogo como clave (los items no llevan
+  // id estable — ni los del seed ni los importados — así que id sería undefined
+  // y todos colisionarían). Para líneas que no encajan en el catálogo, dedupeamos
+  // por descripción normalizada.
   const reservasActivas = incidents.filter(i => i.tipo === 'reserva' && (i.lineas||[]).some(l => !l.conseguido));
   const obrasReservadas = new Set(reservasActivas.map(r => r.idObra).filter(Boolean));
   const itemsReservadosSet = new Set();
@@ -10906,8 +10910,7 @@ function renderAlmacenDashboard() {
       if (l.conseguido) return;
       unidadesReservadasTotal += parseFloat(l.cantidad) || 0;
       const item = (typeof _findCatalogItemByLine === 'function') ? _findCatalogItemByLine(l) : null;
-      // si el item está en el catálogo, dedupea por id; si no, usa la descripción tal cual
-      itemsReservadosSet.add(item ? `id:${item.id}` : `d:${(l.descripcion||'').toLowerCase()}`);
+      itemsReservadosSet.add(item || `d:${(l.descripcion||'').trim().toLowerCase()}|${(l.ref||'').trim().toLowerCase()}`);
     });
   });
 
@@ -10921,7 +10924,7 @@ function renderAlmacenDashboard() {
 
   cont.innerHTML =
     card('#1560a8', '📥', 'Recepciones', recTotal,
-      [recPendientes ? `${recPendientes} pdte` : '', recParciales ? `${recParciales} parcial` : '', recRetrasadas ? `${recRetrasadas} retrasadas` : ''].filter(Boolean).join(' · ') || 'Al día',
+      [recPendientes ? `${recPendientes} pdte` : '', recParciales ? `${recParciales} parcial${recParciales===1?'':'es'}` : '', recRetrasadas ? `${recRetrasadas} retrasad${recRetrasadas===1?'a':'as'}` : ''].filter(Boolean).join(' · ') || 'Al día',
       "abrirPedidosFiltrado('pendiente')")
     +
     card('#1f7a4a', '📦', 'Reservas', itemsReservadosSet.size,

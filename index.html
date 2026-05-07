@@ -344,6 +344,7 @@
   .pill { padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: var(--sans); user-select: none; }
   .pill:hover { border-color: var(--accent); }
   .pill.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .pill.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
   /* ── Mi día (banner instaladores en home) ── */
   .mi-dia { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; }
@@ -2128,12 +2129,9 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Instaladores</label>
-        <div class="pill-selector" id="asig-instaladores-pills"></div>
-      </div>
-      <div class="form-group">
-        <label>Furgoneta</label>
-        <select id="asig-furgoneta" class="select-furgoneta"></select>
+        <label>Equipos por furgoneta</label>
+        <div id="asig-equipos-cont"></div>
+        <button type="button" class="btn-ghost" id="asig-add-equipo" onclick="addEquipoAsig()" style="width:100%;margin-top:6px">+ Añadir 2ª furgoneta</button>
       </div>
       <div class="form-group">
         <label>Notas</label>
@@ -9616,7 +9614,28 @@ let planSemanaOffset = 0;   // 0 = esta semana, -1 = anterior, +1 = siguiente
 let planVistaActual = 'personas';
 let planTrabajosDiaISO = '';
 let asigEnEdicion = null;
-let asigInstaladoresSel = [];
+// Estado del modal: array de equipos (uno por furgoneta). Cada equipo:
+// { furgoneta: string, instaladores: string[] }. Mín 1, máx 2 (por ahora).
+let asigEquiposEdit = [{ furgoneta: '', instaladores: [] }];
+
+// Devuelve siempre un array de equipos para una asignación, sea nueva (con
+// `equipos`) o legacy (campos planos `furgoneta` + `instaladores`).
+function _asigEquipos(asig) {
+  if (!asig) return [];
+  if (Array.isArray(asig.equipos) && asig.equipos.length) {
+    return asig.equipos.map(e => ({
+      furgoneta: e.furgoneta || '',
+      instaladores: Array.isArray(e.instaladores) ? e.instaladores.slice() : []
+    }));
+  }
+  return [{ furgoneta: asig.furgoneta || '', instaladores: (asig.instaladores || []).slice() }];
+}
+
+// Encuentra el equipo de una persona dentro de una asignación (multi-furgo).
+function _equipoDePersona(asig, nombre) {
+  const equipos = _asigEquipos(asig);
+  return equipos.find(e => (e.instaladores || []).includes(nombre)) || null;
+}
 
 function _dateToLocalISO(d) {
   const y = d.getFullYear();
@@ -9688,12 +9707,14 @@ function itemsSinAsignarFecha(fechaISO) {
 // Agrega items de los 3 tipos (obra / visita / mantenimiento) para una persona+fecha
 function itemsPlanificacionPersonaFecha(fechaISO, nombrePersona) {
   const items = [];
-  // Obras (asignaciones)
+  // Obras (asignaciones) — si la asignación tiene varios equipos, mostramos
+  // la furgo del equipo en el que va esta persona (no la furgo "principal").
   incidents.forEach(i => {
     if (i.tipo === 'asignacion'
         && (i.instaladores || []).includes(nombrePersona)
         && i.fechaDesdeISO <= fechaISO && fechaISO <= i.fechaHastaISO) {
-      items.push({ kind: 'obra', id: i.id, data: i, obra: i.idObra, furgoneta: i.furgoneta, hora: '' });
+      const eq = _equipoDePersona(i, nombrePersona);
+      items.push({ kind: 'obra', id: i.id, data: i, obra: i.idObra, furgoneta: (eq && eq.furgoneta) || i.furgoneta || '', hora: '' });
     }
   });
   // Visitas (fechaPrevista ISO date)
@@ -9887,18 +9908,24 @@ function renderPlanTrabajos() {
 function renderTarjetaTrabajo(t) {
   const d = t.data;
   if (t.kind === 'obra') {
-    const insts = (d.instaladores||[]).join(', ') || 'Sin asignar';
+    const equipos = _asigEquipos(d).filter(e => e.furgoneta || e.instaladores.length);
+    const equiposHtml = equipos.length
+      ? equipos.map(e => {
+          const insts = (e.instaladores||[]).join(', ');
+          const partes = [];
+          if (e.furgoneta) partes.push(`<span>🚐 ${escapeHtml(e.furgoneta)}</span>`);
+          if (insts) partes.push(`<span>👷 ${escapeHtml(insts)}</span>`);
+          return `<div class="mov-meta">${partes.join('')}</div>`;
+        }).join('')
+      : `<div class="mov-meta"><span>👷 Sin asignar</span></div>`;
     return `
       <div class="parte-card" onclick="abrirModalAsignacion(${d.id})" style="border-left:3px solid #2171c7;margin-bottom:8px">
         <div class="mov-head">
           <div class="mov-obra">🏗 ${escapeHtml(d.idObra || '—')}</div>
           <span class="badge badge-marca">OBRA</span>
         </div>
-        <div class="mov-meta">
-          <span>👷 ${escapeHtml(insts)}</span>
-          ${d.furgoneta ? `<span>🚐 ${escapeHtml(d.furgoneta)}</span>` : ''}
-          ${d.fechaDesdeISO !== d.fechaHastaISO ? `<span>📅 ${fechaIsoToEs(d.fechaDesdeISO)} → ${fechaIsoToEs(d.fechaHastaISO)}</span>` : ''}
-        </div>
+        ${equiposHtml}
+        ${d.fechaDesdeISO !== d.fechaHastaISO ? `<div class="mov-meta"><span>📅 ${fechaIsoToEs(d.fechaDesdeISO)} → ${fechaIsoToEs(d.fechaHastaISO)}</span></div>` : ''}
         ${d.notas ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px">${escapeHtml(d.notas)}</div>` : ''}
       </div>
     `;
@@ -9979,16 +10006,14 @@ function crearDesdePlan(kind) {
 
 function abrirModalAsignacionNueva(fechaISO, nombrePrefill) {
   asigEnEdicion = null;
-  asigInstaladoresSel = nombrePrefill ? [nombrePrefill] : [];
+  asigEquiposEdit = [{ furgoneta: '', instaladores: nombrePrefill ? [nombrePrefill] : [] }];
   document.getElementById('asig-title').textContent = 'Nueva asignación';
   fillObraSelects();
-  fillFurgonetaSelects();
   document.getElementById('asig-obra').value = '';
   document.getElementById('asig-desde').value = fechaISO || hoyISO();
   document.getElementById('asig-hasta').value = fechaISO || hoyISO();
-  document.getElementById('asig-furgoneta').value = '';
   document.getElementById('asig-notas').value = '';
-  renderAsigInstaladoresPills();
+  renderAsigEquipos();
   document.getElementById('btn-asig-duplicar').style.display = 'none';
   document.getElementById('btn-asig-acortar').style.display = 'none';
   document.getElementById('btn-asig-eliminar').style.display = 'none';
@@ -9999,10 +10024,10 @@ function abrirModalAsignacion(id) {
   const a = incidents.find(i => i.id === id && i.tipo === 'asignacion');
   if (!a) return;
   asigEnEdicion = id;
-  asigInstaladoresSel = (a.instaladores || []).slice();
+  asigEquiposEdit = _asigEquipos(a);
+  if (!asigEquiposEdit.length) asigEquiposEdit = [{ furgoneta: '', instaladores: [] }];
   document.getElementById('asig-title').textContent = 'Editar asignación';
   fillObraSelects();
-  fillFurgonetaSelects();
   const obraSel = document.getElementById('asig-obra');
   obraSel.value = a.idObra || '';
   if (a.idObra && !obraSel.value) {
@@ -10010,9 +10035,8 @@ function abrirModalAsignacion(id) {
   }
   document.getElementById('asig-desde').value = a.fechaDesdeISO || '';
   document.getElementById('asig-hasta').value = a.fechaHastaISO || '';
-  document.getElementById('asig-furgoneta').value = a.furgoneta || '';
   document.getElementById('asig-notas').value = a.notas || '';
-  renderAsigInstaladoresPills();
+  renderAsigEquipos();
   document.getElementById('btn-asig-duplicar').style.display = '';
   document.getElementById('btn-asig-acortar').style.display = '';
   document.getElementById('btn-asig-eliminar').style.display = '';
@@ -10022,33 +10046,110 @@ function abrirModalAsignacion(id) {
 function cerrarModalAsignacion() {
   document.getElementById('asignacion-modal').classList.remove('open');
   asigEnEdicion = null;
-  asigInstaladoresSel = [];
+  asigEquiposEdit = [{ furgoneta: '', instaladores: [] }];
 }
 
-function renderAsigInstaladoresPills() {
-  const c = document.getElementById('asig-instaladores-pills');
-  if (!c) return;
-  const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
-  c.innerHTML = lista.map(n => `<button type="button" class="pill${asigInstaladoresSel.includes(n)?' on':''}" onclick="toggleAsigInstalador('${escapeAttr(n)}')">${escapeHtml(n)}</button>`).join('');
+function renderAsigEquipos() {
+  const cont = document.getElementById('asig-equipos-cont');
+  if (!cont) return;
+  const furgosLista = (typeof furgonetasActivasAdmin === 'function') ? furgonetasActivasAdmin() : (typeof FURGONETAS !== 'undefined' ? FURGONETAS : []);
+  const instaladoresLista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : [];
+  // Para deshabilitar pills de personas ya asignadas en otro equipo
+  const ocupadasPorEquipo = asigEquiposEdit.map(eq => new Set(eq.instaladores || []));
+  cont.innerHTML = asigEquiposEdit.map((eq, idx) => {
+    const titulo = asigEquiposEdit.length > 1 ? `Furgoneta ${idx + 1}` : 'Furgoneta';
+    const opts = '<option value="">— Seleccionar —</option>' + furgosLista.map(f => `<option value="${escapeAttr(f)}"${eq.furgoneta === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
+    const pills = instaladoresLista.map(n => {
+      const enEste = (eq.instaladores || []).includes(n);
+      const enOtro = !enEste && ocupadasPorEquipo.some((s, i) => i !== idx && s.has(n));
+      const clase = 'pill' + (enEste ? ' on' : '') + (enOtro ? ' disabled' : '');
+      const onClick = enOtro ? '' : `onclick="toggleEquipoInstalador(${idx}, '${escapeAttr(n)}')"`;
+      const title = enOtro ? 'title="Ya asignado en el otro equipo"' : '';
+      return `<button type="button" class="${clase}" ${onClick} ${title}>${escapeHtml(n)}</button>`;
+    }).join('');
+    const rmBtn = idx > 0
+      ? `<button type="button" class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--red);border:none" onclick="removeEquipoAsig(${idx})">✕ Quitar</button>`
+      : '';
+    return `
+      <div class="asig-equipo" style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--surface-2,rgba(0,0,0,.02))">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-weight:600;font-size:13px;color:var(--text-muted)">${titulo}</div>
+          ${rmBtn}
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label style="font-size:12px">Furgoneta</label>
+          <select class="select-furgoneta" onchange="setEquipoAsigFurgo(${idx}, this.value)">${opts}</select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size:12px">Instaladores</label>
+          <div class="pill-selector">${pills}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  const addBtn = document.getElementById('asig-add-equipo');
+  if (addBtn) addBtn.style.display = asigEquiposEdit.length >= 2 ? 'none' : '';
 }
 
-function toggleAsigInstalador(nombre) {
-  const idx = asigInstaladoresSel.indexOf(nombre);
-  if (idx >= 0) asigInstaladoresSel.splice(idx, 1);
-  else asigInstaladoresSel.push(nombre);
-  renderAsigInstaladoresPills();
+function addEquipoAsig() {
+  if (asigEquiposEdit.length >= 2) return;
+  asigEquiposEdit.push({ furgoneta: '', instaladores: [] });
+  renderAsigEquipos();
+}
+
+function removeEquipoAsig(idx) {
+  if (idx <= 0 || idx >= asigEquiposEdit.length) return;
+  asigEquiposEdit.splice(idx, 1);
+  renderAsigEquipos();
+}
+
+function setEquipoAsigFurgo(idx, val) {
+  if (asigEquiposEdit[idx]) asigEquiposEdit[idx].furgoneta = val || '';
+}
+
+function toggleEquipoInstalador(idx, nombre) {
+  const eq = asigEquiposEdit[idx];
+  if (!eq) return;
+  const i = (eq.instaladores || []).indexOf(nombre);
+  if (i >= 0) eq.instaladores.splice(i, 1);
+  else {
+    // nunca permitir mismo instalador en dos equipos
+    asigEquiposEdit.forEach((other, oi) => {
+      if (oi === idx) return;
+      const j = (other.instaladores || []).indexOf(nombre);
+      if (j >= 0) other.instaladores.splice(j, 1);
+    });
+    (eq.instaladores ||= []).push(nombre);
+  }
+  renderAsigEquipos();
 }
 
 async function guardarAsignacion() {
   const idObra = document.getElementById('asig-obra').value.trim();
   const desde = document.getElementById('asig-desde').value;
   const hasta = document.getElementById('asig-hasta').value;
-  const furgoneta = document.getElementById('asig-furgoneta').value.trim();
   const notas = document.getElementById('asig-notas').value.trim();
 
   if (!idObra) { showToast('⚠ Selecciona obra', 'err'); return; }
   if (!desde || !hasta) { showToast('⚠ Rellena las fechas', 'err'); return; }
   if (desde > hasta) { showToast('⚠ La fecha final debe ser ≥ la inicial', 'err'); return; }
+
+  // Limpiar equipos vacíos (sin furgo y sin instaladores). Si todos quedan
+  // vacíos, mantenemos uno para no perder la estructura.
+  let equipos = asigEquiposEdit
+    .map(e => ({ furgoneta: (e.furgoneta || '').trim(), instaladores: (e.instaladores || []).slice() }))
+    .filter(e => e.furgoneta || e.instaladores.length);
+  if (!equipos.length) equipos = [{ furgoneta: '', instaladores: [] }];
+
+  // Validación: si hay 2 equipos, ambos deben tener furgoneta
+  if (equipos.length >= 2 && equipos.some(e => !e.furgoneta)) {
+    showToast('⚠ Selecciona furgoneta en los dos equipos', 'err');
+    return;
+  }
+
+  // Compat plano (queries existentes leen estos campos):
+  const furgoneta = equipos.find(e => e.furgoneta)?.furgoneta || '';
+  const instaladores = Array.from(new Set(equipos.flatMap(e => e.instaladores)));
 
   await sheetsLoad();
   const existente = asigEnEdicion ? incidents.find(i => i.id === asigEnEdicion && i.tipo === 'asignacion') : null;
@@ -10058,7 +10159,8 @@ async function guardarAsignacion() {
     idObra,
     fechaDesdeISO: desde,
     fechaHastaISO: hasta,
-    instaladores: asigInstaladoresSel.slice(),
+    equipos,
+    instaladores,
     furgoneta,
     notas,
     creadoPor: existente?.creadoPor || (currentUser?.nombre || 'Admin'),
@@ -10083,14 +10185,18 @@ async function duplicarAsignacionMañana() {
   d.setDate(d.getDate() + 1);
   const siguiente = _dateToLocalISO(d);
   await sheetsLoad();
+  const equiposCopia = _asigEquipos(a).map(e => ({ furgoneta: e.furgoneta || '', instaladores: (e.instaladores || []).slice() }));
+  const furgoCompat = equiposCopia.find(e => e.furgoneta)?.furgoneta || '';
+  const instCompat = Array.from(new Set(equiposCopia.flatMap(e => e.instaladores)));
   incidents.unshift({
     id: Date.now(),
     tipo: 'asignacion',
     idObra: a.idObra,
     fechaDesdeISO: siguiente,
     fechaHastaISO: siguiente,
-    instaladores: (a.instaladores || []).slice(),
-    furgoneta: a.furgoneta || '',
+    equipos: equiposCopia,
+    instaladores: instCompat,
+    furgoneta: furgoCompat,
     notas: a.notas || '',
     creadoPor: currentUser?.nombre || 'Admin',
     creadoTs: Date.now()
@@ -10145,7 +10251,8 @@ function proximosItemsParaPersona(nombre, hoyISOstr, limite) {
   // Asignaciones de obra que empiezan tras hoy
   incidents.forEach(i => {
     if (i.tipo === 'asignacion' && (i.instaladores || []).includes(nombre) && i.fechaDesdeISO > hoyISOstr) {
-      out.push({ kind: 'obra', fecha: i.fechaDesdeISO, fechaHasta: i.fechaHastaISO, obra: i.idObra, furgoneta: i.furgoneta, hora: '', id: i.id });
+      const eq = _equipoDePersona(i, nombre);
+      out.push({ kind: 'obra', fecha: i.fechaDesdeISO, fechaHasta: i.fechaHastaISO, obra: i.idObra, furgoneta: (eq && eq.furgoneta) || i.furgoneta || '', hora: '', id: i.id });
     }
   });
   (Array.isArray(visitas) ? visitas : []).forEach(v => {

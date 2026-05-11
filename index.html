@@ -10,7 +10,7 @@
      pdf.js carga su worker como blob, de ahí worker-src blob:. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+  script-src 'self' 'unsafe-inline';
   style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
@@ -4464,17 +4464,21 @@ document.addEventListener('change', (e) => {
   }
 });
 
-// ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js CDN) ───
+// ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js self-hosted con SRI) ───
+const PDFJS_URL        = 'vendor/pdfjs/pdf.min.mjs';
+const PDFJS_WORKER_URL = 'vendor/pdfjs/pdf.worker.min.mjs';
+const PDFJS_SRI        = 'sha384-ZCFxELU1bvPx4evkYZ+4CxkApXPjaMxGVdWGuBjqwJe5aBdx8oSItpalx5V4e5Yh';
 let pdfjsPromise = null;
 function loadPdfjs() {
   if (pdfjsPromise) return pdfjsPromise;
   pdfjsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs';
+    s.src = PDFJS_URL;
     s.type = 'module';
+    s.integrity = PDFJS_SRI;
     s.onload = async () => {
-      const mod = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs');
-      mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs';
+      const mod = await import(PDFJS_URL);
+      mod.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
       resolve(mod);
     };
     s.onerror = () => reject(new Error('No se pudo cargar pdf.js'));

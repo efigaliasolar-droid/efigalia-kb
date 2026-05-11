@@ -426,7 +426,8 @@
     <div class="home-intro">Elige tu nombre e introduce tu PIN para continuar.</div>
     <div class="form-group">
       <label>¿Quién eres?</label>
-      <select id="login-nombre"></select>
+      <input type="text" id="login-nombre" list="login-names" autocomplete="off" placeholder="Escribe o elige tu nombre" onkeydown="if(event.key==='Enter')document.getElementById('login-pin').focus()">
+      <datalist id="login-names"></datalist>
     </div>
     <div class="form-group">
       <label>PIN</label>
@@ -7657,29 +7658,32 @@ function mostrarLogin() {
   document.getElementById('view-login').style.display = 'block';
   document.getElementById('login-pin').value = '';
   actualizarHeaderUsuario();
-  // El dropdown se rellena con el endpoint público /auth/users (solo nombres,
-  // sin PINs). No usar sheetsLoad aquí: requiere auth y todavía no la tenemos.
-  const sel = document.getElementById('login-nombre');
-  sel.innerHTML = '<option value="">— Cargando… —</option>';
+  // El input es de texto libre; el datalist solo aporta sugerencias. Así, si
+  // /auth/users falla o no existe (Worker antiguo), el usuario aún puede
+  // escribir su nombre y loguearse sin bootstrap roto.
+  const dl = document.getElementById('login-names');
+  if (dl) dl.innerHTML = '';
+  // Pre-rellenar con el último nombre usado en este navegador (UX).
+  const last = localStorage.getItem('efigalia_last_nombre');
+  if (last) document.getElementById('login-nombre').value = last;
   fetch(WORKER + '/auth/users')
     .then(r => r.ok ? r.json() : [])
     .then(list => {
-      const activos = Array.isArray(list) ? list : [];
-      sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +
-        activos.map(a => `<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
+      if (!Array.isArray(list) || !dl) return;
+      dl.innerHTML = list.map(a => `<option value="${escapeHtml(a.nombre)}"></option>`).join('');
     })
-    .catch(() => {
-      sel.innerHTML = '<option value="">— Sin conexión —</option>';
-    });
+    .catch(() => { /* sin sugerencias; el input sigue siendo escribible */ });
 }
 
 async function hacerLogin() {
-  const nombre = document.getElementById('login-nombre').value;
+  const nombre = document.getElementById('login-nombre').value.trim();
   const pin = document.getElementById('login-pin').value;
+  if (!nombre) { showToast('⚠ Escribe tu nombre', 'err'); return; }
   if (!pin) { showToast('⚠ Introduce tu PIN', 'err'); return; }
   const result = await autenticarUsuario(nombre, pin);
   if (!result.ok) { showToast('⚠ ' + result.error, 'err'); document.getElementById('login-pin').value = ''; return; }
   currentUser = result.user;
+  localStorage.setItem('efigalia_last_nombre', currentUser.nombre);
   sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser));
   if (isAdmin()) adminAutenticado = true;
   actualizarHeaderUsuario();

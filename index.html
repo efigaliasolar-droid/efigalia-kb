@@ -7655,13 +7655,22 @@ function mostrarLogin() {
   hideAllViews();
   document.getElementById('tab-bar-incidencias').style.display = 'none';
   document.getElementById('view-login').style.display = 'block';
-  sheetsLoad().then(() => {
-    const sel = document.getElementById('login-nombre');
-    const activos = incidents.filter(i => i.tipo === 'instalador' && i.activa !== false).sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
-    sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' + activos.map(a => `<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
-    document.getElementById('login-pin').value = '';
-    actualizarHeaderUsuario();
-  });
+  document.getElementById('login-pin').value = '';
+  actualizarHeaderUsuario();
+  // El dropdown se rellena con el endpoint público /auth/users (solo nombres,
+  // sin PINs). No usar sheetsLoad aquí: requiere auth y todavía no la tenemos.
+  const sel = document.getElementById('login-nombre');
+  sel.innerHTML = '<option value="">— Cargando… —</option>';
+  fetch(WORKER + '/auth/users')
+    .then(r => r.ok ? r.json() : [])
+    .then(list => {
+      const activos = Array.isArray(list) ? list : [];
+      sel.innerHTML = '<option value="">— Selecciona tu nombre —</option>' +
+        activos.map(a => `<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
+    })
+    .catch(() => {
+      sel.innerHTML = '<option value="">— Sin conexión —</option>';
+    });
 }
 
 async function hacerLogin() {

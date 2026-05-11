@@ -10,7 +10,7 @@
      pdf.js carga su worker como blob, de ahí worker-src blob:. -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+  script-src 'self' 'unsafe-inline';
   style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data: blob: https:;
@@ -2930,6 +2930,25 @@
 <script>
 const WORKER = 'https://efigalia-kb.efigalia-solar.workers.dev';
 
+// ── Wrapper de fetch al Worker con auth + manejo de 401 ──
+async function workerFetch(pathAndQuery, options = {}) {
+  const token = sessionStorage.getItem('efigalia_token');
+  const headers = new Headers(options.headers || {});
+  if (token) headers.set('Authorization', 'Bearer ' + token);
+  const res = await fetch(WORKER + pathAndQuery, { ...options, headers });
+  if (res.status === 401 && token) {
+    sessionStorage.removeItem('efigalia_token');
+    sessionStorage.removeItem('efigalia_user');
+    if (typeof currentUser !== 'undefined') currentUser = null;
+    if (typeof adminAutenticado !== 'undefined') adminAutenticado = false;
+    try { actualizarHeaderUsuario(); } catch(e) {}
+    try { showToast('⚠ Sesión expirada, vuelve a entrar', 'err'); } catch(e) {}
+    try { mostrarLogin(); } catch(e) {}
+    throw new Error('Sesión expirada');
+  }
+  return res;
+}
+
 const BASE_INICIAL = [{"id":1000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Acceso a maintain contraseña no conocida","verificaciones":"Probar con las contraseñas habituales del Logger1000 (consultar gestor de contraseñas del equipo).","solucion":"Entrar en modo \"administrator\" (contraseña en gestor del equipo), escoger el usuario maintain y darle la contraseña deseada.","documentacion":"Manual de usuario Logger1000b","keywords":"maintain, administrator, contraseña, olvidado, acceso, logger","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":2000,"idObra":"-","marca":"Sungrow","modelo":"Logger1000","codError":"-","incidencia":"Mantenimiento remoto no activado","verificaciones":"Verificar si el equipo tiene internet o si el equipo está conectado a un Router de edp, en cuyo caso no es posible","solucion":"En la configuración avanzada del logger, desde el portal de monitorización, activar el mantenimiento remoto.","documentacion":"FAQ_1015 How to activate remote maintenance.pdf","keywords":"mantenimiento remoto, sungrow, logger1000","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":3000,"idObra":"Portela vella","marca":"Huawei","modelo":"Logger","codError":"-","incidencia":"Recolector de energía defectuoso","verificaciones":"Verificar el estado de conexión del medidor de consumo. Verificar el funcionamiento y la conexión del medidor.","solucion":"Configurar el medidor de consumo como equipo de medición.","documentacion":"-","keywords":"Huawei, logger, colector, defectuoso, medidor","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":4000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Sobretensión","verificaciones":"Verificar si la sobretensión no procede de la red","solucion":"Realizar un ajuste de P(V) mediante acceso por la app Solaredge Go.","documentacion":"01_A_ES Max Grid Voltage 253 Vac con ANEXOS.pdf","keywords":"Solaredge, sobretensión","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":5000,"idObra":"-","marca":"Solaredge","modelo":"Todos","codError":"-","incidencia":"Fallo de aislamiento","verificaciones":"Verificar la resistencia de aislamiento que indica el inversor","solucion":"Realizar mediciones del aislamiento de las series de fotovoltaica.","documentacion":"Comprobación de defecto a tierra Solaredge.pdf","keywords":"Solaredge, defecto, tierra, aislamiento","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":6000,"idObra":"-","marca":"Huawei","modelo":"Luna","codError":"3013","incidencia":"Fallo de comunicación de la batería","verificaciones":"Realizar las verificaciones de la documentación de referencia.","solucion":"Revisar cableado de comunicación, cable par trenzado roto en el conector.","documentacion":"Residential Smart PV Troubleshooting Guide - Battery expansion module communication.pdf","keywords":"comunicación, Huawei, Luna, Sun2000, batería","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":7000,"idObra":"-","marca":"Fronius","modelo":"todos","codError":"-","incidencia":"Sobretensiones en red","verificaciones":"Verificar si la tensión de red con el inversor apagado tiene valores estables. Ver si la impedancia de la acometida es baja","solucion":"Realizar un ajuste P(V)","documentacion":"GVDPR- Reducción de potencia por tensión.pdf","keywords":"Fronius, sobretensión, ajuste, tensión, red","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":8000,"idObra":"-","marca":"Huawei","modelo":"SUN2000","codError":"-","incidencia":"Contraseña de acceso olvidada","verificaciones":"Verificar si no es una de las contraseñas habituales del equipo (consultar gestor de contraseñas).","solucion":"Realizar un reseteo del acceso.","documentacion":"Reestablecer contraseña SUN2000_Huawei.png","keywords":"Huawei, SUN2000, contraseña, acceso, reset","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":9000,"idObra":"-","marca":"Janitza","modelo":"Serie UMG","codError":"-","incidencia":"Error de medición de potencia","verificaciones":"Verificar que los toroidales de medición se encuentran bien cerrados","solucion":"Realizar un ajuste de los valores de configuración de los toroidales a través de GRIDVISS, comprobar valores de factores de potencia","documentacion":"Manual gridviss Janitza","keywords":"Janitza, toroidal, medida, potencia, corriente, GRIDVISS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":10000,"idObra":"-","marca":"Meter wifi EDP","modelo":"-","codError":"-","incidencia":"Error de medición de potencia con toroidales","verificaciones":"Verificar que los toroidales miden en la fase correspondiente","solucion":"Verificar factores de potencia: producción debe dar 1, consumo próximos a 1. Ajustar toroidales a la fase que miden de tensión. Verificar el sentido de los toroidales. Verificar que la relación de transformación es la correcta.","documentacion":"-","keywords":"meter, wifi, edp, toroidal, potencia, fase, transformación","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":11000,"idObra":"-","marca":"UWP","modelo":"-","codError":"-","incidencia":"Fallo envío datos UWP a Janitza/ITR/Prisma","verificaciones":"Verificar la conexión entre equipos","solucion":"Al cargar el software, hacerlo desde el propio archivo de configuración. No cargar el archivo al programa.","documentacion":"-","keywords":"UWP, Janitza, ITR, Prisma, envío, datos","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":12000,"idObra":"-","marca":"RUT241","modelo":"-","codError":"-","incidencia":"RUT241 no conecta a internet","verificaciones":"Verificar la tarjeta SIM. Verificar que la antena esté colocada.","solucion":"Para cargar el backup, hacerlo utilizando una tarjeta SIM antigua de EDP. Luego cambiar la tarjeta por una nueva con IP 10.145...","documentacion":"-","keywords":"RUT241, SIM, internet, router, antena, backup","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":13000,"idObra":"Sigen nave","marca":"Sigen","modelo":"EC6.0SP","codError":"-","incidencia":"Medidores SDM CT120 no reconocidos, reconoce equipos de otras plantas","verificaciones":"Reconocimiento desde app Posventa, actualización de planta e inversor, cambio de medidores, comprobación de cableado (consumo pines 13-14, producción pines 16-15), desconexión wifi","solucion":"Conectar con dongle SIM en lugar de wifi.","documentacion":"-","keywords":"Sigen, EC6, SDM, medidor, pines, wifi, dongle, SIM","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":14000,"idObra":"Cafento","marca":"Lacecal","modelo":"ITR 2.0b","codError":"-","incidencia":"Fallo de comunicación, 3 LEDs fijos, no envía datos a la app","verificaciones":"Desconexión y conexión de router, comprobación de cables, caso abierto con Amara","solucion":"Reset de la SD desde el PC según el manual. Reconfigurar ITR (IP y credenciales por defecto del fabricante en el manual; consultar gestor de contraseñas del equipo si ya se cambió previamente para acceder como instalador).","documentacion":"Reset ITR 2.0B","keywords":"ITR, comunicación, LED, Lacecal, reset, SD","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":15000,"idObra":"Corvaz","marca":"BYD","modelo":"B-PLUS 2.5","codError":"-","incidencia":"Batería no aparece en Cerbo, % batería incorrecto, equipo se apaga","verificaciones":"Cableado, software, parámetros, reinicio","solucion":"Comprobar DIP switches de numeración de batería. La batería 1 tenía 2 switches arriba (= nº 3), duplicando la dirección. Corrección: solo switch 1 arriba. Apareció en el Cerbo al momento.","documentacion":"BYD_Installation_Manual_B-BOX Pro 2.5-10.0 V2.1_ES","keywords":"BYD, Cerbo, batería, DIP switch, dirección, B-PLUS","tecnico":"Efigalia","fecha":"2025","fotos":[]},{"id":16000,"idObra":"Picadizo","marca":"Sigen","modelo":"DTSU666","codError":"-","incidencia":"Medidor DTSU666 no reconocido por el inversor","verificaciones":"Revisión de cableado y parámetros del medidor","solucion":"El DTSU666 no va en los mismos pines que el medidor 630. Va en pines 15 y 16.","documentacion":"-","keywords":"Sigen, DTSU666, medidor, pines, 15, 16, 630","tecnico":"Efigalia","fecha":"2025","fotos":[]}];
 
 let incidents = [];
@@ -2989,7 +3008,7 @@ async function sheetsLoad() {
   try {
     // Cache-busting: evita que Cloudflare Edge o el navegador devuelvan una versión antigua
     // cache:'no-store' + query único bypassa navegador y edge sin disparar CORS preflight
-    const res = await fetch(WORKER + '/data?t=' + Date.now(), { cache: 'no-store' });
+    const res = await workerFetch('/data?t=' + Date.now(), { cache: 'no-store' });
     const text = await res.text();
     const data = JSON.parse(text);
     if (Array.isArray(data) && data.length > 0) {
@@ -3031,7 +3050,7 @@ async function sheetsSave() {
   try {
     const body = JSON.stringify(payload);
     console.log(`[sheetsSave] enviando ${payload.length} registros, ${(body.length/1024).toFixed(1)} KB`);
-    const res = await fetch(WORKER + '/data', {
+    const res = await workerFetch('/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body
@@ -3055,7 +3074,7 @@ async function sheetsSave() {
 async function subirFoto(file) {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(WORKER + '/foto', {
+  const res = await workerFetch('/foto', {
     method: 'POST',
     body: formData
   });
@@ -3294,7 +3313,7 @@ function renderEstadoObra() {
 
   const resumenFicha = obraRec ? `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(obraRec.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+      ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(sanitizeUrl(obraRec.mapsUrl))}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
       ${obraRec.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.clienteNombre)}${obraRec.telefono ? ` · <a href="tel:${escapeHtml(obraRec.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.telefono)}</a>` : ''}</div></div>` : ''}
       ${obraRec.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obraRec.contactoObs)}</div>` : ''}
       ${!obraRec.direccion && !obraRec.clienteNombre && !obraRec.contactoObs ? `<div style="color:var(--text-muted);font-size:13px">Ficha sin rellenar. Usa el botón para añadir contacto, dirección y documentos.</div>` : ''}
@@ -3411,51 +3430,39 @@ function enterPartes() {
   });
 }
 
-// ── ADMINISTRACIÓN (PIN) ───────────────────────────────
-const ADMIN_PIN = '111111';
+// ── ADMINISTRACIÓN ────────────────────────────────────
+// El acceso admin se determina por el rol del usuario logueado (ver autenticarUsuario
+// en el Worker). Ya no existe PIN maestro: si el usuario actual no es admin, no hay
+// forma de elevar privilegios desde el cliente.
 let adminAutenticado = false;
-let pendingAction = null;   // acción a ejecutar tras validar el PIN
 
 function pedirPin() {
-  document.getElementById('pin-modal').style.display = 'flex';
-  setTimeout(() => { const i = document.getElementById('pin-input'); if (i) { i.value = ''; i.focus(); } }, 80);
+  // Compat: cuando código antiguo intenta abrir el modal de PIN admin,
+  // verificamos si el usuario actual ya es admin; si no, mostramos error claro.
+  if (isAdmin()) { adminAutenticado = true; mostrarAdmin(); return; }
+  showToast('⚠ Necesitas permisos de administrador', 'err');
 }
 function pedirPinPara(action) {
-  pendingAction = action;
-  pedirPin();
+  if (isAdmin()) { adminAutenticado = true; if (typeof action === 'function') action(); return; }
+  showToast('⚠ Necesitas permisos de administrador', 'err');
 }
 function cerrarPinModal() {
-  document.getElementById('pin-modal').style.display = 'none';
-  document.getElementById('pin-input').value = '';
-  pendingAction = null;
+  const m = document.getElementById('pin-modal');
+  if (m) m.style.display = 'none';
+  const i = document.getElementById('pin-input');
+  if (i) i.value = '';
 }
 function verificarPin() {
-  const pin = document.getElementById('pin-input').value;
-  if (pin === ADMIN_PIN) {
-    adminAutenticado = true;
-    document.getElementById('pin-modal').style.display = 'none';
-    document.getElementById('pin-input').value = '';
-    if (pendingAction) {
-      const act = pendingAction;
-      pendingAction = null;
-      setTimeout(act, 50);
-    } else {
-      mostrarAdmin();
-    }
-  } else {
-    showToast('⚠ PIN incorrecto', 'err');
-    document.getElementById('pin-input').value = '';
-  }
+  // El modal de PIN admin ya no autentica: solo cierra. Mantenido para compat con
+  // event handlers existentes en el HTML.
+  cerrarPinModal();
+  if (isAdmin()) { adminAutenticado = true; mostrarAdmin(); }
+  else showToast('⚠ Necesitas permisos de administrador', 'err');
 }
 function enterAdmin() {
-  // Si el usuario logueado es admin, acceso directo sin re-pedir PIN
-  if (isAdmin()) {
-    adminAutenticado = true;
-    mostrarAdmin();
-    return;
-  }
-  // Si no, pedir PIN maestro como fallback
-  pedirPin();
+  if (!isAdmin()) { showToast('⚠ Necesitas permisos de administrador', 'err'); return; }
+  adminAutenticado = true;
+  mostrarAdmin();
 }
 function mostrarAdmin() {
   hideAllViews();
@@ -3794,7 +3801,7 @@ function renderAdminDocumentos() {
         </div>
       </div>
       <div class="acciones" style="gap:4px">
-        ${d.archivoUrl ? `<a class="toggle-btn on" href="${d.archivoUrl}" target="_blank" rel="noopener" style="text-decoration:none">VER</a>` : ''}
+        ${d.archivoUrl ? `<a class="toggle-btn on" href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="text-decoration:none">VER</a>` : ''}
         <button class="toggle-btn off" onclick="editarDocumento(${d.id})">EDITAR</button>
         <button class="icon-btn" onclick="eliminarDocumento(${d.id})" title="Eliminar">🗑</button>
       </div>
@@ -4073,27 +4080,27 @@ async function sha256(str) {
   return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Punto único de verificación. Cuando movamos auth al Worker, sólo se cambia aquí:
-// devolver fetch(WORKER + '/auth/login', {method:'POST', body: JSON.stringify({nombre, pin})}).then(r=>r.json())
+// Punto único de verificación: delega en el Worker, que valida contra los PINs
+// almacenados en R2 y devuelve un JWT firmado.
 async function autenticarUsuario(nombre, pinPlano) {
-  await sheetsLoad();
-  // PIN maestro de bootstrap: 111111 concede admin a cualquiera que lo introduzca
-  if (pinPlano === '111111') {
-    return { ok: true, user: { nombre: nombre || 'Admin', rol: 'admin', master: true } };
-  }
   if (!nombre) return { ok: false, error: 'Selecciona tu nombre' };
-  const user = incidents.find(i => i.tipo === 'instalador' && i.nombre === nombre && i.activa !== false);
-  if (!user) return { ok: false, error: 'Usuario no encontrado o inactivo' };
-  // Compatibilidad: registros antiguos con pinHash; actuales con pin en claro
-  if (user.pin) {
-    if (user.pin !== pinPlano) return { ok: false, error: 'PIN incorrecto' };
-  } else if (user.pinHash) {
-    const hash = await sha256(pinPlano);
-    if (user.pinHash !== hash) return { ok: false, error: 'PIN incorrecto' };
-  } else {
-    return { ok: false, error: 'No tienes PIN asignado. Pídeselo al administrador.' };
+  if (!pinPlano) return { ok: false, error: 'Introduce tu PIN' };
+  let res;
+  try {
+    res = await fetch(WORKER + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, pin: pinPlano }),
+    });
+  } catch (e) {
+    return { ok: false, error: 'Sin conexión con el servidor' };
   }
-  return { ok: true, user: { nombre: user.nombre, rol: user.rol || 'instalador' } };
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) return { ok: false, error: (data && data.error) || 'Error de autenticación' };
+  if (!data || !data.token || !data.user) return { ok: false, error: 'Respuesta inválida del servidor' };
+  sessionStorage.setItem('efigalia_token', data.token);
+  return { ok: true, user: data.user };
 }
 
 async function cambiarPinInstalador(id) {
@@ -4104,11 +4111,13 @@ async function cambiarPinInstalador(id) {
   const clean = pin.trim();
   if (clean === '') {
     if (!confirm('¿Quitar PIN? Este usuario no podrá entrar hasta que se le asigne otro.')) return;
-    delete user.pin;
-    delete user.pinHash;
+    user.pin = null;        // null = borrar intencionado (vs undefined = preservar)
+    user.pinHash = null;
   } else {
     if (!/^\d{4,6}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–6 dígitos', 'err'); return; }
-    if (clean === '111111') { showToast('⚠ 111111 es el PIN maestro del sistema, elige otro', 'err'); return; }
+    if (/^(\d)\1+$/.test(clean) || clean === '123456' || clean === '654321' || clean === '111111') {
+      showToast('⚠ PIN demasiado obvio, elige otro', 'err'); return;
+    }
     user.pin = clean;
     delete user.pinHash;  // limpiar legado
   }
@@ -4219,7 +4228,7 @@ INSTRUCCIONES:
 6. Responde siempre en español, de forma directa y concreta. Máximo 350 palabras.`;
 
   try {
-    const response = await fetch(WORKER + '/ai', {
+    const response = await workerFetch('/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4464,17 +4473,21 @@ document.addEventListener('change', (e) => {
   }
 });
 
-// ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js CDN) ───
+// ── EXTRACCIÓN DE TEXTO DE PDF (cliente, pdf.js self-hosted con SRI) ───
+const PDFJS_URL        = 'vendor/pdfjs/pdf.min.mjs';
+const PDFJS_WORKER_URL = 'vendor/pdfjs/pdf.worker.min.mjs';
+const PDFJS_SRI        = 'sha384-ZCFxELU1bvPx4evkYZ+4CxkApXPjaMxGVdWGuBjqwJe5aBdx8oSItpalx5V4e5Yh';
 let pdfjsPromise = null;
 function loadPdfjs() {
   if (pdfjsPromise) return pdfjsPromise;
   pdfjsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs';
+    s.src = PDFJS_URL;
     s.type = 'module';
+    s.integrity = PDFJS_SRI;
     s.onload = async () => {
-      const mod = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.mjs');
-      mod.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.mjs';
+      const mod = await import(PDFJS_URL);
+      mod.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
       resolve(mod);
     };
     s.onerror = () => reject(new Error('No se pudo cargar pdf.js'));
@@ -4538,7 +4551,7 @@ function onTipoChange() {
 async function subirArchivo(file) {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(WORKER + '/foto', { method: 'POST', body: formData });
+  const res = await workerFetch('/foto', { method: 'POST', body: formData });
   const data = await res.json();
   return { url: data.url, nombre: file.name };
 }
@@ -4751,10 +4764,10 @@ function openModal(id) {
   if (!inc) return;
   const tipo = inc.tipo || 'incidencia';
   const photos = inc.fotos?.length
-    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${escapeHtml(sanitizeUrl(f))}" onclick="window.open('${escapeAttr(sanitizeUrl(f))}')" loading="lazy">`).join('')}</div></div>`
     : '';
   const archivo = inc.archivoUrl
-    ? `<div class="modal-section"><div class="modal-label">Archivo</div><a class="modal-doc" href="${inc.archivoUrl}" target="_blank" rel="noopener">📎 ${inc.archivoNombre || 'Descargar archivo'}</a></div>`
+    ? `<div class="modal-section"><div class="modal-label">Archivo</div><a class="modal-doc" href="${escapeHtml(sanitizeUrl(inc.archivoUrl))}" target="_blank" rel="noopener">📎 ${escapeHtml(inc.archivoNombre || 'Descargar archivo')}</a></div>`
     : '';
   const doc = inc.documentacion && inc.documentacion !== '-' ? `<div class="modal-section"><div class="modal-label">${tipo==='documento'?'Descripción':'Documentación'}</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
   const kw = inc.keywords ? `<div class="modal-section"><div class="modal-label">Palabras clave</div><div class="modal-keywords">${inc.keywords}</div></div>` : '';
@@ -5485,7 +5498,7 @@ function renderInstaladorPills(containerId, selected) {
   const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : INSTALADORES;
   c._selected = (selected || []).filter(n => lista.includes(n));
   c.innerHTML = lista.map(name =>
-    `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${containerId}','${name.replace(/'/g,"\\'")}')">${name}</button>`
+    `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${escapeAttr(containerId)}','${escapeAttr(name)}')">${escapeHtml(name)}</button>`
   ).join('');
 }
 function togglePill(containerId, name) {
@@ -5514,7 +5527,7 @@ const MATERIALES_SEED = [
 
 async function materialesLoad() {
   try {
-    const res = await fetch(WORKER + '/materiales');
+    const res = await workerFetch('/materiales');
     const data = await res.json();
     if (Array.isArray(data)) materiales = data;
   } catch(e) {
@@ -5533,7 +5546,7 @@ async function materialesSave() {
   try { localStorage.setItem('efigalia_materiales_v1', JSON.stringify(materiales)); } catch(e) {}
   if (!navigator.onLine) { setDirty('materiales'); return true; }
   try {
-    const res = await fetch(WORKER + '/materiales', {
+    const res = await workerFetch('/materiales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(materiales)
@@ -5552,7 +5565,7 @@ async function materialesSave() {
 
 async function movimientosLoad() {
   try {
-    const res = await fetch(WORKER + '/movimientos');
+    const res = await workerFetch('/movimientos');
     const data = await res.json();
     if (Array.isArray(data)) movimientos = data;
     try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
@@ -5566,7 +5579,7 @@ async function movimientosSave() {
   try { localStorage.setItem('efigalia_movimientos_v1', JSON.stringify(movimientos)); } catch(e) {}
   if (!navigator.onLine) { setDirty('movimientos'); return true; }
   try {
-    const res = await fetch(WORKER + '/movimientos', {
+    const res = await workerFetch('/movimientos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(movimientos)
@@ -5585,7 +5598,7 @@ async function movimientosSave() {
 
 async function partesLoad() {
   try {
-    const res = await fetch(WORKER + '/partes');
+    const res = await workerFetch('/partes');
     const data = await res.json();
     if (Array.isArray(data)) partes = data;
     try {
@@ -5605,7 +5618,7 @@ async function partesSave() {
   } catch(e) {}
   if (!navigator.onLine) { setDirty('partes'); return true; }
   try {
-    const res = await fetch(WORKER + '/partes', {
+    const res = await workerFetch('/partes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(partes)
@@ -5628,7 +5641,7 @@ let visitaEnEdicion = null;  // id de la visita abierta en el formulario, null s
 
 async function visitasLoad() {
   try {
-    const res = await fetch(WORKER + '/visitas');
+    const res = await workerFetch('/visitas');
     const data = await res.json();
     if (Array.isArray(data)) visitas = data;
     try { localStorage.setItem('efigalia_visitas_v1', JSON.stringify(visitas)); } catch(e) {}
@@ -5642,7 +5655,7 @@ async function visitasSave() {
   try { localStorage.setItem('efigalia_visitas_v1', JSON.stringify(visitas)); } catch(e) {}
   if (!navigator.onLine) { setDirty('visitas'); return true; }
   try {
-    const res = await fetch(WORKER + '/visitas', {
+    const res = await workerFetch('/visitas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(visitas)
@@ -6239,6 +6252,15 @@ function refrescarDatalists() {
   fill('dl-instaladores', instaladoresUsados());
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function sanitizeUrl(url) {
+  if (url == null) return '#';
+  const s = String(url).trim();
+  if (!s) return '#';
+  if (/^[#/.?]/.test(s)) return s;
+  if (/^(https?|mailto|tel|blob):/i.test(s)) return s;
+  if (/^data:image\/(png|jpe?g|gif|webp|bmp);base64,/i.test(s)) return s;
+  return '#';
+}
 
 // ── CHIPS INPUT (instaladores) ─────────────────────────
 function setupChipsInput(containerId, inputId, values) {
@@ -6351,7 +6373,7 @@ function renderMatSearch() {
     (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onclick="addLineaLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onclick="addLineaLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -7069,7 +7091,7 @@ function renderPpSearch() {
     (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addPpLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addPpLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -7581,7 +7603,7 @@ function openParteModal(id) {
   const p = partes.find(x => x.id === id);
   if (!p) return;
   const photos = (p.fotos||[]).length
-    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${escapeHtml(sanitizeUrl(f))}" onclick="window.open('${escapeAttr(sanitizeUrl(f))}')" loading="lazy">`).join('')}</div></div>`
     : '';
   document.getElementById('modal-inner').innerHTML = `
     <div class="modal-title">${escapeHtml(p.idObra)} · ${escapeHtml(p.fecha)}</div>
@@ -7662,6 +7684,7 @@ function cerrarSesion() {
   adminAutenticado = false;
   sessionStorage.removeItem('efigalia_user');
   sessionStorage.removeItem('efigalia_admin_session');
+  sessionStorage.removeItem('efigalia_token');
   actualizarHeaderUsuario();
   mostrarLogin();
 }
@@ -8335,7 +8358,7 @@ function renderDocsObra() {
   }
   cont.innerHTML = docs.map(d => `
     <div class="admin-row" style="margin-bottom:6px">
-      <a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
+      <a href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
       <div class="acciones">
         <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">${escapeHtml(d.fecha || '')}</span>
         ${isAdmin() ? `<button class="icon-btn" onclick="eliminarDocObra(${d.id})" title="Eliminar">🗑</button>` : ''}
@@ -9135,13 +9158,13 @@ function onMntObraChange() {
   const docs = incidents.filter(i => i.tipo === 'documento' && i.idObraAsociada === nombre)
     .sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0));
   cont.innerHTML = `
-    ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(obra.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+    ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(sanitizeUrl(obra.mapsUrl))}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
     ${obra.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.clienteNombre)}${obra.telefono ? ` · <a href="tel:${escapeHtml(obra.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.telefono)}</a>` : ''}</div></div>` : ''}
     ${obra.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obra.contactoObs)}</div>` : ''}
     ${docs.length ? `
       <div style="margin-top:10px">
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Documentación</div>
-        ${docs.map(d => `<a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
+        ${docs.map(d => `<a href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
       </div>
     ` : ''}
     ${!obra.direccion && !obra.clienteNombre && !obra.contactoObs && !docs.length ? '<div style="color:var(--text-muted);font-size:13px">Ficha de obra sin rellenar. Edítala desde Administración → Obras → Ficha.</div>' : ''}
@@ -9439,7 +9462,7 @@ function _pdfFld(k, v) { return (v != null && v !== '') ? `<div class="fld"><div
 function _pdfBlock(title, texto) { return texto ? `<h2>${escapeHtml(title)}</h2><div class="blk">${escapeHtml(texto)}</div>` : ''; }
 function _pdfFotos(urls) {
   if (!Array.isArray(urls) || !urls.length) return '';
-  return `<h2>Fotografías (${urls.length})</h2><div class="photos">${urls.map(u => `<img src="${escapeHtml(u)}" alt="">`).join('')}</div>`;
+  return `<h2>Fotografías (${urls.length})</h2><div class="photos">${urls.map(u => `<img src="${escapeHtml(sanitizeUrl(u))}" alt="">`).join('')}</div>`;
 }
 
 function generarPDFVisita(id) {
@@ -9988,7 +10011,17 @@ function renderTarjetaTrabajo(t) {
   `;
 }
 
-function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
+function escapeAttr(s) {
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 // ── Selector de tipo (desde Planificación) ─────────────
 let planCtx = { fecha: null, persona: null };
@@ -10076,7 +10109,7 @@ function renderAsigEquipos() {
   const ocupadasPorEquipo = asigEquiposEdit.map(eq => new Set(eq.instaladores || []));
   cont.innerHTML = asigEquiposEdit.map((eq, idx) => {
     const titulo = asigEquiposEdit.length > 1 ? `Furgoneta ${idx + 1}` : 'Furgoneta';
-    const opts = '<option value="">— Seleccionar —</option>' + furgosLista.map(f => `<option value="${escapeAttr(f)}"${eq.furgoneta === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
+    const opts = '<option value="">— Seleccionar —</option>' + furgosLista.map(f => `<option value="${escapeHtml(f)}"${eq.furgoneta === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
     const pills = instaladoresLista.map(n => {
       const enEste = (eq.instaladores || []).includes(n);
       const enOtro = !enEste && ocupadasPorEquipo.some((s, i) => i !== idx && s.has(n));
@@ -10334,7 +10367,7 @@ function renderMiDia() {
             </div>
             <div class="acciones">
               <button class="btn-ghost" onclick="abrirVisita(${d.id})">Abrir visita</button>
-              ${d.urlMaps ? `<a class="btn-ghost" href="${escapeHtml(d.urlMaps)}" target="_blank" rel="noopener" style="text-decoration:none">Maps ↗</a>` : ''}
+              ${d.urlMaps ? `<a class="btn-ghost" href="${escapeHtml(sanitizeUrl(d.urlMaps))}" target="_blank" rel="noopener" style="text-decoration:none">Maps ↗</a>` : ''}
             </div>
           </div>
         `;
@@ -11445,7 +11478,7 @@ function renderPedMatSearch() {
     (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addLineaPedidoLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addLineaPedidoLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -11621,7 +11654,7 @@ function renderRsvSearch() {
     (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addRsvLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addRsvLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }

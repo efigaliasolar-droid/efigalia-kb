@@ -2,7 +2,7 @@
 // Estrategia: network-first para index.html (que contiene TODA la app)
 // con fallback a caché. Assets estáticos (iconos, manifest) cache-first.
 
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'efigalia-' + VERSION;
 const SHELL = [
   './',
@@ -10,7 +10,9 @@ const SHELL = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './icon-maskable-512.png'
+  './icon-maskable-512.png',
+  './vendor/pdfjs/pdf.min.mjs',
+  './vendor/pdfjs/pdf.worker.min.mjs'
 ];
 
 self.addEventListener('install', (e) => {
@@ -34,7 +36,7 @@ self.addEventListener('fetch', (e) => {
 
   // Nunca cachear llamadas al Worker de Cloudflare (datos dinámicos + IA)
   if (url.hostname.endsWith('workers.dev')) return;
-  // Nunca cachear CDNs de terceros (pdf.js, fuentes) para no quedar con versiones obsoletas
+  // Nunca cachear orígenes cruzados (fuentes Google, etc.) para no quedar con versiones obsoletas
   if (url.origin !== self.location.origin) return;
 
   // Network-first para HTML (la app es una SPA en un único index.html)

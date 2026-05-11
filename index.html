@@ -3294,7 +3294,7 @@ function renderEstadoObra() {
 
   const resumenFicha = obraRec ? `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
-      ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(obraRec.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+      ${obraRec.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.direccion)}${obraRec.mapsUrl ? ` · <a href="${escapeHtml(sanitizeUrl(obraRec.mapsUrl))}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
       ${obraRec.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obraRec.clienteNombre)}${obraRec.telefono ? ` · <a href="tel:${escapeHtml(obraRec.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obraRec.telefono)}</a>` : ''}</div></div>` : ''}
       ${obraRec.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obraRec.contactoObs)}</div>` : ''}
       ${!obraRec.direccion && !obraRec.clienteNombre && !obraRec.contactoObs ? `<div style="color:var(--text-muted);font-size:13px">Ficha sin rellenar. Usa el botón para añadir contacto, dirección y documentos.</div>` : ''}
@@ -3794,7 +3794,7 @@ function renderAdminDocumentos() {
         </div>
       </div>
       <div class="acciones" style="gap:4px">
-        ${d.archivoUrl ? `<a class="toggle-btn on" href="${d.archivoUrl}" target="_blank" rel="noopener" style="text-decoration:none">VER</a>` : ''}
+        ${d.archivoUrl ? `<a class="toggle-btn on" href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="text-decoration:none">VER</a>` : ''}
         <button class="toggle-btn off" onclick="editarDocumento(${d.id})">EDITAR</button>
         <button class="icon-btn" onclick="eliminarDocumento(${d.id})" title="Eliminar">🗑</button>
       </div>
@@ -4751,10 +4751,10 @@ function openModal(id) {
   if (!inc) return;
   const tipo = inc.tipo || 'incidencia';
   const photos = inc.fotos?.length
-    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${inc.fotos.map(f=>`<img src="${escapeHtml(sanitizeUrl(f))}" onclick="window.open('${escapeAttr(sanitizeUrl(f))}')" loading="lazy">`).join('')}</div></div>`
     : '';
   const archivo = inc.archivoUrl
-    ? `<div class="modal-section"><div class="modal-label">Archivo</div><a class="modal-doc" href="${inc.archivoUrl}" target="_blank" rel="noopener">📎 ${inc.archivoNombre || 'Descargar archivo'}</a></div>`
+    ? `<div class="modal-section"><div class="modal-label">Archivo</div><a class="modal-doc" href="${escapeHtml(sanitizeUrl(inc.archivoUrl))}" target="_blank" rel="noopener">📎 ${escapeHtml(inc.archivoNombre || 'Descargar archivo')}</a></div>`
     : '';
   const doc = inc.documentacion && inc.documentacion !== '-' ? `<div class="modal-section"><div class="modal-label">${tipo==='documento'?'Descripción':'Documentación'}</div><div class="modal-doc">📄 ${inc.documentacion}</div></div>` : '';
   const kw = inc.keywords ? `<div class="modal-section"><div class="modal-label">Palabras clave</div><div class="modal-keywords">${inc.keywords}</div></div>` : '';
@@ -5485,7 +5485,7 @@ function renderInstaladorPills(containerId, selected) {
   const lista = (typeof instaladoresActivosAdmin === 'function') ? instaladoresActivosAdmin() : INSTALADORES;
   c._selected = (selected || []).filter(n => lista.includes(n));
   c.innerHTML = lista.map(name =>
-    `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${containerId}','${name.replace(/'/g,"\\'")}')">${name}</button>`
+    `<button type="button" class="pill${c._selected.includes(name)?' on':''}" onclick="togglePill('${escapeAttr(containerId)}','${escapeAttr(name)}')">${escapeHtml(name)}</button>`
   ).join('');
 }
 function togglePill(containerId, name) {
@@ -6239,6 +6239,15 @@ function refrescarDatalists() {
   fill('dl-instaladores', instaladoresUsados());
 }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function sanitizeUrl(url) {
+  if (url == null) return '#';
+  const s = String(url).trim();
+  if (!s) return '#';
+  if (/^[#/.?]/.test(s)) return s;
+  if (/^(https?|mailto|tel|blob):/i.test(s)) return s;
+  if (/^data:image\/(png|jpe?g|gif|webp|bmp);base64,/i.test(s)) return s;
+  return '#';
+}
 
 // ── CHIPS INPUT (instaladores) ─────────────────────────
 function setupChipsInput(containerId, inputId, values) {
@@ -6351,7 +6360,7 @@ function renderMatSearch() {
     (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onclick="addLineaLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onclick="addLineaLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -7069,7 +7078,7 @@ function renderPpSearch() {
     (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addPpLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addPpLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -7581,7 +7590,7 @@ function openParteModal(id) {
   const p = partes.find(x => x.id === id);
   if (!p) return;
   const photos = (p.fotos||[]).length
-    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${f}" onclick="window.open('${f}')" loading="lazy">`).join('')}</div></div>`
+    ? `<div class="modal-section"><div class="modal-label">Fotos</div><div class="modal-photos">${p.fotos.map(f=>`<img src="${escapeHtml(sanitizeUrl(f))}" onclick="window.open('${escapeAttr(sanitizeUrl(f))}')" loading="lazy">`).join('')}</div></div>`
     : '';
   document.getElementById('modal-inner').innerHTML = `
     <div class="modal-title">${escapeHtml(p.idObra)} · ${escapeHtml(p.fecha)}</div>
@@ -8335,7 +8344,7 @@ function renderDocsObra() {
   }
   cont.innerHTML = docs.map(d => `
     <div class="admin-row" style="margin-bottom:6px">
-      <a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
+      <a href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="flex:1;color:var(--accent);text-decoration:none;font-size:14px;font-weight:500">${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>
       <div class="acciones">
         <span style="font-family:var(--mono);font-size:10px;color:var(--text-muted)">${escapeHtml(d.fecha || '')}</span>
         ${isAdmin() ? `<button class="icon-btn" onclick="eliminarDocObra(${d.id})" title="Eliminar">🗑</button>` : ''}
@@ -9135,13 +9144,13 @@ function onMntObraChange() {
   const docs = incidents.filter(i => i.tipo === 'documento' && i.idObraAsociada === nombre)
     .sort((a,b) => (b.fechaTs||0) - (a.fechaTs||0));
   cont.innerHTML = `
-    ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(obra.mapsUrl)}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
+    ${obra.direccion ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Dirección</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.direccion)}${obra.mapsUrl ? ` · <a href="${escapeHtml(sanitizeUrl(obra.mapsUrl))}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">Maps ↗</a>` : ''}</div></div>` : ''}
     ${obra.clienteNombre ? `<div style="margin-bottom:8px"><span style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase">Cliente</span><div style="font-size:14px;margin-top:2px">${escapeHtml(obra.clienteNombre)}${obra.telefono ? ` · <a href="tel:${escapeHtml(obra.telefono)}" style="color:var(--accent);text-decoration:none">${escapeHtml(obra.telefono)}</a>` : ''}</div></div>` : ''}
     ${obra.contactoObs ? `<div style="font-size:13px;color:var(--text-muted);padding:8px 10px;background:var(--surface2);border-radius:6px;margin-top:4px">${escapeHtml(obra.contactoObs)}</div>` : ''}
     ${docs.length ? `
       <div style="margin-top:10px">
         <div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">Documentación</div>
-        ${docs.map(d => `<a href="${escapeHtml(d.archivoUrl)}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
+        ${docs.map(d => `<a href="${escapeHtml(sanitizeUrl(d.archivoUrl))}" target="_blank" rel="noopener" style="display:block;color:var(--accent);text-decoration:none;font-size:13px;padding:4px 0">📄 ${escapeHtml(d.nombre || d.archivoNombre || 'documento')}</a>`).join('')}
       </div>
     ` : ''}
     ${!obra.direccion && !obra.clienteNombre && !obra.contactoObs && !docs.length ? '<div style="color:var(--text-muted);font-size:13px">Ficha de obra sin rellenar. Edítala desde Administración → Obras → Ficha.</div>' : ''}
@@ -9439,7 +9448,7 @@ function _pdfFld(k, v) { return (v != null && v !== '') ? `<div class="fld"><div
 function _pdfBlock(title, texto) { return texto ? `<h2>${escapeHtml(title)}</h2><div class="blk">${escapeHtml(texto)}</div>` : ''; }
 function _pdfFotos(urls) {
   if (!Array.isArray(urls) || !urls.length) return '';
-  return `<h2>Fotografías (${urls.length})</h2><div class="photos">${urls.map(u => `<img src="${escapeHtml(u)}" alt="">`).join('')}</div>`;
+  return `<h2>Fotografías (${urls.length})</h2><div class="photos">${urls.map(u => `<img src="${escapeHtml(sanitizeUrl(u))}" alt="">`).join('')}</div>`;
 }
 
 function generarPDFVisita(id) {
@@ -9988,7 +9997,17 @@ function renderTarjetaTrabajo(t) {
   `;
 }
 
-function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
+function escapeAttr(s) {
+  return String(s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 // ── Selector de tipo (desde Planificación) ─────────────
 let planCtx = { fecha: null, persona: null };
@@ -10076,7 +10095,7 @@ function renderAsigEquipos() {
   const ocupadasPorEquipo = asigEquiposEdit.map(eq => new Set(eq.instaladores || []));
   cont.innerHTML = asigEquiposEdit.map((eq, idx) => {
     const titulo = asigEquiposEdit.length > 1 ? `Furgoneta ${idx + 1}` : 'Furgoneta';
-    const opts = '<option value="">— Seleccionar —</option>' + furgosLista.map(f => `<option value="${escapeAttr(f)}"${eq.furgoneta === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
+    const opts = '<option value="">— Seleccionar —</option>' + furgosLista.map(f => `<option value="${escapeHtml(f)}"${eq.furgoneta === f ? ' selected' : ''}>${escapeHtml(f)}</option>`).join('');
     const pills = instaladoresLista.map(n => {
       const enEste = (eq.instaladores || []).includes(n);
       const enOtro = !enEste && ocupadasPorEquipo.some((s, i) => i !== idx && s.has(n));
@@ -10334,7 +10353,7 @@ function renderMiDia() {
             </div>
             <div class="acciones">
               <button class="btn-ghost" onclick="abrirVisita(${d.id})">Abrir visita</button>
-              ${d.urlMaps ? `<a class="btn-ghost" href="${escapeHtml(d.urlMaps)}" target="_blank" rel="noopener" style="text-decoration:none">Maps ↗</a>` : ''}
+              ${d.urlMaps ? `<a class="btn-ghost" href="${escapeHtml(sanitizeUrl(d.urlMaps))}" target="_blank" rel="noopener" style="text-decoration:none">Maps ↗</a>` : ''}
             </div>
           </div>
         `;
@@ -11445,7 +11464,7 @@ function renderPedMatSearch() {
     (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addLineaPedidoLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addLineaPedidoLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Añadir como texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }
@@ -11621,7 +11640,7 @@ function renderRsvSearch() {
     (m.ref||'').toLowerCase().includes(q) || (m.descripcion||'').toLowerCase().includes(q) || (m.categoria||'').toLowerCase().includes(q)
   ).slice(0, 30);
   if (!results.length) {
-    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addRsvLibre('${escapeHtml(q).replace(/'/g,"&#39;")}')" style="margin-left:8px">+ Texto libre</button></div></div>`;
+    box.innerHTML = `<div class="mat-result"><div class="desc">Sin resultados. <button class="btn-ghost" onmousedown="event.preventDefault();addRsvLibre('${escapeAttr(q)}')" style="margin-left:8px">+ Texto libre</button></div></div>`;
     box.classList.add('open');
     return;
   }

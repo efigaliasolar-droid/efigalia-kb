@@ -4107,22 +4107,28 @@ async function autenticarUsuario(nombre, pinPlano) {
 async function cambiarPinInstalador(id) {
   const user = incidents.find(i => i.id === id && i.tipo === 'instalador');
   if (!user) return;
-  const pin = prompt(`Nuevo PIN para ${user.nombre} (4–6 dígitos, vacío para borrar):`);
+  const pin = prompt(`Nuevo PIN para ${user.nombre} (4–8 dígitos):`);
   if (pin === null) return;
   const clean = pin.trim();
-  if (clean === '') {
-    if (!confirm('¿Quitar PIN? Este usuario no podrá entrar hasta que se le asigne otro.')) return;
-    user.pin = null;        // null = borrar intencionado (vs undefined = preservar)
-    user.pinHash = null;
-  } else {
-    if (!/^\d{4,6}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–6 dígitos', 'err'); return; }
-    if (/^(\d)\1+$/.test(clean) || clean === '123456' || clean === '654321' || clean === '111111') {
-      showToast('⚠ PIN demasiado obvio, elige otro', 'err'); return;
-    }
-    user.pin = clean;
-    delete user.pinHash;  // limpiar legado
+  if (!/^\d{4,8}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–8 dígitos', 'err'); return; }
+  if (/^(\d)\1+$/.test(clean) || ['123456', '654321', '12345678', '87654321', '111111'].includes(clean)) {
+    showToast('⚠ PIN demasiado obvio, elige otro', 'err'); return;
   }
-  await sheetsSave();
+  try {
+    const res = await workerFetch('/auth/set-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, pin: clean }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('⚠ ' + (err.error || 'Error asignando PIN'), 'err');
+      return;
+    }
+  } catch(e) {
+    showToast('⚠ Sin conexión', 'err');
+    return;
+  }
   renderAdminMaestros('instalador');
   showToast('✓ PIN actualizado', 'ok');
 }

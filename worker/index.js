@@ -1,14 +1,17 @@
 // Cloudflare Worker para Efigalia
-// Fase A: auth con token HMAC-SHA256 (JWT estándar) + redacción de PINs.
-// Endpoints públicos: GET /foto/:key, POST /auth/login.
+// Fase B: PINs hasheados con PBKDF2 (100k iter, sal por usuario).
+// Endpoints públicos: GET /foto/:key, GET /auth/users, POST /auth/login.
 // Resto: requieren Authorization: Bearer <token>.
-// POST /data: además requiere rol admin (puede sobrescribir usuarios y PINs).
 
 const ALLOWED_ORIGINS = new Set([
   'https://efigaliasolar-droid.github.io'
 ]);
 
 const SESSION_TTL_SECONDS = 24 * 60 * 60; // 24h
+const PBKDF2_ITER = 100000;
+
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_PHOTO_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 // ── CORS ──────────────────────────────────────────────────
 function corsHeaders(request) {
@@ -30,7 +33,7 @@ function json(body, status, cors) {
   });
 }
 
-// ── Base64URL helpers ────────────────────────────────────
+// ── Encoding helpers ─────────────────────────────────────
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 function b64uFromBytes(bytes) {
@@ -46,6 +49,14 @@ function b64uToBytes(b64u) {
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
+}
+function hexToBytes(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
+function bytesToHex(bytes) {
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ── JWT HS256 ────────────────────────────────────────────
@@ -83,10 +94,30 @@ async function verifyJWT(token, secret) {
   return payload;
 }
 
-// ── SHA-256 hex (compat con cliente legado) ──────────────
-async function sha256Hex(str) {
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+// ── PBKDF2 para PINs ─────────────────────────────────────
+async function pbkdf2Hash(pin, saltHex, iterations) {
+  const salt = hexToBytes(saltHex);
+  const key = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    key, 256
+  );
+  return bytesToHex(new Uint8Array(bits));
+}
+async function generatePinFields(pin) {
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const pinSalt = bytesToHex(saltBytes);
+  const pinPBKDF2 = await pbkdf2Hash(pin, pinSalt, PBKDF2_ITER);
+  return { pinPBKDF2, pinSalt, pinIter: PBKDF2_ITER };
+}
+function constantTimeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+function isValidPin(pin) {
+  return typeof pin === 'string' && /^\d{4,8}$/.test(pin);
 }
 
 // ── Auth helpers ─────────────────────────────────────────
@@ -101,18 +132,24 @@ function isAdminRole(rol) {
 }
 
 // ── Datos en R2 ──────────────────────────────────────────
+const DATA_KEY = 'kb/data.json';
 async function loadData(env) {
-  const obj = await env.FOTOS.get('kb/data.json');
+  const obj = await env.FOTOS.get(DATA_KEY);
   if (!obj) return [];
   try { return JSON.parse(await obj.text()); } catch { return []; }
 }
+async function saveData(env, arr) {
+  await env.FOTOS.put(DATA_KEY, JSON.stringify(arr), {
+    httpMetadata: { contentType: 'application/json' },
+  });
+}
 
-// Devuelve el array sin los campos pin/pinHash de los instaladores.
+// Devuelve el array sin los campos de PIN (cualquier formato) de los instaladores.
 function redactPins(arr) {
   if (!Array.isArray(arr)) return arr;
   return arr.map(it => {
-    if (it && it.tipo === 'instalador' && (it.pin !== undefined || it.pinHash !== undefined)) {
-      const { pin, pinHash, ...rest } = it;
+    if (it && it.tipo === 'instalador') {
+      const { pin, pinHash, pinPBKDF2, pinSalt, pinIter, ...rest } = it;
       return rest;
     }
     return it;
@@ -142,7 +179,6 @@ export default {
     }
 
     // — PÚBLICO: listado mínimo de nombres para el dropdown de login —
-    // Solo nombres de instaladores activos. Sin PINs, sin roles, sin metadata.
     if (path === '/auth/users' && request.method === 'GET') {
       const data = await loadData(env);
       const nombres = data
@@ -163,18 +199,42 @@ export default {
       const data = await loadData(env);
       const user = data.find(i => i && i.tipo === 'instalador' && i.nombre === nombre && i.activa !== false);
 
-      // Delay ~150 ms para que la respuesta tarde igual aunque el usuario no exista (timing).
+      // Delay constante para no filtrar si el usuario existe o no.
       await new Promise(r => setTimeout(r, 150));
 
       if (!user) return json({ error: 'Usuario o PIN incorrecto' }, 401, cors);
 
       let ok = false;
-      if (typeof user.pin === 'string' && user.pin.length > 0) {
-        ok = (user.pin === pin);
-      } else if (typeof user.pinHash === 'string' && user.pinHash.length > 0) {
-        ok = (user.pinHash === await sha256Hex(pin));
+
+      // 1) Bootstrap PIN temporal (env vars). Solo válido si AMBOS están
+      //    configurados Y el nombre del login coincide con BOOTSTRAP_ADMIN_NAME.
+      //    Pensado para recuperar/asignar el primer PIN PBKDF2 y luego borrar
+      //    los secrets. Restringir por nombre evita que otros usuarios que
+      //    descubran el PIN bootstrap puedan suplantar.
+      if (env.BOOTSTRAP_PIN && env.BOOTSTRAP_ADMIN_NAME &&
+          typeof env.BOOTSTRAP_PIN === 'string' && env.BOOTSTRAP_PIN.length >= 8 &&
+          user.nombre === env.BOOTSTRAP_ADMIN_NAME) {
+        if (constantTimeEqual(pin, env.BOOTSTRAP_PIN)) ok = true;
       }
-      if (!ok) return json({ error: 'Usuario o PIN incorrecto' }, 401, cors);
+
+      // 2) PIN PBKDF2 normal.
+      if (!ok && user.pinPBKDF2 && user.pinSalt && user.pinIter) {
+        const hash = await pbkdf2Hash(pin, user.pinSalt, user.pinIter);
+        ok = constantTimeEqual(hash, user.pinPBKDF2);
+      }
+
+      // 3) Formatos viejos (pin claro, pinHash SHA256): YA NO se aceptan.
+      //    Si el usuario solo los tiene, hay que reasignar PIN vía /auth/set-pin.
+
+      if (!ok) {
+        if (!user.pinPBKDF2 && (user.pin || user.pinHash)) {
+          return json({ error: 'PIN no migrado. Pide al admin que te asigne un PIN nuevo.' }, 401, cors);
+        }
+        if (!user.pinPBKDF2) {
+          return json({ error: 'PIN no asignado. Pide al admin que te asigne uno.' }, 401, cors);
+        }
+        return json({ error: 'Usuario o PIN incorrecto' }, 401, cors);
+      }
 
       const now = Math.floor(Date.now() / 1000);
       const payload = {
@@ -191,7 +251,64 @@ export default {
     const auth = await getAuth(request, env);
     if (!auth) return json({ error: 'Auth requerida' }, 401, cors);
 
-    // — PROXY ANTHROPIC (cualquier usuario autenticado) —
+    // — Cambiar mi propio PIN (cualquier autenticado) —
+    if (path === '/auth/change-pin' && request.method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch { return json({ error: 'bad json' }, 400, cors); }
+      const oldPin = typeof body.oldPin === 'string' ? body.oldPin.trim() : '';
+      const newPin = typeof body.newPin === 'string' ? body.newPin.trim() : '';
+      if (!isValidPin(newPin)) return json({ error: 'PIN nuevo debe ser 4-8 dígitos' }, 400, cors);
+
+      const data = await loadData(env);
+      const idx = data.findIndex(i => i && i.tipo === 'instalador' && i.nombre === auth.sub);
+      if (idx === -1) return json({ error: 'Usuario no encontrado' }, 404, cors);
+      const user = data[idx];
+
+      // Si el usuario ya tiene PIN PBKDF2, exigimos verificar el oldPin.
+      // Si no tiene (acaba de loguearse por bootstrap), permitimos setear sin oldPin.
+      if (user.pinPBKDF2 && user.pinSalt && user.pinIter) {
+        if (!oldPin) return json({ error: 'Falta PIN actual' }, 400, cors);
+        const oldHash = await pbkdf2Hash(oldPin, user.pinSalt, user.pinIter);
+        if (!constantTimeEqual(oldHash, user.pinPBKDF2)) {
+          return json({ error: 'PIN actual incorrecto' }, 401, cors);
+        }
+      }
+
+      const fields = await generatePinFields(newPin);
+      data[idx] = { ...user, ...fields };
+      delete data[idx].pin;
+      delete data[idx].pinHash;
+      await saveData(env, data);
+      return json({ ok: true }, 200, cors);
+    }
+
+    // — Asignar PIN a otro usuario (solo admin) —
+    if (path === '/auth/set-pin' && request.method === 'POST') {
+      if (!isAdminRole(auth.rol)) return json({ error: 'Solo admin' }, 403, cors);
+      let body;
+      try { body = await request.json(); } catch { return json({ error: 'bad json' }, 400, cors); }
+      const id     = body && body.id;
+      const nombre = body && typeof body.nombre === 'string' ? body.nombre.trim() : '';
+      const pin    = body && typeof body.pin === 'string'    ? body.pin.trim()    : '';
+      if (!isValidPin(pin)) return json({ error: 'PIN debe ser 4-8 dígitos' }, 400, cors);
+      if (!id && !nombre)   return json({ error: 'Falta id o nombre' }, 400, cors);
+
+      const data = await loadData(env);
+      const idx = data.findIndex(i =>
+        i && i.tipo === 'instalador' &&
+        (id !== undefined && id !== null ? i.id === id : i.nombre === nombre)
+      );
+      if (idx === -1) return json({ error: 'Usuario no encontrado' }, 404, cors);
+
+      const fields = await generatePinFields(pin);
+      data[idx] = { ...data[idx], ...fields };
+      delete data[idx].pin;
+      delete data[idx].pinHash;
+      await saveData(env, data);
+      return json({ ok: true }, 200, cors);
+    }
+
+    // — PROXY ANTHROPIC (cualquier autenticado) —
     if (path === '/ai' && request.method === 'POST') {
       const body = await request.json();
       const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -207,9 +324,8 @@ export default {
       return json(data, res.status, cors);
     }
 
-    // — DATOS MAESTROS (incluye usuarios y PINs) —
+    // — DATOS MAESTROS (incluye usuarios) —
     if (path === '/data') {
-      const KEY = 'kb/data.json';
       if (request.method === 'GET') {
         const arr = await loadData(env);
         return json(redactPins(arr), 200, cors);
@@ -221,31 +337,33 @@ export default {
         try { incoming = JSON.parse(text); } catch { return json({ error: 'JSON inválido' }, 400, cors); }
         if (!Array.isArray(incoming)) return json({ error: 'Se esperaba array' }, 400, cors);
 
-        // El cliente recibe los PINs redactados (sin pin/pinHash). Para no borrar
-        // los PINs almacenados al guardar, mergeamos por id: si el item entrante
-        // no trae pin/pinHash pero el existente sí, preservamos los del existente.
+        // Los campos de PIN se gestionan EXCLUSIVAMENTE vía /auth/set-pin y
+        // /auth/change-pin. POST /data los stripea siempre y preserva los del
+        // existing (solo el formato nuevo PBKDF2; el viejo pin/pinHash se
+        // descarta como migración silenciosa).
         const existing = await loadData(env);
         const byId = new Map();
         for (const it of existing) if (it && it.id !== undefined) byId.set(it.id, it);
-        // Convención: undefined = no enviado (preservar lo existente); null = borrar intencionado.
+
         const merged = incoming.map(it => {
-          if (!it || it.tipo !== 'instalador' || it.id === undefined) return it;
+          if (!it || it.tipo !== 'instalador') return it;
+          const { pin, pinHash, pinPBKDF2, pinSalt, pinIter, ...rest } = it;
+          if (it.id === undefined) return rest; // usuario nuevo sin id, sin PIN
           const prev = byId.get(it.id);
-          if (!prev) return it; // usuario nuevo, lo dejamos tal cual
-          const out = { ...it };
-          if (out.pin === undefined)     { if (prev.pin !== undefined) out.pin = prev.pin; }
-          else if (out.pin === null)     { delete out.pin; }
-          if (out.pinHash === undefined) { if (prev.pinHash !== undefined) out.pinHash = prev.pinHash; }
-          else if (out.pinHash === null) { delete out.pinHash; }
+          if (!prev) return rest; // usuario nuevo, sin PIN
+          const out = { ...rest };
+          if (prev.pinPBKDF2) out.pinPBKDF2 = prev.pinPBKDF2;
+          if (prev.pinSalt)   out.pinSalt   = prev.pinSalt;
+          if (prev.pinIter)   out.pinIter   = prev.pinIter;
           return out;
         });
 
-        await env.FOTOS.put(KEY, JSON.stringify(merged), { httpMetadata: { contentType: 'application/json' } });
+        await saveData(env, merged);
         return new Response('ok', { headers: cors });
       }
     }
 
-    // — DATOS OPERATIVOS (cualquier usuario autenticado) —
+    // — DATOS OPERATIVOS (cualquier autenticado) —
     for (const entity of ['movimientos', 'partes', 'visitas', 'materiales']) {
       if (path === '/' + entity) {
         const KEY = 'kb/' + entity + '.json';
@@ -263,13 +381,20 @@ export default {
       }
     }
 
-    // — SUBIDA FOTOS —
+    // — SUBIDA FOTOS (validada) —
     if (path === '/foto' && request.method === 'POST') {
       const formData = await request.formData();
       const file = formData.get('file');
-      if (!file) return new Response('No file', { status: 400, headers: cors });
+      if (!file) return json({ error: 'No file' }, 400, cors);
+      if (typeof file.size === 'number' && file.size > MAX_PHOTO_BYTES) {
+        return json({ error: 'Archivo > 10 MB' }, 413, cors);
+      }
+      if (!ALLOWED_PHOTO_MIMES.has(file.type)) {
+        return json({ error: 'Tipo no permitido (jpg/png/webp)' }, 415, cors);
+      }
       const ext = (file.name || '').split('.').pop() || 'jpg';
-      const key = 'fotos/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+      const safeExt = /^[a-zA-Z0-9]{1,5}$/.test(ext) ? ext.toLowerCase() : 'jpg';
+      const key = 'fotos/' + Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + safeExt;
       await env.FOTOS.put(key, file.stream(), {
         httpMetadata: { contentType: file.type }
       });

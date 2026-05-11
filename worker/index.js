@@ -141,6 +141,17 @@ export default {
       });
     }
 
+    // — PÚBLICO: listado mínimo de nombres para el dropdown de login —
+    // Solo nombres de instaladores activos. Sin PINs, sin roles, sin metadata.
+    if (path === '/auth/users' && request.method === 'GET') {
+      const data = await loadData(env);
+      const nombres = data
+        .filter(i => i && i.tipo === 'instalador' && i.activa !== false && typeof i.nombre === 'string')
+        .map(i => ({ nombre: i.nombre }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      return json(nombres, 200, cors);
+    }
+
     // — PÚBLICO: login —
     if (path === '/auth/login' && request.method === 'POST') {
       let body;

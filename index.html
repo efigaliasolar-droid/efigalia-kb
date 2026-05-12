@@ -424,17 +424,19 @@
   <div id="view-login">
     <div class="section-title" style="margin-top:30px">Identifícate</div>
     <div class="home-intro">Elige tu nombre e introduce tu PIN para continuar.</div>
-    <div class="form-group">
-      <label>¿Quién eres?</label>
-      <select id="login-nombre" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('login-pin').focus()">
-        <option value="">— Elige tu nombre —</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>PIN</label>
-      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-pin" class="pin-input" autocomplete="off" onkeydown="if(event.key==='Enter')hacerLogin()">
-    </div>
-    <button class="btn-primary" onclick="hacerLogin()">Entrar</button>
+    <form id="login-form" onsubmit="event.preventDefault(); hacerLogin();" autocomplete="on">
+      <div class="form-group">
+        <label>¿Quién eres?</label>
+        <select id="login-nombre" name="username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pin').focus()">
+          <option value="">— Elige tu nombre —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>PIN</label>
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="login-pin" name="password" class="pin-input" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-primary">Entrar</button>
+    </form>
     <div class="calc-note" style="margin-top:14px">Si no tienes PIN asignado, pídeselo al administrador.</div>
   </div>
 

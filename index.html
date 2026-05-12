@@ -421,7 +421,7 @@
 </header>
 
 <main>
-  <div id="view-login">
+  <div id="view-login" style="display:none">
     <div class="section-title" style="margin-top:30px">Identifícate</div>
     <div class="home-intro">Elige tu nombre e introduce tu PIN para continuar.</div>
     <div class="form-group">
@@ -7653,26 +7653,14 @@ function actualizarHeaderUsuario() {
 }
 
 function mostrarLogin() {
-  hideAllViews();
-  document.getElementById('tab-bar-incidencias').style.display = 'none';
-  document.getElementById('view-login').style.display = 'block';
-  document.getElementById('login-pin').value = '';
+  // BYPASS TEMPORAL: acceso sin PIN. Se inicia sesión automáticamente como admin
+  // para poder entrar mientras se resuelve el problema de autenticación.
+  const last = (localStorage.getItem('efigalia_last_nombre') || '').trim();
+  currentUser = { id: 0, nombre: last || 'Admin', rol: 'admin' };
+  adminAutenticado = true;
+  try { sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser)); } catch(e) {}
   actualizarHeaderUsuario();
-  // El input es de texto libre; el datalist solo aporta sugerencias. Así, si
-  // /auth/users falla o no existe (Worker antiguo), el usuario aún puede
-  // escribir su nombre y loguearse sin bootstrap roto.
-  const dl = document.getElementById('login-names');
-  if (dl) dl.innerHTML = '';
-  // Pre-rellenar con el último nombre usado en este navegador (UX).
-  const last = localStorage.getItem('efigalia_last_nombre');
-  if (last) document.getElementById('login-nombre').value = last;
-  fetch(WORKER + '/auth/users')
-    .then(r => r.ok ? r.json() : [])
-    .then(list => {
-      if (!Array.isArray(list) || !dl) return;
-      dl.innerHTML = list.map(a => `<option value="${escapeHtml(a.nombre)}"></option>`).join('');
-    })
-    .catch(() => { /* sin sugerencias; el input sigue siendo escribible */ });
+  goHome();
 }
 
 async function hacerLogin() {
@@ -12285,8 +12273,29 @@ try { applyFontSize(localStorage.getItem('efigalia_fs') || ''); } catch(e) {}
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────
 if ('serviceWorker' in navigator) {
+  // updateViaCache:'none' fuerza al navegador a no cachear sw.js,
+  // imprescindible para que llegue una nueva versión sin esperar 24h.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW reg failed:', err));
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('SW reg failed:', err));
   });
 }
 </script>

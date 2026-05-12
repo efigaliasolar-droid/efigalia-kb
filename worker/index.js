@@ -21,7 +21,8 @@ function corsHeaders(request) {
     'Access-Control-Allow-Origin': allow,
     'Vary': 'Origin',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, If-Match',
+    'Access-Control-Expose-Headers': 'ETag',
     'Access-Control-Max-Age': '86400',
   };
 }
@@ -133,13 +134,57 @@ function isAdminRole(rol) {
 
 // ── Datos en R2 ──────────────────────────────────────────
 const DATA_KEY = 'kb/data.json';
+
+// Devuelve {text, etag} o {text:null, etag:null} si no existe.
+async function loadRaw(env, key) {
+  const obj = await env.FOTOS.get(key);
+  if (!obj) return { text: null, etag: null };
+  const text = await obj.text();
+  const etag = await etagOf(text);
+  return { text, etag };
+}
+async function etagOf(text) {
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+  return '"' + bytesToHex(new Uint8Array(buf)) + '"';
+}
+
+// loadData usa loadRaw; mantenemos el alias para no tocar el resto del worker.
 async function loadData(env) {
-  const obj = await env.FOTOS.get(DATA_KEY);
-  if (!obj) return [];
-  try { return JSON.parse(await obj.text()); } catch { return []; }
+  const { text } = await loadRaw(env, DATA_KEY);
+  if (!text) return [];
+  try { return JSON.parse(text); } catch { return []; }
 }
 async function saveData(env, arr) {
   await env.FOTOS.put(DATA_KEY, JSON.stringify(arr), {
+    httpMetadata: { contentType: 'application/json' },
+  });
+}
+
+// Comprueba If-Match. Devuelve {ok, currentEtag, currentText}.
+// Regla:
+//   - Si el archivo NO existe: aceptar (primera escritura) sólo si If-Match es '*' o falta.
+//   - Si el archivo existe: exigir If-Match con etag actual o '*'.
+async function checkIfMatch(request, env, key) {
+  const ifMatch = (request.headers.get('If-Match') || '').trim();
+  const { text, etag } = await loadRaw(env, key);
+  if (text === null) {
+    if (!ifMatch || ifMatch === '*') return { ok: true, currentEtag: null, currentText: null };
+    return { ok: false, currentEtag: null, currentText: null };
+  }
+  if (!ifMatch) return { ok: false, currentEtag: etag, currentText: text };
+  if (ifMatch === '*') return { ok: true, currentEtag: etag, currentText: text };
+  const norm = s => s.replace(/^W\//, '');
+  return { ok: norm(ifMatch) === norm(etag), currentEtag: etag, currentText: text };
+}
+
+// Copia el texto actual a kb/_backups/<entidad>-<ISOtimestamp>.json antes de
+// sobreescribir. Si no había nada (primera escritura), no hace nada.
+async function backupCurrent(env, key, currentText) {
+  if (!currentText) return;
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = key.split('/').pop().replace(/\.json$/, '');
+  const backupKey = 'kb/_backups/' + filename + '-' + ts + '.json';
+  await env.FOTOS.put(backupKey, currentText, {
     httpMetadata: { contentType: 'application/json' },
   });
 }
@@ -330,11 +375,19 @@ export default {
     // — DATOS MAESTROS (incluye usuarios) —
     if (path === '/data') {
       if (request.method === 'GET') {
-        const arr = await loadData(env);
-        return json(redactPins(arr), 200, cors);
+        const { text, etag } = await loadRaw(env, DATA_KEY);
+        let arr = [];
+        if (text) { try { arr = JSON.parse(text); } catch {} }
+        const body = JSON.stringify(redactPins(arr));
+        return new Response(body, {
+          headers: { ...cors, 'Content-Type': 'application/json', 'ETag': etag || '"empty"' },
+        });
       }
       if (request.method === 'POST') {
         if (!isAdminRole(auth.rol)) return json({ error: 'Solo admin' }, 403, cors);
+        const check = await checkIfMatch(request, env, DATA_KEY);
+        if (!check.ok) return json({ error: 'Conflict', currentEtag: check.currentEtag }, 409, cors);
+
         const text = await request.text();
         let incoming;
         try { incoming = JSON.parse(text); } catch { return json({ error: 'JSON inválido' }, 400, cors); }
@@ -344,16 +397,17 @@ export default {
         // /auth/change-pin. POST /data los stripea siempre y preserva los del
         // existing (solo el formato nuevo PBKDF2; el viejo pin/pinHash se
         // descarta como migración silenciosa).
-        const existing = await loadData(env);
+        let existing = [];
+        if (check.currentText) { try { existing = JSON.parse(check.currentText); } catch {} }
         const byId = new Map();
         for (const it of existing) if (it && it.id !== undefined) byId.set(it.id, it);
 
         const merged = incoming.map(it => {
           if (!it || it.tipo !== 'instalador') return it;
           const { pin, pinHash, pinPBKDF2, pinSalt, pinIter, ...rest } = it;
-          if (it.id === undefined) return rest; // usuario nuevo sin id, sin PIN
+          if (it.id === undefined) return rest;
           const prev = byId.get(it.id);
-          if (!prev) return rest; // usuario nuevo, sin PIN
+          if (!prev) return rest;
           const out = { ...rest };
           if (prev.pinPBKDF2) out.pinPBKDF2 = prev.pinPBKDF2;
           if (prev.pinSalt)   out.pinSalt   = prev.pinSalt;
@@ -361,8 +415,10 @@ export default {
           return out;
         });
 
-        await saveData(env, merged);
-        return new Response('ok', { headers: cors });
+        await backupCurrent(env, DATA_KEY, check.currentText);
+        const newText = JSON.stringify(merged);
+        await env.FOTOS.put(DATA_KEY, newText, { httpMetadata: { contentType: 'application/json' } });
+        return new Response('ok', { headers: { ...cors, 'ETag': await etagOf(newText) } });
       }
     }
 
@@ -371,15 +427,21 @@ export default {
       if (path === '/' + entity) {
         const KEY = 'kb/' + entity + '.json';
         if (request.method === 'GET') {
-          const obj = await env.FOTOS.get(KEY);
-          const text = obj ? await obj.text() : '[]';
-          return new Response(text, { headers: { ...cors, 'Content-Type': 'application/json' } });
+          const { text, etag } = await loadRaw(env, KEY);
+          return new Response(text || '[]', {
+            headers: { ...cors, 'Content-Type': 'application/json', 'ETag': etag || '"empty"' },
+          });
         }
         if (request.method === 'POST') {
+          const check = await checkIfMatch(request, env, KEY);
+          if (!check.ok) return json({ error: 'Conflict', currentEtag: check.currentEtag }, 409, cors);
+
           const text = await request.text();
           try { JSON.parse(text); } catch { return json({ error: 'JSON inválido' }, 400, cors); }
+
+          await backupCurrent(env, KEY, check.currentText);
           await env.FOTOS.put(KEY, text, { httpMetadata: { contentType: 'application/json' } });
-          return new Response('ok', { headers: cors });
+          return new Response('ok', { headers: { ...cors, 'ETag': await etagOf(text) } });
         }
       }
     }

@@ -2,7 +2,7 @@
 // Estrategia: network-first para index.html (que contiene TODA la app)
 // con fallback a caché. Assets estáticos (iconos, manifest) cache-first.
 
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = 'efigalia-' + VERSION;
 const SHELL = [
   './',
@@ -19,6 +19,10 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {

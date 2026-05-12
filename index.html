@@ -12279,8 +12279,30 @@ try { applyFontSize(localStorage.getItem('efigalia_fs') || ''); } catch(e) {}
 
 // ── SERVICE WORKER (PWA) ───────────────────────────────
 if ('serviceWorker' in navigator) {
+  // updateViaCache:'none' fuerza al navegador a no cachear sw.js,
+  // imprescindible para que llegue una nueva versión sin esperar 24h.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW reg failed:', err));
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        // Si ya hay una versión nueva esperando, actívala inmediatamente
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('SW reg failed:', err));
   });
 }
 </script>

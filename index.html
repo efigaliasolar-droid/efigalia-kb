@@ -421,7 +421,7 @@
 </header>
 
 <main>
-  <div id="view-login" style="display:none">
+  <div id="view-login">
     <div class="section-title" style="margin-top:30px">Identifícate</div>
     <div class="home-intro">Elige tu nombre e introduce tu PIN para continuar.</div>
     <div class="form-group">
@@ -4107,22 +4107,28 @@ async function autenticarUsuario(nombre, pinPlano) {
 async function cambiarPinInstalador(id) {
   const user = incidents.find(i => i.id === id && i.tipo === 'instalador');
   if (!user) return;
-  const pin = prompt(`Nuevo PIN para ${user.nombre} (4–6 dígitos, vacío para borrar):`);
+  const pin = prompt(`Nuevo PIN para ${user.nombre} (4–8 dígitos):`);
   if (pin === null) return;
   const clean = pin.trim();
-  if (clean === '') {
-    if (!confirm('¿Quitar PIN? Este usuario no podrá entrar hasta que se le asigne otro.')) return;
-    user.pin = null;        // null = borrar intencionado (vs undefined = preservar)
-    user.pinHash = null;
-  } else {
-    if (!/^\d{4,6}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–6 dígitos', 'err'); return; }
-    if (/^(\d)\1+$/.test(clean) || clean === '123456' || clean === '654321' || clean === '111111') {
-      showToast('⚠ PIN demasiado obvio, elige otro', 'err'); return;
-    }
-    user.pin = clean;
-    delete user.pinHash;  // limpiar legado
+  if (!/^\d{4,8}$/.test(clean)) { showToast('⚠ El PIN debe tener 4–8 dígitos', 'err'); return; }
+  if (/^(\d)\1+$/.test(clean) || ['123456', '654321', '12345678', '87654321', '111111'].includes(clean)) {
+    showToast('⚠ PIN demasiado obvio, elige otro', 'err'); return;
   }
-  await sheetsSave();
+  try {
+    const res = await workerFetch('/auth/set-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user.id, pin: clean }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast('⚠ ' + (err.error || 'Error asignando PIN'), 'err');
+      return;
+    }
+  } catch(e) {
+    showToast('⚠ Sin conexión', 'err');
+    return;
+  }
   renderAdminMaestros('instalador');
   showToast('✓ PIN actualizado', 'ok');
 }
@@ -7653,14 +7659,26 @@ function actualizarHeaderUsuario() {
 }
 
 function mostrarLogin() {
-  // BYPASS TEMPORAL: acceso sin PIN. Se inicia sesión automáticamente como admin
-  // para poder entrar mientras se resuelve el problema de autenticación.
-  const last = (localStorage.getItem('efigalia_last_nombre') || '').trim();
-  currentUser = { id: 0, nombre: last || 'Admin', rol: 'admin' };
-  adminAutenticado = true;
-  try { sessionStorage.setItem('efigalia_user', JSON.stringify(currentUser)); } catch(e) {}
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  document.getElementById('view-login').style.display = 'block';
+  document.getElementById('login-pin').value = '';
   actualizarHeaderUsuario();
-  goHome();
+  // El input es de texto libre; el datalist solo aporta sugerencias. Así, si
+  // /auth/users falla o no existe (Worker antiguo), el usuario aún puede
+  // escribir su nombre y loguearse sin bootstrap roto.
+  const dl = document.getElementById('login-names');
+  if (dl) dl.innerHTML = '';
+  // Pre-rellenar con el último nombre usado en este navegador (UX).
+  const last = localStorage.getItem('efigalia_last_nombre');
+  if (last) document.getElementById('login-nombre').value = last;
+  fetch(WORKER + '/auth/users')
+    .then(r => r.ok ? r.json() : [])
+    .then(list => {
+      if (!Array.isArray(list) || !dl) return;
+      dl.innerHTML = list.map(a => `<option value="${escapeHtml(a.nombre)}"></option>`).join('');
+    })
+    .catch(() => { /* sin sugerencias; el input sigue siendo escribible */ });
 }
 
 async function hacerLogin() {
@@ -12284,6 +12302,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then(reg => {
+        // Si ya hay una versión nueva esperando, actívala inmediatamente
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;

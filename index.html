@@ -4051,8 +4051,8 @@ function renderAdminMaestros(tipo) {
   const isInst = tipo === 'instalador';
   const isObra = tipo === 'obra';
   cont.innerHTML = list.map(i => {
-    const pinDisplay = i.pin
-      ? `<span style="font-family:var(--mono);background:var(--surface2);padding:3px 7px;border-radius:4px;font-size:12px;letter-spacing:1px">${escapeHtml(i.pin)}</span>`
+    const pinDisplay = i.hasPin
+      ? `<span style="color:var(--green);font-family:var(--mono);font-size:11px" title="Tiene PIN asignado">✓ con PIN</span>`
       : `<span style="color:var(--red);font-family:var(--mono);font-size:10px">sin PIN</span>`;
     const extra = isInst ? `
         <button class="toggle-btn off" onclick="cambiarPinInstalador(${i.id})" title="Cambiar PIN" style="padding:5px 8px">🔑</button>

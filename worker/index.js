@@ -145,11 +145,14 @@ async function saveData(env, arr) {
 }
 
 // Devuelve el array sin los campos de PIN (cualquier formato) de los instaladores.
+// Añade hasPin: true si tenía algún campo de PIN, para que la UI pueda indicar
+// estado sin exponer el hash.
 function redactPins(arr) {
   if (!Array.isArray(arr)) return arr;
   return arr.map(it => {
     if (it && it.tipo === 'instalador') {
       const { pin, pinHash, pinPBKDF2, pinSalt, pinIter, ...rest } = it;
+      rest.hasPin = !!(pinPBKDF2 || pin || pinHash);
       return rest;
     }
     return it;

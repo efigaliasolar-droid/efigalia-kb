@@ -84,7 +84,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-por-pedir, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-por-pedir, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-admin-huerfanos, #view-ficha-obra, #view-login, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -2219,6 +2219,11 @@
         <div class="home-title">Documentos</div>
         <div class="home-desc">Subir y gestionar manuales, guías y fichas técnicas.</div>
       </div>
+      <div class="home-card" onclick="enterAdminHuerfanos()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 7h18M5 7l1 13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg></div>
+        <div class="home-title">Archivos huérfanos</div>
+        <div class="home-desc">Reincorporar PDFs sin registro y limpiar fotos sueltas.</div>
+      </div>
     </div>
   </div>
 
@@ -2399,6 +2404,25 @@
       <div class="section-title">Documentos subidos</div>
       <input type="text" id="adm-doc-search" placeholder="Buscar..." oninput="renderAdminDocumentos()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;margin-bottom:10px">
       <div class="admin-list" id="adm-doc-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ HUÉRFANOS (admin) ═══════════════ -->
+  <div id="view-admin-huerfanos">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Archivos huérfanos en R2</div>
+    <div class="home-intro">Archivos subidos al almacén que no están vinculados a ningún registro. Permite reincorporar los PDFs perdidos y limpiar fotos sueltas.</div>
+
+    <div style="margin-top:18px">
+      <div class="section-title" style="font-size:16px">📄 PDFs huérfanos <span id="huerf-pdf-count" style="opacity:0.6;font-weight:400"></span></div>
+      <div class="calc-note">Al pulsar "Reincorporar" el PDF se asocia a un nuevo registro de documento, con título y contenido extraídos automáticamente del propio archivo. No se vuelve a subir.</div>
+      <div class="admin-list" id="huerf-pdf-list" style="margin-top:10px"><div class="empty-state" style="padding:20px">Cargando…</div></div>
+    </div>
+
+    <div style="margin-top:30px">
+      <div class="section-title" style="font-size:16px">🖼 Fotos huérfanas <span id="huerf-photo-count" style="opacity:0.6;font-weight:400"></span></div>
+      <div class="calc-note">Imágenes sueltas que no están en ningún parte, visita ni incidencia. Se pueden borrar todas para liberar espacio.</div>
+      <button id="btn-borrar-fotos-huerfanas" class="btn-primary" style="margin-top:12px;background:var(--red,#c0392b)" onclick="limpiarFotosHuerfanas()" disabled>Cargando…</button>
     </div>
   </div>
 
@@ -3534,6 +3558,9 @@ function enterAdminInstaladores() {
 // ── ADMIN · DOCUMENTOS ─────────────────────────────────
 let docArchivoFile = null;
 let docEditingId = null;
+// Cuando estamos reincorporando un documento huérfano (archivo ya en R2),
+// guardamos aquí la info para que guardarDocumento la consuma sin subir nada.
+let pendingOrphanFile = null;
 
 function previewDocArchivo(event) {
   docArchivoFile = event.target.files[0] || null;
@@ -3546,6 +3573,7 @@ function resetDocForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   docArchivoFile = null;
+  pendingOrphanFile = null;
   const fArch = document.getElementById('doc-archivo'); if (fArch) fArch.value = '';
   const lbl = document.getElementById('doc-archivo-label'); if (lbl) lbl.textContent = '📄 Toca para seleccionar archivo';
   docEditingId = null;
@@ -3568,7 +3596,7 @@ async function guardarDocumento() {
   const keywords = document.getElementById('doc-keywords').value.trim();
 
   if (!titulo || !marca) { showToast('⚠ Título y marca son obligatorios', 'err'); return; }
-  if (!docEditingId && !docArchivoFile) { showToast('⚠ Selecciona un archivo', 'err'); return; }
+  if (!docEditingId && !docArchivoFile && !pendingOrphanFile) { showToast('⚠ Selecciona un archivo', 'err'); return; }
 
   const btn = document.getElementById('btn-doc-save');
   btn.disabled = true;
@@ -3593,6 +3621,11 @@ async function guardarDocumento() {
       btn.disabled = false; btn.textContent = 'Subir documento';
       return;
     }
+  } else if (pendingOrphanFile) {
+    // Reincorporación: archivo ya existe en R2, no se vuelve a subir.
+    archivoUrl       = pendingOrphanFile.archivoUrl;
+    archivoNombre    = pendingOrphanFile.archivoNombre || archivoUrl.split('/').pop();
+    contenidoExtraido = pendingOrphanFile.contenidoExtraido || '';
   } else if (original) {
     archivoUrl = original.archivoUrl || '';
     archivoNombre = original.archivoNombre || '';
@@ -3630,9 +3663,15 @@ async function guardarDocumento() {
   await sheetsSave();
 
   btn.disabled = false;
-  showToast(docEditingId ? '✓ Documento actualizado' : '✓ Documento subido', 'ok');
+  const eraReincorporacion = !!pendingOrphanFile;
+  showToast(docEditingId ? '✓ Documento actualizado' : (eraReincorporacion ? '✓ Documento reincorporado' : '✓ Documento subido'), 'ok');
   resetDocForm();
-  renderAdminDocumentos();
+  if (eraReincorporacion) {
+    // Volver a la lista de huérfanos para procesar el siguiente.
+    enterAdminHuerfanos();
+  } else {
+    renderAdminDocumentos();
+  }
 }
 
 function editarDocumento(id) {
@@ -3658,6 +3697,148 @@ async function eliminarDocumento(id) {
   await sheetsSave();
   showToast('✓ Documento eliminado', 'ok');
   renderAdminDocumentos();
+}
+
+// ── ADMIN · ARCHIVOS HUÉRFANOS ─────────────────────────
+let huerfanosCache = { pdf: [], photo: [] };
+
+function enterAdminHuerfanos() {
+  if (!adminAutenticado) { pedirPin(); return; }
+  hideAllViews();
+  document.getElementById('view-admin-huerfanos').style.display = 'block';
+  cargarHuerfanos();
+}
+
+async function cargarHuerfanos() {
+  const pdfList = document.getElementById('huerf-pdf-list');
+  const btnFotos = document.getElementById('btn-borrar-fotos-huerfanas');
+  pdfList.innerHTML = '<div class="empty-state" style="padding:20px">Cargando…</div>';
+  btnFotos.disabled = true; btnFotos.textContent = 'Cargando…';
+
+  try {
+    const [pdfRes, photoRes] = await Promise.all([
+      workerFetch('/admin/orphans?kind=pdf'),
+      workerFetch('/admin/orphans?kind=photo')
+    ]);
+    if (!pdfRes.ok || !photoRes.ok) throw new Error('HTTP ' + pdfRes.status + '/' + photoRes.status);
+    const pdfData = await pdfRes.json();
+    const photoData = await photoRes.json();
+    huerfanosCache = { pdf: pdfData.orphans || [], photo: photoData.orphans || [] };
+    renderHuerfanos();
+  } catch (e) {
+    console.error('[huerfanos] error', e);
+    pdfList.innerHTML = '<div class="empty-state" style="padding:20px;color:var(--red)">Error cargando huérfanos.</div>';
+    btnFotos.textContent = 'Error'; btnFotos.disabled = true;
+  }
+}
+
+function renderHuerfanos() {
+  const pdfs = huerfanosCache.pdf;
+  const photos = huerfanosCache.photo;
+  document.getElementById('huerf-pdf-count').textContent = pdfs.length ? `(${pdfs.length})` : '(ninguno)';
+  document.getElementById('huerf-photo-count').textContent = photos.length ? `(${photos.length})` : '(ninguna)';
+
+  const cont = document.getElementById('huerf-pdf-list');
+  if (!pdfs.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:20px">Sin PDFs huérfanos. Todo está vinculado.</div>';
+  } else {
+    cont.innerHTML = pdfs.map(o => {
+      const url = WORKER + '/foto/' + o.key;
+      const sz = (o.size/1024).toFixed(0) + ' KB';
+      const fecha = (o.uploaded || '').slice(0, 10);
+      const nombreCorto = o.key.replace(/^fotos\//, '');
+      return `
+        <div class="admin-row">
+          <div class="nombre" style="font-family:var(--mono);font-size:12px;word-break:break-all">
+            <a href="${escapeAttr(url)}" target="_blank" rel="noopener" style="color:var(--accent,#4a90e2);text-decoration:none">${escapeHtml(nombreCorto)}</a>
+            <div style="opacity:0.6;font-size:11px;margin-top:2px">${sz} · ${escapeHtml(fecha)}</div>
+          </div>
+          <div class="acciones">
+            <button class="toggle-btn off" onclick="reincorporarHuerfano(${JSON.stringify(o.key).replace(/"/g, '&quot;')})" style="padding:6px 12px">Reincorporar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const btnFotos = document.getElementById('btn-borrar-fotos-huerfanas');
+  if (photos.length === 0) {
+    btnFotos.disabled = true;
+    btnFotos.textContent = 'Sin fotos huérfanas';
+  } else {
+    btnFotos.disabled = false;
+    btnFotos.textContent = `Borrar ${photos.length} fotos huérfanas`;
+  }
+}
+
+async function reincorporarHuerfano(key) {
+  const o = huerfanosCache.pdf.find(x => x.key === key);
+  if (!o) { showToast('⚠ No encontrado', 'err'); return; }
+  const url = WORKER + '/foto/' + o.key;
+  const nombreCorto = o.key.replace(/^fotos\//, '');
+
+  showToast('Leyendo PDF…', 'ok');
+  let texto = '';
+  try {
+    texto = await extractPdfTextFromUrl(url);
+  } catch (e) {
+    console.warn('[reincorporar] extracción falló', e);
+    // Seguimos sin texto: el usuario podrá rellenar a mano.
+  }
+
+  // Título sugerido: primera línea no vacía del texto, recortada.
+  let tituloSugerido = '';
+  if (texto) {
+    const primera = texto.split('. ').find(s => s.trim().length > 4) || texto.slice(0, 80);
+    tituloSugerido = primera.trim().substring(0, 90);
+  }
+
+  pendingOrphanFile = { archivoUrl: url, archivoNombre: nombreCorto, contenidoExtraido: texto.substring(0, 4000) };
+  docEditingId = null;
+  docArchivoFile = null;
+
+  hideAllViews();
+  document.getElementById('view-admin-documentos').style.display = 'block';
+  document.getElementById('doc-titulo').value = tituloSugerido;
+  document.getElementById('doc-marca').value = '';
+  document.getElementById('doc-modelo').value = '';
+  document.getElementById('doc-descripcion').value = '';
+  document.getElementById('doc-keywords').value = '';
+  const lbl = document.getElementById('doc-archivo-label');
+  if (lbl) lbl.textContent = `📄 ${nombreCorto} (ya en R2, no se sube otra vez)`;
+  const btn = document.getElementById('btn-doc-save');
+  if (btn) btn.textContent = 'Reincorporar documento';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Revisa título y marca antes de guardar', 'ok');
+}
+
+async function limpiarFotosHuerfanas() {
+  const photos = huerfanosCache.photo;
+  if (!photos.length) return;
+  if (!confirm(`¿Borrar definitivamente ${photos.length} fotos huérfanas? No se pueden recuperar.`)) return;
+  if (!confirm('Confirma una segunda vez: BORRAR todas.')) return;
+
+  const btn = document.getElementById('btn-borrar-fotos-huerfanas');
+  btn.disabled = true; btn.textContent = 'Borrando…';
+  try {
+    const res = await workerFetch('/admin/delete-objects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keys: photos.map(p => p.key) })
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} · ${t.substring(0, 120)}`);
+    }
+    const data = await res.json();
+    showToast(`✓ Borradas ${data.deleted} fotos${data.refused ? ` (${data.refused} rechazadas)` : ''}`, 'ok');
+    await cargarHuerfanos();
+  } catch (e) {
+    console.error('[limpiar fotos] error', e);
+    showToast('⚠ Error al borrar', 'err');
+    btn.disabled = false;
+    btn.textContent = `Borrar ${photos.length} fotos huérfanas`;
+  }
 }
 
 // ── BULK UPLOAD DE DOCUMENTOS ──────────────────────────
@@ -4531,8 +4712,17 @@ function loadPdfjs() {
 
 async function extractPdfText(file) {
   if (!file || file.type !== 'application/pdf') return '';
+  return extractPdfTextFromBuffer(await file.arrayBuffer());
+}
+
+async function extractPdfTextFromUrl(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('No se pudo descargar el PDF (' + res.status + ')');
+  return extractPdfTextFromBuffer(await res.arrayBuffer());
+}
+
+async function extractPdfTextFromBuffer(buf) {
   const pdfjs = await loadPdfjs();
-  const buf = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: buf }).promise;
   const maxPages = Math.min(pdf.numPages, 25);      // tope 25 páginas
   let text = '';

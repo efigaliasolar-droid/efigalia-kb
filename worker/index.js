@@ -204,6 +204,63 @@ function redactPins(arr) {
   });
 }
 
+// Extrae la key R2 de una URL del propio worker. Acepta tanto la URL completa
+// "https://.../foto/fotos/abc.pdf" como una key directa "fotos/abc.pdf".
+function extractKeyFromUrl(s) {
+  if (typeof s !== 'string' || !s) return null;
+  const m = s.match(/\/foto\/(fotos\/[^?#]+)/);
+  if (m) return m[1];
+  if (s.startsWith('fotos/')) return s;
+  return null;
+}
+
+// Recolecta todas las keys de R2 referenciadas en data + entidades operativas.
+// Si onlyDocs=true, solo mira archivoUrl en data.json (PDFs); ignora fotos[].
+async function collectReferencedKeys(env, { onlyDocs = false } = {}) {
+  const ref = new Set();
+  const eat = v => { const k = extractKeyFromUrl(v); if (k) ref.add(k); };
+
+  const dataArr = await loadData(env);
+  for (const it of dataArr || []) {
+    if (!it) continue;
+    eat(it.archivoUrl);
+    if (!onlyDocs && Array.isArray(it.fotos)) for (const f of it.fotos) eat(f);
+  }
+  if (onlyDocs) return ref;
+
+  for (const ent of ['movimientos', 'partes', 'visitas', 'materiales']) {
+    const { text } = await loadRaw(env, 'kb/' + ent + '.json');
+    if (!text) continue;
+    let arr; try { arr = JSON.parse(text); } catch { continue; }
+    if (!Array.isArray(arr)) continue;
+    for (const it of arr) {
+      if (!it) continue;
+      eat(it.archivoUrl);
+      if (Array.isArray(it.fotos)) for (const f of it.fotos) eat(f);
+      // Algunas entidades usan fotos como {antes:[], despues:[]} u objetos similares
+      if (it.fotos && typeof it.fotos === 'object' && !Array.isArray(it.fotos)) {
+        for (const v of Object.values(it.fotos)) {
+          if (Array.isArray(v)) for (const f of v) eat(f);
+          else if (typeof v === 'string') eat(v);
+        }
+      }
+    }
+  }
+  return ref;
+}
+
+// Lista todos los objetos del bucket bajo el prefijo dado, paginando.
+async function listAll(env, prefix) {
+  const out = [];
+  let cursor;
+  do {
+    const list = await env.FOTOS.list({ prefix, cursor, limit: 1000 });
+    for (const obj of list.objects) out.push(obj);
+    cursor = list.truncated ? list.cursor : null;
+  } while (cursor);
+  return out;
+}
+
 // ── Handler principal ────────────────────────────────────
 export default {
   async fetch(request, env) {
@@ -447,6 +504,65 @@ export default {
     }
 
     // — SUBIDA FOTOS (validada) —
+    // — Admin: listar archivos huérfanos en R2 —
+    // GET /admin/orphans?kind=pdf|photo
+    //   kind=pdf   → PDFs en fotos/ no referenciados por archivoUrl en data.json
+    //   kind=photo → imágenes en fotos/ no referenciadas en data ni partes/visitas/movimientos
+    if (path === '/admin/orphans' && request.method === 'GET') {
+      if (!isAdminRole(auth.rol)) return json({ error: 'Solo admin' }, 403, cors);
+      const kind = url.searchParams.get('kind') === 'photo' ? 'photo' : 'pdf';
+      const filter = kind === 'pdf' ? /\.pdf$/i : /\.(jpe?g|png|webp)$/i;
+      const referenced = await collectReferencedKeys(env, { onlyDocs: kind === 'pdf' });
+      const objects = await listAll(env, 'fotos/');
+      const orphans = [];
+      for (const obj of objects) {
+        if (!filter.test(obj.key)) continue;
+        if (referenced.has(obj.key)) continue;
+        orphans.push({
+          key: obj.key,
+          size: obj.size,
+          uploaded: obj.uploaded instanceof Date ? obj.uploaded.toISOString() : String(obj.uploaded),
+        });
+      }
+      orphans.sort((a, b) => (b.uploaded || '').localeCompare(a.uploaded || ''));
+      return json({ orphans, total: orphans.length, kind }, 200, cors);
+    }
+
+    // — Admin: borrar objetos (solo huérfanos verificados de nuevo aquí) —
+    // POST /admin/delete-objects  body: { keys: ['fotos/abc.jpg', ...] }
+    if (path === '/admin/delete-objects' && request.method === 'POST') {
+      if (!isAdminRole(auth.rol)) return json({ error: 'Solo admin' }, 403, cors);
+      let body;
+      try { body = await request.json(); } catch { return json({ error: 'bad json' }, 400, cors); }
+      if (!body || !Array.isArray(body.keys)) return json({ error: 'keys array requerido' }, 400, cors);
+
+      // Defensa en profundidad: aunque el cliente solo nos mande huérfanos según
+      // su última consulta, recalculamos referencias aquí y filtramos. Así un
+      // cliente con cache vieja no puede borrar nada vinculado.
+      const referenced = await collectReferencedKeys(env);
+      const toDelete = [];
+      const refused = [];
+      for (const k of body.keys) {
+        if (typeof k !== 'string') { refused.push(k); continue; }
+        if (!k.startsWith('fotos/')) { refused.push(k); continue; }
+        if (referenced.has(k))      { refused.push(k); continue; }
+        toDelete.push(k);
+      }
+
+      let deleted = 0;
+      for (let i = 0; i < toDelete.length; i += 1000) {
+        const chunk = toDelete.slice(i, i + 1000);
+        try { await env.FOTOS.delete(chunk); deleted += chunk.length; }
+        catch (e) {
+          // Si falla el delete por lotes, intentamos uno a uno para no perder progreso.
+          for (const k of chunk) {
+            try { await env.FOTOS.delete(k); deleted++; } catch {}
+          }
+        }
+      }
+      return json({ deleted, requested: body.keys.length, refused: refused.length }, 200, cors);
+    }
+
     if (path === '/foto' && request.method === 'POST') {
       const formData = await request.formData();
       const file = formData.get('file');

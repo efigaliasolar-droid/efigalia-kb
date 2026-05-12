@@ -3777,39 +3777,47 @@ async function reincorporarHuerfano(key) {
   const url = WORKER + '/foto/' + o.key;
   const nombreCorto = o.key.replace(/^fotos\//, '');
 
-  showToast('Leyendo PDF…', 'ok');
-  let texto = '';
-  try {
-    texto = await extractPdfTextFromUrl(url);
-  } catch (e) {
-    console.warn('[reincorporar] extracción falló', e);
-    // Seguimos sin texto: el usuario podrá rellenar a mano.
-  }
-
-  // Título sugerido: primera línea no vacía del texto, recortada.
-  let tituloSugerido = '';
-  if (texto) {
-    const primera = texto.split('. ').find(s => s.trim().length > 4) || texto.slice(0, 80);
-    tituloSugerido = primera.trim().substring(0, 90);
-  }
-
-  pendingOrphanFile = { archivoUrl: url, archivoNombre: nombreCorto, contenidoExtraido: texto.substring(0, 4000) };
+  // Abrir el form INMEDIATAMENTE. La extracción del PDF puede tardar varios
+  // segundos y no debe bloquear la UI.
+  pendingOrphanFile = { archivoUrl: url, archivoNombre: nombreCorto, contenidoExtraido: '' };
   docEditingId = null;
   docArchivoFile = null;
 
   hideAllViews();
   document.getElementById('view-admin-documentos').style.display = 'block';
-  document.getElementById('doc-titulo').value = tituloSugerido;
+  document.getElementById('doc-titulo').value = '';
   document.getElementById('doc-marca').value = '';
   document.getElementById('doc-modelo').value = '';
   document.getElementById('doc-descripcion').value = '';
   document.getElementById('doc-keywords').value = '';
   const lbl = document.getElementById('doc-archivo-label');
-  if (lbl) lbl.textContent = `📄 ${nombreCorto} (ya en R2, no se sube otra vez)`;
+  if (lbl) lbl.textContent = `📄 ${nombreCorto} (ya en R2, no se sube otra vez) — extrayendo texto…`;
   const btn = document.getElementById('btn-doc-save');
   if (btn) btn.textContent = 'Reincorporar documento';
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast('Revisa título y marca antes de guardar', 'ok');
+
+  // Extracción en background con timeout de 30s. Si termina, prerelleno
+  // título y guardo el contenido en pendingOrphanFile. Si ya no estamos en
+  // este archivo (el usuario cambió de huérfano), ignoramos el resultado.
+  const expectedUrl = url;
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000));
+  Promise.race([extractPdfTextFromUrl(url), timeout])
+    .then(texto => {
+      if (!pendingOrphanFile || pendingOrphanFile.archivoUrl !== expectedUrl) return;
+      pendingOrphanFile.contenidoExtraido = (texto || '').substring(0, 4000);
+      const tituloEl = document.getElementById('doc-titulo');
+      if (tituloEl && !tituloEl.value) {
+        const primera = (texto || '').split('. ').find(s => s.trim().length > 4) || (texto || '').slice(0, 80);
+        tituloEl.value = primera.trim().substring(0, 90);
+      }
+      if (lbl) lbl.textContent = `📄 ${nombreCorto} (ya en R2, no se sube otra vez)`;
+    })
+    .catch(e => {
+      console.warn('[reincorporar] extracción falló', e);
+      if (lbl && pendingOrphanFile && pendingOrphanFile.archivoUrl === expectedUrl) {
+        lbl.textContent = `📄 ${nombreCorto} (ya en R2, sin texto extraído)`;
+      }
+    });
 }
 
 async function limpiarFotosHuerfanas() {

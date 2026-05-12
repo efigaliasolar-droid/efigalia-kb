@@ -2932,10 +2932,23 @@
 const WORKER = 'https://efigalia-kb.efigalia-solar.workers.dev';
 
 // ── Wrapper de fetch al Worker con auth + manejo de 401 ──
+// Endpoints con control de concurrencia por ETag. Solo el path base (sin query).
+const ETAG_PATHS = new Set(['/data', '/movimientos', '/partes', '/visitas', '/materiales']);
+function etagKey(path) { return 'efigalia_etag_' + path.split('?')[0]; }
+function getStoredEtag(path) { try { return sessionStorage.getItem(etagKey(path)); } catch { return null; } }
+function setStoredEtag(path, etag) { try { etag ? sessionStorage.setItem(etagKey(path), etag) : sessionStorage.removeItem(etagKey(path)); } catch {} }
+
 async function workerFetch(pathAndQuery, options = {}) {
   const token = sessionStorage.getItem('efigalia_token');
   const headers = new Headers(options.headers || {});
   if (token) headers.set('Authorization', 'Bearer ' + token);
+  const basePath = '/' + pathAndQuery.replace(/^\//, '').split('?')[0];
+  const method = (options.method || 'GET').toUpperCase();
+  // En POST a endpoints con ETag, mandamos If-Match con el último ETag conocido
+  // (o '*' si nunca lo hemos pedido; el worker acepta '*' como "no me importa").
+  if (method === 'POST' && ETAG_PATHS.has(basePath) && !headers.has('If-Match')) {
+    headers.set('If-Match', getStoredEtag(basePath) || '*');
+  }
   const res = await fetch(WORKER + pathAndQuery, { ...options, headers });
   if (res.status === 401 && token) {
     sessionStorage.removeItem('efigalia_token');
@@ -2946,6 +2959,17 @@ async function workerFetch(pathAndQuery, options = {}) {
     try { showToast('⚠ Sesión expirada, vuelve a entrar', 'err'); } catch(e) {}
     try { mostrarLogin(); } catch(e) {}
     throw new Error('Sesión expirada');
+  }
+  // 409 = otro dispositivo modificó el archivo entre nuestro GET y este POST.
+  // Borramos nuestro ETag para forzar re-GET y avisamos. NO marcamos como sincronizado.
+  if (res.status === 409 && ETAG_PATHS.has(basePath)) {
+    setStoredEtag(basePath, null);
+    try { showToast('⚠ Datos modificados desde otro dispositivo. Recarga la página.', 'err'); } catch(e) {}
+  }
+  // Guardamos ETag de GET exitosos, o del nuevo estado tras POST exitoso.
+  if (res.ok && ETAG_PATHS.has(basePath)) {
+    const newEtag = res.headers.get('ETag');
+    if (newEtag) setStoredEtag(basePath, newEtag);
   }
   return res;
 }
@@ -3012,13 +3036,14 @@ async function sheetsLoad() {
     const res = await workerFetch('/data?t=' + Date.now(), { cache: 'no-store' });
     const text = await res.text();
     const data = JSON.parse(text);
-    if (Array.isArray(data) && data.length > 0) {
-      incidents = data;
-    } else {
-      incidents = [...BASE_INICIAL];
-      await sheetsSave();
+    // NUNCA sobreescribir automáticamente con BASE_INICIAL: si el servidor devuelve [],
+    // respetamos eso (es un estado válido) para evitar pérdida de datos por carrera.
+    // Si no hay nada ni en servidor ni en local, mostramos el seed SOLO en memoria.
+    if (!Array.isArray(data)) {
+      throw new Error('Respuesta /data no es array');
     }
-    console.log(`[sheetsLoad] ${incidents.length} registros recibidos del servidor`);
+    incidents = data.length > 0 ? data : [...BASE_INICIAL];
+    console.log(`[sheetsLoad] ${data.length} registros del servidor${data.length === 0 ? ' (mostrando seed local sin sobreescribir)' : ''}`);
     localStorage.setItem('efigalia_kb_v4', JSON.stringify(incidents));
     setSyncStatus('ok', 'sincronizado');
   } catch(e) {

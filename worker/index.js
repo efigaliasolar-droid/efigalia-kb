@@ -89,6 +89,30 @@ async function sha256Hex(str) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// ── PBKDF2-SHA-256 hex (formato del bootstrap inicial) ───
+function hexToBytes(hex) {
+  if (typeof hex !== 'string' || hex.length % 2 !== 0) return null;
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    const b = parseInt(hex.substr(i * 2, 2), 16);
+    if (Number.isNaN(b)) return null;
+    out[i] = b;
+  }
+  return out;
+}
+async function pbkdf2Hex(pin, saltHex, iter, lenBytes) {
+  const salt = hexToBytes(saltHex);
+  if (!salt) return null;
+  const base = await crypto.subtle.importKey(
+    'raw', enc.encode(pin), { name: 'PBKDF2' }, false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' },
+    base, lenBytes * 8
+  );
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 // ── Auth helpers ─────────────────────────────────────────
 async function getAuth(request, env) {
   const h = request.headers.get('Authorization') || '';
@@ -107,12 +131,12 @@ async function loadData(env) {
   try { return JSON.parse(await obj.text()); } catch { return []; }
 }
 
-// Devuelve el array sin los campos pin/pinHash de los instaladores.
+// Devuelve el array sin los campos sensibles (pin/pinHash/PBKDF2) de los instaladores.
 function redactPins(arr) {
   if (!Array.isArray(arr)) return arr;
   return arr.map(it => {
-    if (it && it.tipo === 'instalador' && (it.pin !== undefined || it.pinHash !== undefined)) {
-      const { pin, pinHash, ...rest } = it;
+    if (it && it.tipo === 'instalador') {
+      const { pin, pinHash, pinPBKDF2, pinSalt, pinIter, ...rest } = it;
       return rest;
     }
     return it;
@@ -173,6 +197,14 @@ export default {
         ok = (user.pin === pin);
       } else if (typeof user.pinHash === 'string' && user.pinHash.length > 0) {
         ok = (user.pinHash === await sha256Hex(pin));
+      } else if (
+        typeof user.pinPBKDF2 === 'string' && user.pinPBKDF2.length > 0 &&
+        typeof user.pinSalt === 'string' && user.pinSalt.length > 0 &&
+        Number.isInteger(user.pinIter) && user.pinIter > 0
+      ) {
+        const expectedLen = user.pinPBKDF2.length / 2;
+        const got = await pbkdf2Hex(pin, user.pinSalt, user.pinIter, expectedLen);
+        ok = (got !== null && got === user.pinPBKDF2);
       }
       if (!ok) return json({ error: 'Usuario o PIN incorrecto' }, 401, cors);
 
@@ -228,15 +260,16 @@ export default {
         const byId = new Map();
         for (const it of existing) if (it && it.id !== undefined) byId.set(it.id, it);
         // Convención: undefined = no enviado (preservar lo existente); null = borrar intencionado.
+        const SECRET_FIELDS = ['pin', 'pinHash', 'pinPBKDF2', 'pinSalt', 'pinIter'];
         const merged = incoming.map(it => {
           if (!it || it.tipo !== 'instalador' || it.id === undefined) return it;
           const prev = byId.get(it.id);
           if (!prev) return it; // usuario nuevo, lo dejamos tal cual
           const out = { ...it };
-          if (out.pin === undefined)     { if (prev.pin !== undefined) out.pin = prev.pin; }
-          else if (out.pin === null)     { delete out.pin; }
-          if (out.pinHash === undefined) { if (prev.pinHash !== undefined) out.pinHash = prev.pinHash; }
-          else if (out.pinHash === null) { delete out.pinHash; }
+          for (const f of SECRET_FIELDS) {
+            if (out[f] === undefined)   { if (prev[f] !== undefined) out[f] = prev[f]; }
+            else if (out[f] === null)   { delete out[f]; }
+          }
           return out;
         });
 

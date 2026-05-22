@@ -1300,6 +1300,13 @@
       <summary>Datos de la visita</summary>
       <div class="filtros-body">
         <div class="form-group">
+          <label>Tipo de instalación *</label>
+          <select id="v-tipo-inst" onchange="onTipoInstChange()">
+            <option value="fv">Fotovoltaica</option>
+            <option value="pdr">Punto de recarga</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Título del proyecto *</label>
           <input type="text" id="v-titulo" placeholder="Ej: Autoconsumo nave Portela">
         </div>
@@ -1376,7 +1383,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Cubierta</summary>
       <div class="filtros-body">
         <div class="form-group">
@@ -1414,7 +1421,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Correas</summary>
       <div class="filtros-body">
         <div class="form-group">
@@ -1432,7 +1439,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Grecas</summary>
       <div class="filtros-body">
         <div class="form-row">
@@ -1443,7 +1450,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Obstáculos / sombras en la cubierta</summary>
       <div class="filtros-body">
         <div class="form-group">
@@ -1474,7 +1481,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Acceso a cubierta</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Ubicación del acceso</label><input type="text" id="v-acc-ubic"></div>
@@ -1509,7 +1516,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Medio de elevación del material</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Detalles</label><textarea class="field" id="v-ele-detalles" placeholder="Grúa, carretilla, manual, escaleras..."></textarea></div>
@@ -1524,7 +1531,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Ubicación del inversor</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-inv-obs" placeholder="Ubicación prevista del inversor..."></textarea></div>
@@ -1547,7 +1554,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Ubicación del cuadro de protección</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Notas (marcar en plano aparte)</label><textarea class="field" id="v-cuap-obs"></textarea></div>
@@ -1566,8 +1573,11 @@
       <summary>Cuadro general existente</summary>
       <div class="filtros-body">
         <div class="form-group"><label>Interruptor general (intensidad, modelo…)</label><input type="text" id="v-cug-interruptor" placeholder="Ej: 63 A tetrapolar"></div>
-        <div class="form-group">
+        <div class="form-group solo-fv">
           <label><input type="checkbox" id="v-cug-toroidales" style="margin-right:6px">Es posible colocar los toroidales dentro del cuadro</label>
+        </div>
+        <div class="form-group solo-pdr">
+          <label><input type="checkbox" id="v-cug-din-libre" style="margin-right:6px">Hay hueco de módulos DIN para la protección del PdR</label>
         </div>
         <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-cug-obs"></textarea></div>
         <div class="form-group foto-group" data-foto-key="cuadroInterruptor">
@@ -1589,7 +1599,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Contador de distribuidora</summary>
       <div class="filtros-body">
         <div class="form-group">
@@ -1607,7 +1617,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Cableado</summary>
       <div class="filtros-body">
         <div class="form-row">
@@ -1637,7 +1647,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Conexión a internet</summary>
       <div class="filtros-body">
         <div class="form-row">
@@ -1662,6 +1672,120 @@
             <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
           </div>
           <div class="photo-previews" id="vp-router"></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ═══════════════ BLOQUES SOLO PdR ═══════════════ -->
+    <details class="filtros-panel solo-pdr">
+      <summary>Ubicación del cargador</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de emplazamiento</label>
+            <select id="v-pdr-emplazamiento">
+              <option value="">— Seleccionar —</option>
+              <option>Garaje individual</option>
+              <option>Garaje comunitario</option>
+              <option>Aparcamiento exterior</option>
+              <option>Vía pública</option>
+              <option>Nave</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Interior / Exterior</label>
+            <select id="v-pdr-int-ext">
+              <option value="">— Seleccionar —</option>
+              <option value="interior">Interior</option>
+              <option value="exterior">Exterior</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fijación</label>
+            <select id="v-pdr-fijacion">
+              <option value="">— Seleccionar —</option>
+              <option>Pared</option>
+              <option>Pedestal</option>
+              <option>Poste</option>
+              <option>Suelo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Altura de montaje (m)</label>
+            <input type="number" step="any" inputmode="decimal" id="v-pdr-altura" placeholder="1,20">
+          </div>
+        </div>
+        <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-pdr-obs"></textarea></div>
+        <div class="form-group foto-group" data-foto-key="pdrUbicacion">
+          <label>Fotos de la ubicación del PdR</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-pdrUbicacion').click()">
+            <input type="file" id="vf-pdrUbicacion" accept="image/*" multiple onchange="onVisitaFotosChange('pdrUbicacion', event)">
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-pdrUbicacion"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel solo-pdr">
+      <summary>Recorrido del cable hasta el PdR</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Distancia del cuadro al PdR (m)</label>
+            <input type="number" step="any" inputmode="decimal" id="v-pdr-dist">
+          </div>
+          <div class="form-group">
+            <label>Canalización</label>
+            <select id="v-pdr-canal">
+              <option value="">— Seleccionar —</option>
+              <option>Bandeja existente</option>
+              <option>Bandeja nueva</option>
+              <option>Falso techo</option>
+              <option>Roza</option>
+              <option>Canal de PVC</option>
+              <option>Aéreo</option>
+              <option>Exterior</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="v-pdr-obra" style="margin-right:6px">Requiere obra civil (rozas, perforaciones, etc.)</label>
+        </div>
+        <div class="form-group"><label>Descripción de la obra civil / observaciones</label><textarea class="field" id="v-pdr-obra-desc" placeholder="Ej: roza de 3 m en pared maestra, perforación de muro exterior..."></textarea></div>
+        <div class="form-group foto-group" data-foto-key="pdrRecorrido">
+          <label>Fotos del recorrido del cable</label>
+          <div class="photo-drop foto-drop" onclick="document.getElementById('vf-pdrRecorrido').click()">
+            <input type="file" id="vf-pdrRecorrido" accept="image/*" multiple onchange="onVisitaFotosChange('pdrRecorrido', event)">
+            <svg viewBox="0 0 24 24" class="icon-camera" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;color:var(--accent)"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Añadir fotos
+          </div>
+          <div class="photo-previews" id="vp-pdrRecorrido"></div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel solo-pdr">
+      <summary>Comunicaciones en el punto</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>¿El PdR necesita conexión a Internet?</label>
+          <select id="v-pdr-internet" onchange="onPdrInternetChange()">
+            <option value="">— Seleccionar —</option>
+            <option value="si">Sí, requiere Internet</option>
+            <option value="no">No, solo Bluetooth</option>
+          </select>
+        </div>
+        <div id="v-pdr-conex-wrap" style="display:none">
+          <div class="form-group">
+            <label><input type="checkbox" id="v-pdr-wifi" style="margin-right:6px">Hay cobertura WiFi del cliente en el punto</label>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="v-pdr-4g" style="margin-right:6px">Hay cobertura 4G suficiente en el punto</label>
+          </div>
+          <div class="form-group"><label>Observaciones</label><textarea class="field" id="v-pdr-com-obs" placeholder="Ej: WiFi débil, router al otro lado del garaje..."></textarea></div>
         </div>
       </div>
     </details>
@@ -5983,11 +6107,14 @@ function renderVisitas() {
     }[estado] || '';
     const cliente = v.cliente_nombre || (v.cliente ? `${v.cliente.nombre || ''} ${v.cliente.apellidos || ''}`.trim() : '');
     const titulo = v.titulo || (v.proyecto && v.proyecto.titulo) || cliente || '—';
+    const tipoChip = v.tipoInstalacion === 'pdr'
+      ? '<span class="badge" style="background:#e0f0ff;color:#1864ab">⚡ PdR</span>'
+      : '<span class="badge" style="background:#fff5d6;color:#876200">☀ FV</span>';
     return `
       <div class="mov-card" onclick="abrirVisita(${v.id})">
         <div class="mov-head">
           <div class="mov-obra">${escapeHtml(titulo)}</div>
-          ${badges}
+          ${tipoChip}${badges}
         </div>
         <div class="mov-meta">
           ${cliente && cliente !== titulo ? `<span>👤 ${escapeHtml(cliente)}</span>` : ''}
@@ -6034,6 +6161,11 @@ function abrirFormularioVisita(v) {
   const equipos = (v && v.equipos) || '';
   const obs = (v && (v.observaciones || (v.proyecto && v.proyecto.observaciones))) || '';
 
+  // Tipo de instalación (por defecto FV para visitas legadas sin el campo).
+  const tipoInst = (v && v.tipoInstalacion) || 'fv';
+  document.getElementById('v-tipo-inst').value = tipoInst;
+  onTipoInstChange();
+
   document.getElementById('v-titulo').value = titulo;
   document.getElementById('v-cliente').value = cliente;
   document.getElementById('v-telefono').value = telefono;
@@ -6055,7 +6187,7 @@ function abrirFormularioVisita(v) {
 
   // Permisos admin-only: cabecera readonly para instalador con visita existente
   const adminReadOnly = v && !isAdmin();
-  ['v-titulo','v-cliente','v-telefono','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
+  ['v-tipo-inst','v-titulo','v-cliente','v-telefono','v-maps','v-equipos','v-obs','v-operario','v-fecha'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     if (el.tagName === 'SELECT') el.disabled = adminReadOnly;
@@ -6088,10 +6220,13 @@ function abrirFormularioVisita(v) {
     'v-acc-ubic','v-acc-altura','v-acc-obs',
     'v-aco-cerrado','v-aco-detalles',
     'v-ele-detalles','v-inv-obs','v-cuap-obs',
-    'v-cug-interruptor','v-cug-toroidales','v-cug-obs',
+    'v-cug-interruptor','v-cug-toroidales','v-cug-din-libre','v-cug-obs',
     'v-contador-obs',
     'v-cab-mod-inv','v-cab-inv-cua','v-cab-entrada-obs',
     'v-net-router','v-net-wifi','v-net-dist','v-net-obs',
+    'v-pdr-emplazamiento','v-pdr-int-ext','v-pdr-fijacion','v-pdr-altura','v-pdr-obs',
+    'v-pdr-dist','v-pdr-canal','v-pdr-obra','v-pdr-obra-desc',
+    'v-pdr-internet','v-pdr-wifi','v-pdr-4g','v-pdr-com-obs',
     'v-otros'];
   campoIds.forEach(id => {
     const el = document.getElementById(id);
@@ -6112,6 +6247,7 @@ function leerFormularioVisita() {
   const txt = id => document.getElementById(id).value.trim();
   const chk = id => document.getElementById(id).checked;
   return {
+    tipoInstalacion: document.getElementById('v-tipo-inst').value || 'fv',
     titulo: txt('v-titulo'),
     cliente_nombre: txt('v-cliente'),
     telefono: txt('v-telefono'),
@@ -6173,6 +6309,7 @@ function leerFormularioVisita() {
       cuadroGeneral: {
         interruptor: txt('v-cug-interruptor'),
         toroidalesDentro: chk('v-cug-toroidales'),
+        dinLibre: chk('v-cug-din-libre'),
         observaciones: txt('v-cug-obs')
       },
       contadorDistribuidora: {
@@ -6189,13 +6326,28 @@ function leerFormularioVisita() {
         distanciaRouter: num('v-net-dist'),
         observaciones: txt('v-net-obs')
       },
+      pdr: {
+        emplazamiento: document.getElementById('v-pdr-emplazamiento').value,
+        intExt: document.getElementById('v-pdr-int-ext').value,
+        fijacion: document.getElementById('v-pdr-fijacion').value,
+        altura: num('v-pdr-altura'),
+        observaciones: txt('v-pdr-obs'),
+        distancia: num('v-pdr-dist'),
+        canalizacion: document.getElementById('v-pdr-canal').value,
+        obraCivil: chk('v-pdr-obra'),
+        obraCivilDesc: txt('v-pdr-obra-desc'),
+        internet: document.getElementById('v-pdr-internet').value,
+        wifi: chk('v-pdr-wifi'),
+        cobertura4g: chk('v-pdr-4g'),
+        comObservaciones: txt('v-pdr-com-obs')
+      },
       otros: txt('v-otros')
     }
   };
 }
 
 // ── FOTOS DE LA VISITA ─────────────────────────────────
-const VISITA_FOTO_KEYS = ['cubierta','cubiertaDetalle','obstaculos','acceso','acopio','elevacion','inversorPlano','inversorEquipos','cuadroProteccion','cuadroInterruptor','cuadroGeneral','contadorDistribuidora','cableadoEntrada','cableadoRecorrido','router'];
+const VISITA_FOTO_KEYS = ['cubierta','cubiertaDetalle','obstaculos','acceso','acopio','elevacion','inversorPlano','inversorEquipos','cuadroProteccion','cuadroInterruptor','cuadroGeneral','contadorDistribuidora','cableadoEntrada','cableadoRecorrido','router','pdrUbicacion','pdrRecorrido'];
 let visitaFotoFiles = {};   // key → [File] (nuevas, pendientes de subir)
 let visitaFotoUrls = {};    // key → [URL] (ya subidas)
 let visitaEditable = false; // global computado al abrir la visita
@@ -6295,6 +6447,20 @@ function onContactoTipoChange() {
   const wrap = document.getElementById('v-contacto-otro-wrap');
   if (wrap) wrap.style.display = tipo === 'otro' ? '' : 'none';
 }
+function onTipoInstChange() {
+  const tipo = document.getElementById('v-tipo-inst').value || 'fv';
+  document.querySelectorAll('#view-visita .solo-fv').forEach(el => {
+    el.style.display = tipo === 'fv' ? '' : 'none';
+  });
+  document.querySelectorAll('#view-visita .solo-pdr').forEach(el => {
+    el.style.display = tipo === 'pdr' ? '' : 'none';
+  });
+}
+function onPdrInternetChange() {
+  const val = document.getElementById('v-pdr-internet').value;
+  const wrap = document.getElementById('v-pdr-conex-wrap');
+  if (wrap) wrap.style.display = val === 'si' ? '' : 'none';
+}
 function onObsNoExistenChange() {
   const no = document.getElementById('v-obs-no-existen').checked;
   const wrap = document.getElementById('v-obs-wrap');
@@ -6365,6 +6531,7 @@ function rellenarCampoVisita(campo) {
   const cg = campo.cuadroGeneral || {};
   set('v-cug-interruptor', cg.interruptor);
   setChk('v-cug-toroidales', cg.toroidalesDentro);
+  setChk('v-cug-din-libre', cg.dinLibre);
   set('v-cug-obs', cg.observaciones);
 
   set('v-contador-obs', (campo.contadorDistribuidora || {}).observaciones);
@@ -6379,6 +6546,22 @@ function rellenarCampoVisita(campo) {
   setChk('v-net-wifi', net.wifi);
   set('v-net-dist', net.distanciaRouter);
   set('v-net-obs', net.observaciones);
+
+  const pdr = campo.pdr || {};
+  set('v-pdr-emplazamiento', pdr.emplazamiento);
+  set('v-pdr-int-ext', pdr.intExt);
+  set('v-pdr-fijacion', pdr.fijacion);
+  set('v-pdr-altura', pdr.altura);
+  set('v-pdr-obs', pdr.observaciones);
+  set('v-pdr-dist', pdr.distancia);
+  set('v-pdr-canal', pdr.canalizacion);
+  setChk('v-pdr-obra', pdr.obraCivil);
+  set('v-pdr-obra-desc', pdr.obraCivilDesc);
+  set('v-pdr-internet', pdr.internet);
+  setChk('v-pdr-wifi', pdr.wifi);
+  setChk('v-pdr-4g', pdr.cobertura4g);
+  set('v-pdr-com-obs', pdr.comObservaciones);
+  onPdrInternetChange();
 
   set('v-otros', campo.otros);
 }
@@ -9721,25 +9904,17 @@ function generarPDFVisita(id) {
   const v = (Array.isArray(visitas) ? visitas : []).find(x => x.id === id);
   if (!v) { showToast('⚠ Visita no encontrada', 'err'); return; }
   const c = v.campo || {};
+  const tipoInst = v.tipoInstalacion || 'fv';
   const contacto = c.contacto || {};
-  const cub = c.cubierta || {};
-  const cor = c.correas || {};
-  const gre = c.grecas || {};
-  const obs = c.obstaculos || {};
-  const acc = c.acceso || {};
   const aco = c.acopio || {};
-  const ele = c.elevacion || {};
-  const inv = c.inversor || {};
-  const cuap = c.cuadroProteccion || {};
   const cug = c.cuadroGeneral || {};
-  const cab = c.cableado || {};
-  const net = c.internet || {};
-  const cdis = c.contadorDistribuidora || {};
   const fotos = c.fotos ? Object.values(c.fotos).flat().filter(Boolean) : [];
   const yn = (b) => b === true ? 'Sí' : (b === false ? 'No' : '');
+  const tipoLabel = tipoInst === 'pdr' ? 'Punto de recarga' : 'Fotovoltaica';
 
-  const html = `
+  const cabecera = `
     <h2>Datos del proyecto</h2>
+    ${_pdfFld('Tipo de instalación', tipoLabel)}
     ${_pdfFld('Título', v.titulo)}
     ${_pdfFld('Cliente', v.cliente_nombre || v.cliente)}
     ${_pdfFld('Teléfono', v.telefono)}
@@ -9759,65 +9934,116 @@ function generarPDFVisita(id) {
     ${_pdfFld('Nombre', contacto.nombre)}
     ${_pdfFld('Teléfono', contacto.telefono)}
     ${_pdfBlock('Observaciones', contacto.observaciones)}
+  `;
 
-    <h2>Cubierta</h2>
-    ${_pdfFld('Tipo', cub.tipo)}
-    ${_pdfFld('Largo cumbrera (m)', cub.largoCumbrera)}
-    ${_pdfFld('Distancia al borde (m)', cub.distanciaBorde)}
-    ${_pdfBlock('Otras medidas', cub.otrasMedidas)}
+  let especifico = '';
+  if (tipoInst === 'pdr') {
+    const pdr = c.pdr || {};
+    especifico = `
+      <h2>Ubicación del cargador</h2>
+      ${_pdfFld('Tipo de emplazamiento', pdr.emplazamiento)}
+      ${_pdfFld('Interior / Exterior', pdr.intExt)}
+      ${_pdfFld('Fijación', pdr.fijacion)}
+      ${_pdfFld('Altura de montaje (m)', pdr.altura)}
+      ${_pdfBlock('Observaciones', pdr.observaciones)}
 
-    ${(cor.tipo || cor.distanciaEntre || cor.numPorCara) ? `
-      <h2>Correas</h2>
-      ${_pdfFld('Tipo', cor.tipo)}
-      ${_pdfFld('Distancia entre correas (m)', cor.distanciaEntre)}
-      ${_pdfFld('Nº por cara', cor.numPorCara)}
-    ` : ''}
+      <h2>Cuadro general existente</h2>
+      ${_pdfFld('Interruptor general', cug.interruptor)}
+      ${_pdfFld('Hueco DIN para protección PdR', yn(cug.dinLibre))}
+      ${_pdfBlock('Observaciones cuadro general', cug.observaciones)}
 
-    ${(gre.altura || gre.distanciaEntre || gre.ancho) ? `
-      <h2>Grecas</h2>
-      ${_pdfFld('Altura (mm)', gre.altura)}
-      ${_pdfFld('Distancia entre (mm)', gre.distanciaEntre)}
-      ${_pdfFld('Ancho (mm)', gre.ancho)}
-    ` : ''}
+      <h2>Recorrido del cable hasta el PdR</h2>
+      ${_pdfFld('Distancia cuadro–PdR (m)', pdr.distancia)}
+      ${_pdfFld('Canalización', pdr.canalizacion)}
+      ${_pdfFld('Requiere obra civil', yn(pdr.obraCivil))}
+      ${_pdfBlock('Descripción obra civil', pdr.obraCivilDesc)}
 
-    <h2>Obstáculos y acceso</h2>
-    ${_pdfFld('¿Sin obstáculos?', yn(obs.noExisten))}
-    ${_pdfFld('Altura muretes (m)', obs.alturaMuretes)}
-    ${_pdfFld('Altura chimeneas (m)', obs.alturaChimeneas)}
-    ${_pdfBlock('Otros obstáculos', obs.otros)}
-    ${_pdfBlock('Ubicación obstáculos', obs.ubicacion)}
-    ${_pdfBlock('Acceso (ubicación)', acc.ubicacion)}
-    ${_pdfFld('Altura acceso (m)', acc.altura)}
-    ${_pdfBlock('Observaciones acceso', acc.observaciones)}
-    ${_pdfFld('Acopio en exterior cerrado', yn(aco.exteriorCerrado))}
-    ${_pdfBlock('Detalles acopio', aco.detalles)}
-    ${_pdfBlock('Elevación', ele.detalles)}
+      <h2>Comunicaciones en el punto</h2>
+      ${_pdfFld('¿Requiere Internet?', pdr.internet === 'si' ? 'Sí' : (pdr.internet === 'no' ? 'No, solo Bluetooth' : ''))}
+      ${pdr.internet === 'si' ? `
+        ${_pdfFld('Cobertura WiFi del cliente', yn(pdr.wifi))}
+        ${_pdfFld('Cobertura 4G suficiente', yn(pdr.cobertura4g))}
+        ${_pdfBlock('Observaciones', pdr.comObservaciones)}
+      ` : ''}
 
-    <h2>Cuarto de inversor y cuadros</h2>
-    ${_pdfBlock('Observaciones inversor', inv.observaciones)}
-    ${_pdfBlock('Cuadro de protección', cuap.observaciones)}
-    ${_pdfFld('Interruptor general', cug.interruptor)}
-    ${_pdfFld('Toroidales dentro del cuadro', yn(cug.toroidalesDentro))}
-    ${_pdfBlock('Observaciones cuadro general', cug.observaciones)}
+      <h2>Acopio de material</h2>
+      ${_pdfFld('Acopio en exterior cerrado', yn(aco.exteriorCerrado))}
+      ${_pdfBlock('Detalles acopio', aco.detalles)}
+    `;
+  } else {
+    const cub = c.cubierta || {};
+    const cor = c.correas || {};
+    const gre = c.grecas || {};
+    const obs = c.obstaculos || {};
+    const acc = c.acceso || {};
+    const ele = c.elevacion || {};
+    const inv = c.inversor || {};
+    const cuap = c.cuadroProteccion || {};
+    const cab = c.cableado || {};
+    const net = c.internet || {};
+    const cdis = c.contadorDistribuidora || {};
+    especifico = `
+      <h2>Cubierta</h2>
+      ${_pdfFld('Tipo', cub.tipo)}
+      ${_pdfFld('Largo cumbrera (m)', cub.largoCumbrera)}
+      ${_pdfFld('Distancia al borde (m)', cub.distanciaBorde)}
+      ${_pdfBlock('Otras medidas', cub.otrasMedidas)}
 
-    <h2>Contador de distribuidora</h2>
-    ${_pdfBlock('Observaciones contador', cdis.observaciones)}
+      ${(cor.tipo || cor.distanciaEntre || cor.numPorCara) ? `
+        <h2>Correas</h2>
+        ${_pdfFld('Tipo', cor.tipo)}
+        ${_pdfFld('Distancia entre correas (m)', cor.distanciaEntre)}
+        ${_pdfFld('Nº por cara', cor.numPorCara)}
+      ` : ''}
 
-    <h2>Cableado</h2>
-    ${_pdfFld('Distancia módulos–inversor (m)', cab.distModulosInversor)}
-    ${_pdfFld('Distancia inversor–cuadro (m)', cab.distInversorCuadro)}
-    ${_pdfBlock('Entrada a nave', cab.entradaNaveObs)}
+      ${(gre.altura || gre.distanciaEntre || gre.ancho) ? `
+        <h2>Grecas</h2>
+        ${_pdfFld('Altura (mm)', gre.altura)}
+        ${_pdfFld('Distancia entre (mm)', gre.distanciaEntre)}
+        ${_pdfFld('Ancho (mm)', gre.ancho)}
+      ` : ''}
 
-    <h2>Conexión a internet</h2>
-    ${_pdfFld('Router / conexión', net.router)}
-    ${_pdfFld('Wi-Fi disponible', yn(net.wifi))}
-    ${_pdfFld('Distancia al router (m)', net.distanciaRouter)}
-    ${_pdfBlock('Observaciones internet', net.observaciones)}
+      <h2>Obstáculos y acceso</h2>
+      ${_pdfFld('¿Sin obstáculos?', yn(obs.noExisten))}
+      ${_pdfFld('Altura muretes (m)', obs.alturaMuretes)}
+      ${_pdfFld('Altura chimeneas (m)', obs.alturaChimeneas)}
+      ${_pdfBlock('Otros obstáculos', obs.otros)}
+      ${_pdfBlock('Ubicación obstáculos', obs.ubicacion)}
+      ${_pdfBlock('Acceso (ubicación)', acc.ubicacion)}
+      ${_pdfFld('Altura acceso (m)', acc.altura)}
+      ${_pdfBlock('Observaciones acceso', acc.observaciones)}
+      ${_pdfFld('Acopio en exterior cerrado', yn(aco.exteriorCerrado))}
+      ${_pdfBlock('Detalles acopio', aco.detalles)}
+      ${_pdfBlock('Elevación', ele.detalles)}
 
+      <h2>Cuarto de inversor y cuadros</h2>
+      ${_pdfBlock('Observaciones inversor', inv.observaciones)}
+      ${_pdfBlock('Cuadro de protección', cuap.observaciones)}
+      ${_pdfFld('Interruptor general', cug.interruptor)}
+      ${_pdfFld('Toroidales dentro del cuadro', yn(cug.toroidalesDentro))}
+      ${_pdfBlock('Observaciones cuadro general', cug.observaciones)}
+
+      <h2>Contador de distribuidora</h2>
+      ${_pdfBlock('Observaciones contador', cdis.observaciones)}
+
+      <h2>Cableado</h2>
+      ${_pdfFld('Distancia módulos–inversor (m)', cab.distModulosInversor)}
+      ${_pdfFld('Distancia inversor–cuadro (m)', cab.distInversorCuadro)}
+      ${_pdfBlock('Entrada a nave', cab.entradaNaveObs)}
+
+      <h2>Conexión a internet</h2>
+      ${_pdfFld('Router / conexión', net.router)}
+      ${_pdfFld('Wi-Fi disponible', yn(net.wifi))}
+      ${_pdfFld('Distancia al router (m)', net.distanciaRouter)}
+      ${_pdfBlock('Observaciones internet', net.observaciones)}
+    `;
+  }
+
+  const html = cabecera + especifico + `
     ${_pdfBlock('Otros', c.otros)}
     ${_pdfFotos(fotos)}
   `;
-  imprimirComoPDF('Visita pre-contrato · ' + (v.titulo || v.cliente_nombre || v.id), html);
+  imprimirComoPDF('Visita pre-contrato (' + tipoLabel + ') · ' + (v.titulo || v.cliente_nombre || v.id), html);
 }
 
 function generarPDFPuesta(id) {

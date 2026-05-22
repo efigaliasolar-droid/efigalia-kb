@@ -1498,7 +1498,7 @@
       </div>
     </details>
 
-    <details class="filtros-panel">
+    <details class="filtros-panel solo-fv">
       <summary>Acopio de material</summary>
       <div class="filtros-body">
         <div class="form-group">
@@ -9965,10 +9965,6 @@ function generarPDFVisita(id) {
         ${_pdfFld('Cobertura 4G suficiente', yn(pdr.cobertura4g))}
         ${_pdfBlock('Observaciones', pdr.comObservaciones)}
       ` : ''}
-
-      <h2>Acopio de material</h2>
-      ${_pdfFld('Acopio en exterior cerrado', yn(aco.exteriorCerrado))}
-      ${_pdfBlock('Detalles acopio', aco.detalles)}
     `;
   } else {
     const cub = c.cubierta || {};

@@ -480,6 +480,11 @@ export default {
     }
 
     // — DATOS OPERATIVOS (cualquier autenticado) —
+    // - partes y movimientos: SIEMPRE merge por id. Nunca se borran desde la UI,
+    //   y así protegemos contra clientes desactualizados que pisarían trabajo de
+    //   otros operarios (causa del incidente del 12 may).
+    // - visitas y materiales: overwrite con If-Match (sí se borran intencionalmente).
+    const MERGE_BY_ID = new Set(['partes', 'movimientos']);
     for (const entity of ['movimientos', 'partes', 'visitas', 'materiales']) {
       if (path === '/' + entity) {
         const KEY = 'kb/' + entity + '.json';
@@ -490,12 +495,29 @@ export default {
           });
         }
         if (request.method === 'POST') {
+          const text = await request.text();
+          let incoming;
+          try { incoming = JSON.parse(text); } catch { return json({ error: 'JSON inválido' }, 400, cors); }
+          if (!Array.isArray(incoming)) return json({ error: 'Se esperaba array' }, 400, cors);
+
+          if (MERGE_BY_ID.has(entity)) {
+            // Merge por id: existentes en server se conservan, entrantes los
+            // sobrescriben/añaden por id. No requiere If-Match.
+            const { text: currentText } = await loadRaw(env, KEY);
+            let existing = [];
+            if (currentText) { try { existing = JSON.parse(currentText); } catch {} }
+            const byId = new Map();
+            for (const it of existing) if (it && it.id !== undefined) byId.set(it.id, it);
+            for (const it of incoming) if (it && it.id !== undefined) byId.set(it.id, it);
+            const merged = Array.from(byId.values());
+            await backupCurrent(env, KEY, currentText);
+            const newText = JSON.stringify(merged);
+            await env.FOTOS.put(KEY, newText, { httpMetadata: { contentType: 'application/json' } });
+            return new Response('ok', { headers: { ...cors, 'ETag': await etagOf(newText) } });
+          }
+
           const check = await checkIfMatch(request, env, KEY);
           if (!check.ok) return json({ error: 'Conflict', currentEtag: check.currentEtag }, 409, cors);
-
-          const text = await request.text();
-          try { JSON.parse(text); } catch { return json({ error: 'JSON inválido' }, 400, cors); }
-
           await backupCurrent(env, KEY, check.currentText);
           await env.FOTOS.put(KEY, text, { httpMetadata: { contentType: 'application/json' } });
           return new Response('ok', { headers: { ...cors, 'ETag': await etagOf(text) } });

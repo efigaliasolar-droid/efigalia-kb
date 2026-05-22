@@ -3290,16 +3290,33 @@ function goHome() {
   if (cardVisitas) cardVisitas.style.display = tieneVisitas ? '' : 'none';
   const cardMnt = document.getElementById('home-card-mantenimientos');
   if (cardMnt) cardMnt.style.display = tieneMnt ? '' : 'none';
-  // Mi día (solo para instaladores con asignaciones)
+  // Mi día (solo para instaladores con asignaciones). Renderizamos primero
+  // con lo que haya en cache para no dejar la pantalla vacía, y luego
+  // re-renderizamos cuando las cargas terminan: si no, las visitas/asignaciones/
+  // mantenimientos del día aparecen incompletos hasta que el usuario navega a
+  // otra sección y vuelve.
   renderMiDia();
   renderResumenAdmin();
-  // Cargar datos auxiliares para el resumen y refrescar al terminar
+  const loads = [
+    typeof sheetsLoad === 'function'  ? sheetsLoad().catch(() => {})  : Promise.resolve(),
+    typeof visitasLoad === 'function' ? visitasLoad().catch(() => {}) : Promise.resolve(),
+  ];
   if (esAdmin) {
-    Promise.all([
-      typeof partesLoad === 'function' ? partesLoad().catch(() => {}) : Promise.resolve(),
-      typeof movimientosLoad === 'function' ? movimientosLoad().catch(() => {}) : Promise.resolve()
-    ]).then(() => renderResumenAdmin());
+    if (typeof partesLoad === 'function')      loads.push(partesLoad().catch(() => {}));
+    if (typeof movimientosLoad === 'function') loads.push(movimientosLoad().catch(() => {}));
   }
+  Promise.all(loads).then(() => {
+    // Refrescar visibilidad de tarjetas (puede que ahora sí tenga visitas).
+    const nombre2 = currentUser?.nombre || '';
+    const tieneVisitas2 = esAdmin || (nombre2 && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre2));
+    const tieneMnt2 = esAdmin || (nombre2 && incidents.some(i => i.tipo === 'mantenimiento' && obtenerOperariosMnt(i).includes(nombre2)));
+    const cV = document.getElementById('home-card-visitas');
+    if (cV) cV.style.display = tieneVisitas2 ? '' : 'none';
+    const cM = document.getElementById('home-card-mantenimientos');
+    if (cM) cM.style.display = tieneMnt2 ? '' : 'none';
+    renderMiDia();
+    renderResumenAdmin();
+  });
 }
 function enterIncidencias() {
   hideAllViews();

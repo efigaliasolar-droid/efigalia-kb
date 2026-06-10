@@ -2,7 +2,7 @@
 // Estrategia: network-first para index.html (que contiene TODA la app)
 // con fallback a caché. Assets estáticos (iconos, manifest) cache-first.
 
-const VERSION = 'v21';
+const VERSION = 'v22';
 const CACHE = 'efigalia-' + VERSION;
 const SHELL = [
   './',

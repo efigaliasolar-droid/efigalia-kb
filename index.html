@@ -84,7 +84,7 @@
   .tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
 
   main { max-width: 760px; margin: 0 auto; padding: 28px 16px 80px; }
-  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-por-pedir, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-admin-huerfanos, #view-ficha-obra, #view-login, #view-home { display: none; }
+  #view-consultar, #view-registrar, #view-listado, #view-documentos, #view-cable, #view-protecciones, #view-cable-dc, #view-offgrid, #view-calculos, #view-obra, #view-materiales, #view-partes, #view-puestas, #view-solicitud, #view-estado-obras, #view-visitas, #view-visita, #view-repostajes, #view-mantenimientos, #view-mantenimiento, #view-planificacion, #view-stock-furgoneta, #view-almacen, #view-pedidos, #view-reserva, #view-reservas-list, #view-por-pedir, #view-nuevo-proyecto, #view-admin, #view-admin-obras, #view-admin-furgonetas, #view-admin-instaladores, #view-admin-proveedores, #view-admin-clientes, #view-admin-comerciales, #view-admin-catalogo, #view-admin-documentos, #view-admin-huerfanos, #view-ficha-obra, #view-login, #view-tarifas, #view-tarifa-estudio, #view-tarifa-propuesta, #view-admin-tarifas, #view-home { display: none; }
   #view-home { display: block; }
 
   .section-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
@@ -399,6 +399,46 @@
   .plan-pill .obr { font-weight: 600; }
   .plan-pill .fur { font-family: var(--mono); font-size: 10px; opacity: 0.85; }
   .plan-pill .hora { font-family: var(--mono); font-size: 10px; opacity: 0.9; }
+
+  /* ── Selector de tarifas ─────────────────────────── */
+  .tar-grid { border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; background: var(--surface); }
+  .tar-grid table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
+  .tar-grid th, .tar-grid td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: right; white-space: nowrap; }
+  .tar-grid th { background: var(--surface2); font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 600; }
+  .tar-grid th:first-child, .tar-grid td:first-child { text-align: left; }
+  .tar-grid tr.tar-row { cursor: pointer; }
+  .tar-grid tr.tar-row:hover { background: var(--surface2); }
+  .tar-grid tr.tar-sel { background: rgba(33,113,199,0.12); }
+  .tar-grid tr.tar-detail td { background: var(--surface2); white-space: normal; text-align: left; }
+  .tar-pos { color: var(--green, #1f8a5e); font-weight: 600; }
+  .tar-neg { color: var(--red, #c63d3d); font-weight: 600; }
+  .tar-periodos { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 8px; }
+  .tar-periodos .form-group { margin-bottom: 0; }
+  .tar-periodos label { font-size: 11px; }
+  .tar-chip { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); margin-left: 6px; }
+
+  /* Propuesta para el cliente (vista imprimible) */
+  .prop-doc { background: #fff; color: #1a1a1a; border-radius: 10px; padding: 32px 36px; font-size: 14px; line-height: 1.55; }
+  .prop-doc h1 { font-size: 21px; margin: 0 0 2px; color: #0f4c81; }
+  .prop-doc h2 { font-size: 15px; margin: 22px 0 8px; color: #0f4c81; border-bottom: 2px solid #0f4c81; padding-bottom: 4px; }
+  .prop-doc table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 6px; }
+  .prop-doc th, .prop-doc td { border: 1px solid #ccd5de; padding: 6px 9px; text-align: right; }
+  .prop-doc th { background: #eef3f8; text-align: right; }
+  .prop-doc th:first-child, .prop-doc td:first-child { text-align: left; }
+  .prop-doc .prop-ahorro { background: #eaf6ee; border: 1px solid #bfe3cc; border-radius: 8px; padding: 14px 18px; margin-top: 14px; font-size: 15px; }
+  .prop-doc .prop-ahorro b { font-size: 22px; color: #1f8a5e; }
+  .prop-muted { color: #667; font-size: 12px; }
+  .prop-barras { display: flex; gap: 26px; align-items: flex-end; height: 130px; margin: 14px 0 4px; padding: 0 8px; }
+  .prop-barra { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; }
+  .prop-barra .barra { width: 100%; max-width: 130px; border-radius: 6px 6px 0 0; }
+  .prop-barra .eti { font-size: 12px; color: #445; text-align: center; }
+  @media print {
+    body * { visibility: hidden; }
+    #view-tarifa-propuesta, #view-tarifa-propuesta * { visibility: visible; }
+    #view-tarifa-propuesta { position: absolute; left: 0; top: 0; width: 100%; }
+    #view-tarifa-propuesta .no-print { display: none !important; }
+    .prop-doc { border-radius: 0; padding: 0; }
+  }
 </style>
 </head>
 <body>
@@ -485,6 +525,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><rect x="8" y="6" width="8" height="3" rx="0.5"/><circle cx="9" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="0.6" fill="currentColor" stroke="none"/><circle cx="9" cy="17" r="0.6" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></div>
         <div class="home-title">Cálculos rápidos</div>
         <div class="home-desc">Secciones de cable AC/DC, calibre de protecciones e instalación aislada.</div>
+      </div>
+      <div class="home-card" id="home-card-tarifas" onclick="enterTarifas()" style="display:none">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/><circle cx="19" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg></div>
+        <div class="home-title">Tarifas y propuestas</div>
+        <div class="home-desc">Estudio tarifario por cliente: comparativa de comercializadoras, ahorro y comisión.</div>
       </div>
       <div class="home-card" id="home-card-admin" onclick="enterAdmin()" style="display:none">
         <div class="home-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor" stroke="none"/></svg></div>
@@ -2294,6 +2339,240 @@
     </div>
   </div>
 
+  <!-- ═══════════════ TARIFAS Y PROPUESTAS ═══════════════ -->
+  <div id="view-tarifas">
+    <button class="back-link" onclick="goHome()">← Atrás</button>
+    <div class="section-title">Tarifas y propuestas</div>
+    <div class="home-intro">Estudios tarifarios por cliente: comparativa de comercializadoras, simulación de batería y propuesta de ahorro.</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn-primary" style="width:auto" onclick="nuevoEstudio()">+ Nuevo estudio</button>
+      <button class="btn-secondary" style="width:auto" onclick="enterAdminTarifas()">⚙ Comercializadoras y comisiones</button>
+    </div>
+    <div class="form-group">
+      <input type="text" id="estudios-search" placeholder="Buscar por cliente, CUPS, comercializadora..." oninput="renderEstudios()">
+    </div>
+    <div class="admin-list" id="estudios-list"></div>
+  </div>
+
+  <div id="view-tarifa-estudio">
+    <button class="back-link" onclick="enterTarifas()">← Atrás</button>
+    <div class="section-title" id="estudio-titulo">Estudio tarifario</div>
+
+    <details class="filtros-panel" open>
+      <summary>1 · Cliente y suministro</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cliente (base de datos)</label>
+            <select id="est-cliente" onchange="onEstudioClienteChange()"></select>
+          </div>
+          <div class="form-group">
+            <label>Nombre cliente *</label>
+            <input type="text" id="est-cliente-nombre" placeholder="Nombre o razón social">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>CUPS</label>
+            <input type="text" id="est-cups" placeholder="ES0000000000000000XX">
+          </div>
+          <div class="form-group">
+            <label>Tarifa de acceso *</label>
+            <select id="est-tarifa" onchange="tarRenderPeriodos()">
+              <option value="2.0TD">2.0TD (≤15 kW)</option>
+              <option value="3.0TD">3.0TD</option>
+              <option value="6.1TD">6.1TD</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Comercializadora actual</label>
+            <input type="text" id="est-com-actual" placeholder="Ej: Iberdrola, indexada...">
+          </div>
+          <div class="form-group">
+            <label>Fin de contrato / renovación</label>
+            <input type="date" id="est-renovacion">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel" open>
+      <summary>2 · Consumo, producción y potencias</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Curva horaria de la monitorización (CSV)</label>
+          <input type="file" id="est-csv" accept=".csv,.txt" onchange="tarLeerCSV(this.files[0])">
+          <div class="calc-note">Exporta la curva horaria (consumo de red y vertido) desde la plataforma de monitorización del cliente y súbela aquí. También puedes teclear los datos a mano abajo.</div>
+        </div>
+        <div id="est-csv-map" style="display:none"></div>
+        <div id="est-csv-info"></div>
+        <div class="form-group" style="margin-top:10px">
+          <label>Energía consumida de red por periodo (kWh/año)</label>
+          <div class="tar-periodos" id="est-kwh-grid"></div>
+        </div>
+        <div class="form-group">
+          <label>Excedentes vertidos a red (kWh/año)</label>
+          <input type="number" step="any" min="0" id="est-exc-total" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Potencias contratadas (kW)</label>
+          <div class="tar-periodos" id="est-pot-grid"></div>
+        </div>
+        <div id="est-curva-stats"></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>3 · Batería (situación y potencial)</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Batería</label>
+            <select id="est-bat-tiene">
+              <option value="no">No tiene</option>
+              <option value="tiene">Ya tiene batería</option>
+              <option value="oferta">Se oferta con la propuesta</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Capacidad útil (kWh)</label>
+            <input type="number" step="any" min="0" id="est-bat-cap" placeholder="10">
+          </div>
+          <div class="form-group">
+            <label>Potencia (kW)</label>
+            <input type="number" step="any" min="0" id="est-bat-pot" placeholder="5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><input type="checkbox" id="est-bat-valle" checked> Cargar de red en valle y descargar en horas caras</label>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="est-bat-shaving"> Peak shaving · limitar pico a (kW):</label>
+            <input type="number" step="any" min="0" id="est-bat-limite" placeholder="kW objetivo">
+          </div>
+        </div>
+        <button class="btn-secondary" style="width:auto" onclick="tarSimularBateriaUI()">⚡ Simular batería sobre la curva</button>
+        <div id="est-bat-result"></div>
+        <div class="form-group" style="margin-top:10px">
+          <label><input type="checkbox" id="est-bat-usar" onchange="tarCalcularComparativa(true)"> Usar los valores simulados con batería en la comparativa</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="filtros-panel" open>
+      <summary>4 · Tarifa actual (precios de su factura)</summary>
+      <div class="filtros-body">
+        <div class="form-group">
+          <label>Precio energía (€/kWh)</label>
+          <div class="tar-periodos" id="est-actE-grid"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label>Precio potencia</label>
+            <div class="tar-periodos" id="est-actP-grid"></div>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Unidad potencia</label>
+            <select id="est-actP-unidad">
+              <option value="ano">€/kW·año</option>
+              <option value="dia">€/kW·día</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Compensación excedentes (€/kWh)</label>
+          <input type="number" step="any" min="0" id="est-act-exc" placeholder="0,06">
+        </div>
+        <div id="est-actual-result"></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel" open>
+      <summary>5 · Comparativa de comercializadoras</summary>
+      <div class="filtros-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ordenar por</label>
+            <select id="est-comp-orden" onchange="tarCalcularComparativa(true)">
+              <option value="recomendado">Recomendado (mayor comisión con ahorro)</option>
+              <option value="comision">Mayor comisión Efigalia</option>
+              <option value="ahorro">Mayor ahorro del cliente</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button class="btn-primary" style="width:auto" onclick="tarCalcularComparativa()">Calcular comparativa</button>
+          </div>
+        </div>
+        <div id="est-comp-result"></div>
+      </div>
+    </details>
+
+    <details class="filtros-panel">
+      <summary>6 · Servicios añadidos</summary>
+      <div class="filtros-body">
+        <div id="est-servicios"></div>
+      </div>
+    </details>
+
+    <div class="form-group" style="margin-top:14px">
+      <label>Notas internas</label>
+      <textarea id="est-notas" rows="2" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn-primary" style="width:auto" onclick="guardarEstudio()">💾 Guardar estudio</button>
+      <button class="btn-secondary" style="width:auto" onclick="generarPropuesta()">📄 Generar propuesta para el cliente</button>
+      <button class="btn-ghost" id="btn-est-eliminar" style="width:auto;color:var(--red);border-color:var(--red);display:none" onclick="eliminarEstudio()">🗑 Eliminar</button>
+    </div>
+  </div>
+
+  <div id="view-tarifa-propuesta">
+    <div class="no-print" style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <button class="back-link" style="margin-bottom:0" onclick="volverDePropuesta()">← Atrás</button>
+      <button class="btn-primary" style="width:auto" onclick="window.print()">🖨 Imprimir / Guardar PDF</button>
+    </div>
+    <div class="prop-doc" id="prop-doc"></div>
+  </div>
+
+  <!-- Admin: comercializadoras, comisiones y servicios -->
+  <div id="view-admin-tarifas">
+    <button class="back-link" onclick="enterAdmin()">← Atrás</button>
+    <div class="section-title">Comercializadoras y comisiones</div>
+    <div class="home-intro">Productos de cada comercializadora con precios base (sin margen), reglas de comisión y servicios añadidos ofertables.</div>
+
+    <div class="form-group">
+      <label>Añadir comercializadora</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="adm-comer-nombre" placeholder="Nombre (ej: TotalEnergies)" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none">
+        <button class="btn-primary" style="width:auto;flex:0 0 auto" onclick="addComercializadora()">+ Añadir</button>
+      </div>
+    </div>
+    <div class="admin-list" id="adm-comer-list"></div>
+    <div id="adm-comer-editor" style="display:none;margin-top:14px"></div>
+
+    <div class="section-title" style="margin-top:28px">Servicios añadidos</div>
+    <div id="adm-servicios"></div>
+
+    <div class="section-title" style="margin-top:28px">Parámetros de cálculo</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Impuesto eléctrico (%)</label>
+        <input type="number" step="any" min="0" id="pt-iee">
+      </div>
+      <div class="form-group">
+        <label>IVA (%)</label>
+        <input type="number" step="any" min="0" id="pt-iva">
+      </div>
+      <div class="form-group">
+        <label>Alquiler contador (€/mes)</label>
+        <input type="number" step="any" min="0" id="pt-alquiler">
+      </div>
+    </div>
+    <button class="btn-primary" style="width:auto" onclick="guardarParamsTarifas()">💾 Guardar parámetros</button>
+  </div>
+
   <!-- ═══════════════ ADMINISTRACIÓN ═══════════════ -->
   <div id="view-admin">
     <button class="back-link" onclick="goHome()">← Atrás</button>
@@ -2334,6 +2613,11 @@
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M16 11l4 4-4 4"/><path d="M20 15H8a4 4 0 1 1 0-8h8"/></svg></div>
         <div class="home-title">Comerciales</div>
         <div class="home-desc">Comerciales internos y externos que captan proyectos.</div>
+      </div>
+      <div class="home-card" onclick="enterAdminTarifas()">
+        <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="home-title">Comercializadoras y comisiones</div>
+        <div class="home-desc">Productos de cada comercializadora, precios base, comisiones y servicios añadidos.</div>
       </div>
       <div class="home-card" onclick="enterAdminCatalogo()">
         <div class="home-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M10 6h6M10 10h6"/></svg></div>
@@ -3084,7 +3368,7 @@ const WORKER = 'https://efigalia-kb.efigalia-solar.workers.dev';
 
 // ── Wrapper de fetch al Worker con auth + manejo de 401 ──
 // Endpoints con control de concurrencia por ETag. Solo el path base (sin query).
-const ETAG_PATHS = new Set(['/data', '/movimientos', '/partes', '/visitas', '/materiales']);
+const ETAG_PATHS = new Set(['/data', '/movimientos', '/partes', '/visitas', '/materiales', '/tarifas', '/estudios']);
 function etagKey(path) { return 'efigalia_etag_' + path.split('?')[0]; }
 function getStoredEtag(path) { try { return sessionStorage.getItem(etagKey(path)); } catch { return null; } }
 function setStoredEtag(path, etag) { try { etag ? sessionStorage.setItem(etagKey(path), etag) : sessionStorage.removeItem(etagKey(path)); } catch {} }
@@ -3137,7 +3421,7 @@ function setSyncStatus(state, label) {
 
 // ── SINCRONIZACIÓN OFFLINE ─────────────────────────────
 // Cuando un save falla, se marca el dataset como "dirty" y se reintenta al recuperar red.
-const SYNC_DIRTY_KEYS = ['data', 'partes', 'visitas', 'movimientos', 'materiales'];
+const SYNC_DIRTY_KEYS = ['data', 'partes', 'visitas', 'movimientos', 'materiales', 'tarifas', 'estudios'];
 function setDirty(name)   { try { localStorage.setItem('efigalia_dirty_' + name, '1'); } catch(e) {} actualizarIndicadorSync(); }
 function clearDirty(name) { try { localStorage.removeItem('efigalia_dirty_' + name); } catch(e) {} actualizarIndicadorSync(); }
 function isDirty(name)    { return localStorage.getItem('efigalia_dirty_' + name) === '1'; }
@@ -3167,6 +3451,8 @@ async function sincronizarPendientes() {
       else if (name === 'visitas')     await visitasSave();
       else if (name === 'movimientos') await movimientosSave();
       else if (name === 'materiales')  await materialesSave();
+      else if (name === 'tarifas')     await tarifasSave();
+      else if (name === 'estudios')    await estudiosSave();
     }
   } finally {
     syncEnCurso = false;
@@ -3282,6 +3568,8 @@ function goHome() {
   if (planCard) planCard.style.display = esAdmin ? '' : 'none';
   const almacenCard = document.getElementById('home-card-almacen');
   if (almacenCard) almacenCard.style.display = esAdmin ? '' : 'none';
+  const tarifasCard = document.getElementById('home-card-tarifas');
+  if (tarifasCard) tarifasCard.style.display = esAdmin ? '' : 'none';
   // Visitas y Mantenimientos: admin siempre; instalador solo si tiene algo asignado
   const nombre = currentUser?.nombre || '';
   const tieneVisitas = esAdmin || (nombre && (Array.isArray(visitas) ? visitas : []).some(v => v.operarioAsignado === nombre));
@@ -12710,6 +12998,1191 @@ async function guardarNuevoProyecto() {
   await sheetsSave();
   showToast(`✓ Proyecto creado: ${codigo}`, 'ok');
   abrirFichaObra(obra.id, 'estado');
+}
+
+// ══════════════════════════════════════════════════════════
+// SELECTOR DE TARIFAS · estudios, comparativa y propuestas
+// ══════════════════════════════════════════════════════════
+let tarifasData = [];          // config: comercializadoras, servicios, params
+let estudios = [];             // estudios tarifarios guardados
+let estudioEnEdicion = null;   // id del estudio abierto, null si es nuevo
+let estudioCurva = null;       // curva horaria importada [{d, imp, exp}] en kWh
+let estudioSimAgregados = null;// agregados anuales tras simular batería
+let estudioMargenes = {};      // márgenes por producto: 'comId_prodId' → {mE, mP}
+let estudioResultados = [];    // última comparativa calculada
+let estudioSeleccion = null;   // 'comId_prodId' elegido
+let estudioDetalleAbierto = null;
+let estudioCurvaInfo = null;   // {dias, desde, hasta} de la curva importada
+let admComerEnEdicion = null;
+let admProductoEnEdicion = undefined; // undefined=cerrado, null=nuevo, id=editar
+let admServicioEnEdicion = null;
+let csvImport = null;          // {headers, rows, sep} del CSV pendiente de mapear
+
+async function tarifasLoad() {
+  try {
+    const res = await workerFetch('/tarifas');
+    const data = await res.json();
+    if (Array.isArray(data)) tarifasData = data;
+    try { localStorage.setItem('efigalia_tarifas_v1', JSON.stringify(tarifasData)); } catch(e) {}
+  } catch(e) {
+    const stored = localStorage.getItem('efigalia_tarifas_v1');
+    tarifasData = stored ? JSON.parse(stored) : [];
+  }
+}
+async function tarifasSave() {
+  try { localStorage.setItem('efigalia_tarifas_v1', JSON.stringify(tarifasData)); } catch(e) {}
+  if (!navigator.onLine) { setDirty('tarifas'); return true; }
+  try {
+    const res = await workerFetch('/tarifas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tarifasData)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('tarifas'); actualizarIndicadorSync(); return true;
+  } catch(e) {
+    console.warn('[tarifasSave]', e);
+    setDirty('tarifas'); actualizarIndicadorSync(); return true;
+  }
+}
+async function estudiosLoad() {
+  try {
+    const res = await workerFetch('/estudios');
+    const data = await res.json();
+    if (Array.isArray(data)) estudios = data;
+    try { localStorage.setItem('efigalia_estudios_v1', JSON.stringify(estudios)); } catch(e) {}
+  } catch(e) {
+    const stored = localStorage.getItem('efigalia_estudios_v1');
+    estudios = stored ? JSON.parse(stored) : [];
+  }
+}
+async function estudiosSave() {
+  try { localStorage.setItem('efigalia_estudios_v1', JSON.stringify(estudios)); } catch(e) {}
+  if (!navigator.onLine) { setDirty('estudios'); return true; }
+  try {
+    const res = await workerFetch('/estudios', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(estudios)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    clearDirty('estudios'); actualizarIndicadorSync(); return true;
+  } catch(e) {
+    console.warn('[estudiosSave]', e);
+    setDirty('estudios'); actualizarIndicadorSync(); return true;
+  }
+}
+
+function tarComers()    { return tarifasData.filter(t => t && t.tipo === 'comercializadora'); }
+function tarServicios() { return tarifasData.filter(t => t && t.tipo === 'servicio'); }
+function tarParams() {
+  let p = tarifasData.find(t => t && t.tipo === 'params');
+  if (!p) { p = { tipo: 'params', id: 'params', impuestoElectrico: 5.11269632, ivaPct: 21, alquilerContadorMes: 0.81 }; tarifasData.push(p); }
+  return p;
+}
+function tarNum(v) { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; }
+function tarFmt(n, dec = 2) { return (isFinite(n) ? n : 0).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function tarEur(n) { return tarFmt(n) + ' €'; }
+function tarSum(arr) { return (arr || []).reduce((s, v) => s + (parseFloat(v) || 0), 0); }
+
+// ── Calendario de periodos (Circular 3/2020, península) ──
+function nPerE(t) { return t === '2.0TD' ? 3 : 6; }
+function nPerP(t) { return t === '2.0TD' ? 2 : 6; }
+function etiPeriodoE(t, i) { return t === '2.0TD' ? ['P1 punta', 'P2 llano', 'P3 valle'][i] : 'P' + (i + 1); }
+function etiPeriodoP(t, i) { return t === '2.0TD' ? ['Punta (P1)', 'Valle (P2)'][i] : 'P' + (i + 1); }
+const TAR_FESTIVOS = new Set(['1-1', '1-6', '5-1', '8-15', '10-12', '11-1', '12-6', '12-8', '12-25']);
+function tarEsFestivo(d) {
+  const wd = d.getDay();
+  if (wd === 0 || wd === 6) return true;
+  return TAR_FESTIVOS.has((d.getMonth() + 1) + '-' + d.getDate());
+}
+// Mes → temporada (1=alta P1/P2 · 2=media-alta P2/P3 · 3=media P3/P4 · 4=baja P4/P5)
+const TAR_TEMPORADA = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 4, 6: 3, 7: 1, 8: 3, 9: 3, 10: 4, 11: 2, 12: 1 };
+// Devuelve el índice de periodo (0-based) de una hora concreta
+function tarPeriodoHora(tarifa, d) {
+  const h = d.getHours();
+  if (tarifa === '2.0TD') {
+    if (tarEsFestivo(d) || h < 8) return 2;                          // P3 valle
+    return ((h >= 10 && h < 14) || (h >= 18 && h < 22)) ? 0 : 1;     // P1 punta / P2 llano
+  }
+  if (tarEsFestivo(d) || h < 8) return 5;                            // P6
+  const t = TAR_TEMPORADA[d.getMonth() + 1];
+  const punta = (h >= 9 && h < 14) || (h >= 18 && h < 22);
+  return punta ? t - 1 : t;
+}
+// ¿Es hora "valle" (la más barata) en esta tarifa?
+function tarEsValle(tarifa, d) { return tarPeriodoHora(tarifa, d) === (tarifa === '2.0TD' ? 2 : 5); }
+
+function tarAgregarCurva(curva, tarifa) {
+  const kwh = Array(6).fill(0), exc = Array(6).fill(0), maxKw = Array(6).fill(0);
+  let tMin = null, tMax = null;
+  for (const r of curva) {
+    const p = tarPeriodoHora(tarifa, r.d);
+    kwh[p] += r.imp; exc[p] += r.exp;
+    if (r.imp > maxKw[p]) maxKw[p] = r.imp;
+    const t = r.d.getTime();
+    if (tMin === null || t < tMin) tMin = t;
+    if (tMax === null || t > tMax) tMax = t;
+  }
+  const dias = tMin === null ? 0 : Math.max(1, Math.round((tMax - tMin) / 86400000) + 1);
+  return { kwh, exc, maxKw, dias, factor: dias ? 365 / dias : 1, totalImp: tarSum(kwh), totalExp: tarSum(exc) };
+}
+
+// ── Navegación y listado de estudios ──────────────────────
+function enterTarifas() {
+  if (!requireLogin()) return;
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  document.getElementById('view-tarifas').style.display = 'block';
+  Promise.all([tarifasLoad(), estudiosLoad(), sheetsLoad()]).then(renderEstudios);
+}
+
+function renderEstudios() {
+  const cont = document.getElementById('estudios-list');
+  if (!cont) return;
+  const q = (document.getElementById('estudios-search')?.value || '').toLowerCase();
+  let lista = [...estudios];
+  if (q) lista = lista.filter(e => [e.clienteNombre, e.cups, e.comActual, e.resumen?.comercializadora].some(f => (f || '').toLowerCase().includes(q)));
+  lista.sort((a, b) => (b.modificadoTs || b.creadoTs || 0) - (a.modificadoTs || a.creadoTs || 0));
+  if (!lista.length) {
+    cont.innerHTML = '<div class="empty-state" style="padding:24px">Sin estudios todavía. Crea el primero con «+ Nuevo estudio».</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(e => {
+    const r = e.resumen || {};
+    const fecha = e.modificadoTs || e.creadoTs ? new Date(e.modificadoTs || e.creadoTs).toLocaleDateString('es-ES') : '';
+    const datos = r.ahorro !== undefined
+      ? ` <span class="tar-chip">${escapeHtml(r.comercializadora || '')}</span> <span class="tar-chip" style="color:var(--green)">ahorro ${tarEur(r.ahorro)}</span> <span class="tar-chip" style="color:var(--accent)">com. ${tarEur(r.comision)}</span>`
+      : ' <span class="tar-chip">sin comparativa</span>';
+    return `
+    <div class="admin-row">
+      <div class="nombre" style="min-width:0;overflow:hidden;text-overflow:ellipsis;cursor:pointer" onclick="abrirEstudio(${e.id})">
+        ${escapeHtml(e.clienteNombre || '—')} <span style="color:var(--text-muted);font-family:var(--mono);font-size:11px">· ${escapeHtml(e.tarifa || '')} · ${fecha}</span>${datos}
+      </div>
+      <div class="acciones">
+        <button class="icon-btn" onclick="abrirEstudio(${e.id})" title="Abrir">✎</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function tarResetEstadoEstudio() {
+  estudioCurva = null; estudioSimAgregados = null; estudioMargenes = {};
+  estudioResultados = []; estudioSeleccion = null; estudioDetalleAbierto = null;
+  estudioCurvaInfo = null; csvImport = null;
+  ['est-csv-map', 'est-csv-info', 'est-curva-stats', 'est-bat-result', 'est-actual-result', 'est-comp-result'].forEach(id => {
+    const el = document.getElementById(id); if (el) { el.innerHTML = ''; el.style.display = ''; }
+  });
+  const f = document.getElementById('est-csv'); if (f) f.value = '';
+}
+
+function nuevoEstudio() {
+  estudioEnEdicion = null;
+  tarResetEstadoEstudio();
+  hideAllViews();
+  document.getElementById('view-tarifa-estudio').style.display = 'block';
+  document.getElementById('estudio-titulo').textContent = 'Nuevo estudio tarifario';
+  document.getElementById('btn-est-eliminar').style.display = 'none';
+  rellenarSelectClientesEstudio();
+  ['est-cliente-nombre', 'est-cups', 'est-com-actual', 'est-renovacion', 'est-exc-total', 'est-bat-cap', 'est-bat-pot', 'est-bat-limite', 'est-act-exc', 'est-notas'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('est-cliente').value = '';
+  document.getElementById('est-tarifa').value = '2.0TD';
+  document.getElementById('est-bat-tiene').value = 'no';
+  document.getElementById('est-bat-valle').checked = true;
+  document.getElementById('est-bat-shaving').checked = false;
+  document.getElementById('est-bat-usar').checked = false;
+  document.getElementById('est-actP-unidad').value = 'ano';
+  document.getElementById('est-comp-orden').value = 'recomendado';
+  tarRenderPeriodos();
+  renderServiciosEstudio([]);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function rellenarSelectClientesEstudio() {
+  const sel = document.getElementById('est-cliente');
+  if (!sel) return;
+  const lista = (typeof clientesActivos === 'function') ? clientesActivos() : [];
+  sel.innerHTML = '<option value="">— Elegir de la base de datos (opcional) —</option>' +
+    lista.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}${c.nif ? ' · ' + escapeHtml(c.nif) : ''}</option>`).join('');
+}
+
+function onEstudioClienteChange() {
+  const v = document.getElementById('est-cliente').value;
+  if (!v) return;
+  const c = incidents.find(i => i.id === parseInt(v, 10) && i.tipo === 'cliente');
+  if (!c) return;
+  document.getElementById('est-cliente-nombre').value = c.nombre || '';
+  // Si el cliente tiene obras con CUPS/tarifa, precargar la más reciente
+  const obras = incidents.filter(i => i.tipo === 'obra' && i.clienteId === c.id && (i.cups || i.tarifa));
+  if (obras.length) {
+    const o = obras[obras.length - 1];
+    if (o.cups && !document.getElementById('est-cups').value) document.getElementById('est-cups').value = o.cups;
+    const t = (o.tarifa || '').toUpperCase();
+    const sel = document.getElementById('est-tarifa');
+    if (t.includes('6.1')) sel.value = '6.1TD'; else if (t.includes('3.0')) sel.value = '3.0TD'; else if (t.includes('2.0')) sel.value = '2.0TD';
+    tarRenderPeriodos();
+  }
+}
+
+// Renderiza las parrillas de inputs por periodo según la tarifa, preservando valores
+function tarRenderPeriodos() {
+  const t = document.getElementById('est-tarifa').value;
+  const grids = [
+    { id: 'est-kwh-grid',  prefix: 'est-kwh-',  n: nPerE(t), eti: i => etiPeriodoE(t, i), ph: 'kWh' },
+    { id: 'est-pot-grid',  prefix: 'est-pot-',  n: nPerP(t), eti: i => etiPeriodoP(t, i), ph: 'kW' },
+    { id: 'est-actE-grid', prefix: 'est-actE-', n: nPerE(t), eti: i => etiPeriodoE(t, i), ph: '€/kWh' },
+    { id: 'est-actP-grid', prefix: 'est-actP-', n: nPerP(t), eti: i => etiPeriodoP(t, i), ph: '€/kW' },
+  ];
+  for (const g of grids) {
+    const cont = document.getElementById(g.id);
+    if (!cont) continue;
+    const prev = [];
+    for (let i = 0; i < 6; i++) { const el = document.getElementById(g.prefix + i); prev[i] = el ? el.value : ''; }
+    cont.innerHTML = Array.from({ length: g.n }, (_, i) => `
+      <div class="form-group">
+        <label>${g.eti(i)}</label>
+        <input type="number" step="any" min="0" id="${g.prefix}${i}" placeholder="${g.ph}" value="${prev[i] || ''}">
+      </div>`).join('');
+  }
+}
+
+// ── Importación CSV de curva horaria ──────────────────────
+function tarLeerCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result || '');
+    const lineas = text.split(/\r?\n/).filter(l => l.trim());
+    if (lineas.length < 2) { showToast('⚠ CSV vacío o sin datos', 'err'); return; }
+    const primera = lineas[0];
+    const sep = [';', ',', '\t'].map(s => ({ s, n: primera.split(s).length })).sort((a, b) => b.n - a.n)[0].s;
+    const headers = primera.split(sep).map(h => h.replace(/^"|"$/g, '').trim());
+    const rows = lineas.slice(1).map(l => l.split(sep).map(c => c.replace(/^"|"$/g, '').trim()));
+    csvImport = { headers, rows, sep };
+    tarRenderCSVMap();
+  };
+  reader.readAsText(file);
+}
+
+function tarGuessCol(patrones) {
+  if (!csvImport) return '';
+  const idx = csvImport.headers.findIndex(h => patrones.some(p => h.toLowerCase().includes(p)));
+  return idx >= 0 ? String(idx) : '';
+}
+
+function tarRenderCSVMap() {
+  const cont = document.getElementById('est-csv-map');
+  if (!cont || !csvImport) return;
+  const opts = extra => extra + csvImport.headers.map((h, i) => `<option value="${i}">${escapeHtml(h || 'col ' + (i + 1))}</option>`).join('');
+  cont.style.display = 'block';
+  cont.innerHTML = `
+    <div class="calc-result" style="display:block">
+      <div style="font-weight:600;margin-bottom:8px">Mapeo de columnas del CSV (${csvImport.rows.length} filas)</div>
+      <div class="form-row">
+        <div class="form-group"><label>Fecha (o fecha+hora)</label><select id="csvm-fecha">${opts('')}</select></div>
+        <div class="form-group"><label>Hora (si va aparte)</label><select id="csvm-hora">${opts('<option value="">— incluida en fecha —</option>')}</select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Consumo de red *</label><select id="csvm-imp">${opts('')}</select></div>
+        <div class="form-group"><label>Vertido / excedentes</label><select id="csvm-exp">${opts('<option value="">— no hay —</option>')}</select></div>
+        <div class="form-group"><label>Unidad</label><select id="csvm-unidad"><option value="kwh">kWh</option><option value="wh">Wh</option></select></div>
+      </div>
+      <button class="btn-primary" style="width:auto" onclick="tarAplicarCSV()">Aplicar curva</button>
+    </div>`;
+  document.getElementById('csvm-fecha').value = tarGuessCol(['fecha', 'date', 'dia', 'día', 'time']);
+  document.getElementById('csvm-hora').value = tarGuessCol(['hora', 'hour']);
+  document.getElementById('csvm-imp').value = tarGuessCol(['consumo', 'import', 'red', 'grid', 'compra', 'purchased', 'energy from grid', 'kwh']);
+  document.getElementById('csvm-exp').value = tarGuessCol(['exced', 'export', 'vertid', 'inyec', 'feed', 'surplus', 'venta', 'sold']);
+}
+
+function tarParseFecha(s, hora) {
+  s = (s || '').trim();
+  let d = null, m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{1,2})[:.](\d{2}))?/))) {
+    d = new Date(+m[1], +m[2] - 1, +m[3], m[4] !== undefined ? +m[4] : 0, m[5] !== undefined ? +m[5] : 0);
+  } else if ((m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ ](\d{1,2})[:.](\d{2}))?/))) {
+    const yy = +m[3] < 100 ? 2000 + (+m[3]) : +m[3];
+    d = new Date(yy, +m[2] - 1, +m[1], m[4] !== undefined ? +m[4] : 0, m[5] !== undefined ? +m[5] : 0);
+  }
+  if (!d || isNaN(d.getTime())) return null;
+  if (hora !== undefined && hora !== null && hora !== '') {
+    let h = null;
+    if ((m = String(hora).match(/^(\d{1,2})(?:[:.](\d{2}))?/))) h = +m[1];
+    if (h !== null) d.setHours(h, 0, 0, 0);
+  }
+  return d;
+}
+
+function tarAplicarCSV() {
+  if (!csvImport) return;
+  const iF = document.getElementById('csvm-fecha').value;
+  const iH = document.getElementById('csvm-hora').value;
+  const iI = document.getElementById('csvm-imp').value;
+  const iE = document.getElementById('csvm-exp').value;
+  const factor = document.getElementById('csvm-unidad').value === 'wh' ? 0.001 : 1;
+  if (iF === '' || iI === '') { showToast('⚠ Indica al menos columna de fecha y de consumo', 'err'); return; }
+  // Detectar formato de hora 1..24 (hora final) vs 0..23
+  let maxHora = 0;
+  if (iH !== '') for (const r of csvImport.rows) { const h = parseInt(r[iH], 10); if (isFinite(h) && h > maxHora) maxHora = h; }
+  const curva = [];
+  let descartadas = 0;
+  for (const r of csvImport.rows) {
+    let horaRaw = iH === '' ? undefined : r[iH];
+    if (iH !== '' && maxHora === 24) { const h = parseInt(horaRaw, 10); horaRaw = isFinite(h) ? String(h - 1) : horaRaw; }
+    const d = tarParseFecha(r[iF], horaRaw);
+    if (!d) { descartadas++; continue; }
+    const imp = tarNum(r[iI]) * factor;
+    const exp = iE === '' ? 0 : tarNum(r[iE]) * factor;
+    curva.push({ d, imp: Math.max(0, imp), exp: Math.max(0, exp) });
+  }
+  if (curva.length < 24) { showToast('⚠ No se pudieron interpretar las filas del CSV (revisa el mapeo)', 'err'); return; }
+  curva.sort((a, b) => a.d - b.d);
+  estudioCurva = curva;
+  estudioSimAgregados = null;
+  document.getElementById('est-bat-usar').checked = false;
+  const t = document.getElementById('est-tarifa').value;
+  const ag = tarAgregarCurva(curva, t);
+  estudioCurvaInfo = { dias: ag.dias, desde: curva[0].d.toLocaleDateString('es-ES'), hasta: curva[curva.length - 1].d.toLocaleDateString('es-ES') };
+  // Volcar a los inputs manuales, anualizando
+  for (let i = 0; i < nPerE(t); i++) {
+    const el = document.getElementById('est-kwh-' + i);
+    if (el) el.value = Math.round(ag.kwh[i] * ag.factor);
+  }
+  document.getElementById('est-exc-total').value = Math.round(ag.totalExp * ag.factor);
+  document.getElementById('est-csv-map').style.display = 'none';
+  tarRenderCurvaStats(ag, t);
+  showToast(`✓ Curva aplicada: ${curva.length} horas, ${ag.dias} días${descartadas ? ` (${descartadas} filas descartadas)` : ''}`, 'ok');
+}
+
+function tarPotenciasSugeridas(maxKw, t) {
+  // +10% de margen sobre el máximo registrado, y creciente entre periodos (exigencia regulatoria en 3.0/6.1)
+  if (t === '2.0TD') {
+    return [Math.max(maxKw[0], maxKw[1]) * 1.1, maxKw[2] * 1.1].map(v => Math.ceil(v * 10) / 10);
+  }
+  const sug = [];
+  let acum = 0;
+  for (let i = 0; i < 6; i++) { acum = Math.max(acum, maxKw[i] * 1.1); sug.push(Math.ceil(acum * 10) / 10); }
+  return sug;
+}
+
+function tarRenderCurvaStats(ag, t) {
+  const cont = document.getElementById('est-curva-stats');
+  if (!cont) return;
+  const sug = tarPotenciasSugeridas(ag.maxKw, t);
+  const aviso = ag.dias < 330 ? `<div class="calc-note" style="color:var(--red)">⚠ La curva cubre solo ${ag.dias} días: la anualización (×${tarFmt(ag.factor)}) puede tener sesgo estacional. Mejor usar 12 meses.</div>` : '';
+  cont.innerHTML = `
+    <div class="calc-result" style="display:block">
+      <div class="calc-row"><span class="k">Curva</span><span class="v">${estudioCurvaInfo.desde} → ${estudioCurvaInfo.hasta} (${ag.dias} días)</span></div>
+      <div class="calc-row"><span class="k">Consumo de red anualizado</span><span class="v">${tarFmt(ag.totalImp * ag.factor, 0)} kWh</span></div>
+      <div class="calc-row"><span class="k">Excedentes anualizados</span><span class="v">${tarFmt(ag.totalExp * ag.factor, 0)} kWh</span></div>
+      <div class="calc-row"><span class="k">Pico máx. por periodo (kW)</span><span class="v">${ag.maxKw.slice(0, nPerE(t)).map((v, i) => etiPeriodoE(t, i).split(' ')[0] + ': ' + tarFmt(v, 1)).join(' · ')}</span></div>
+      <div class="calc-row"><span class="k">Potencias sugeridas (kW)</span><span class="v">${sug.map((v, i) => etiPeriodoP(t, i).split(' ')[0] + ': ' + tarFmt(v, 1)).join(' · ')}</span></div>
+      ${aviso}
+    </div>`;
+}
+
+// ── Simulación de batería ─────────────────────────────────
+// Aproximación horaria: 1) carga con excedentes, 2) carga de red en valle (opcional),
+// 3) descarga fuera de valle (toda demanda, o solo el exceso sobre el límite si peak shaving).
+function tarSimularBateria(curva, tarifa, cfg) {
+  const eff = 0.9;
+  let soc = 0;
+  const out = [];
+  for (const r of curva) {
+    let imp = r.imp, exp = r.exp;
+    const valle = tarEsValle(tarifa, r.d);
+    let potRestante = cfg.pot;
+    // 1) cargar con excedentes solares
+    if (exp > 0 && soc < cfg.cap) {
+      const c = Math.min(exp, potRestante, cfg.cap - soc);
+      exp -= c; soc += c; potRestante -= c;
+    }
+    // 2) cargar de red en valle
+    if (cfg.valle && valle && soc < cfg.cap && potRestante > 0) {
+      const c = Math.min(potRestante, cfg.cap - soc);
+      imp += c; soc += c; potRestante -= c;
+    }
+    // 3) descargar fuera de valle
+    if (!valle && imp > 0 && soc > 0 && potRestante > 0) {
+      const objetivo = (cfg.shaving && cfg.limite > 0) ? Math.max(0, imp - cfg.limite) : imp;
+      const d = Math.min(objetivo, potRestante, soc * eff);
+      imp -= d; soc -= d / eff;
+    }
+    out.push({ d: r.d, imp, exp });
+  }
+  return out;
+}
+
+function tarSimularBateriaUI() {
+  const t = document.getElementById('est-tarifa').value;
+  const cfg = {
+    cap: tarNum(document.getElementById('est-bat-cap').value),
+    pot: tarNum(document.getElementById('est-bat-pot').value),
+    valle: document.getElementById('est-bat-valle').checked,
+    shaving: document.getElementById('est-bat-shaving').checked,
+    limite: tarNum(document.getElementById('est-bat-limite').value),
+  };
+  const cont = document.getElementById('est-bat-result');
+  if (!cfg.cap || !cfg.pot) { showToast('⚠ Indica capacidad y potencia de la batería', 'err'); return; }
+  if (!estudioCurva) {
+    // Estimación sin curva: arbitraje diario desplazando consumo caro a valle
+    const datos = tarLeerDatosEstudio(false);
+    const idxValle = t === '2.0TD' ? 2 : 5;
+    const kwhCaros = datos.kwh.reduce((s, v, i) => i === idxValle ? s : s + v, 0);
+    const desplazable = Math.min(cfg.cap * 0.9 * 365, kwhCaros);
+    const kwhSim = [...datos.kwh];
+    let restante = desplazable;
+    for (let i = 0; i < kwhSim.length && restante > 0; i++) {
+      if (i === idxValle) continue;
+      const q = Math.min(kwhSim[i], restante);
+      kwhSim[i] -= q; restante -= q;
+    }
+    kwhSim[idxValle] += desplazable / 0.9; // pérdidas de ciclo
+    estudioSimAgregados = { kwh: kwhSim, excKwh: datos.excKwh, maxKw: null, estimado: true };
+    cont.innerHTML = `
+      <div class="calc-result" style="display:block">
+        <div style="font-weight:600;margin-bottom:6px">Estimación sin curva horaria (orientativa)</div>
+        <div class="calc-row"><span class="k">Energía desplazable a valle</span><span class="v">${tarFmt(desplazable, 0)} kWh/año</span></div>
+        <div class="calc-row"><span class="k">Consumo en valle tras batería</span><span class="v">${tarFmt(kwhSim[idxValle], 0)} kWh</span></div>
+        <div class="calc-note">Con la curva horaria de la monitorización la simulación sería exacta (incluye peak shaving y carga con excedentes). Marca «usar valores simulados» para aplicarla a la comparativa.</div>
+      </div>`;
+    return;
+  }
+  const simCurva = tarSimularBateria(estudioCurva, t, cfg);
+  const antes = tarAgregarCurva(estudioCurva, t);
+  const despues = tarAgregarCurva(simCurva, t);
+  estudioSimAgregados = {
+    kwh: despues.kwh.map(v => v * despues.factor),
+    excKwh: despues.totalExp * despues.factor,
+    maxKw: despues.maxKw,
+    estimado: false
+  };
+  const n = nPerE(t);
+  const sugAntes = tarPotenciasSugeridas(antes.maxKw, t);
+  const sugDespues = tarPotenciasSugeridas(despues.maxKw, t);
+  cont.innerHTML = `
+    <div class="tar-grid" style="margin-top:10px"><table>
+      <tr><th>Periodo</th><th>kWh/año sin batería</th><th>kWh/año con batería</th><th>Pico kW sin</th><th>Pico kW con</th></tr>
+      ${Array.from({ length: n }, (_, i) => `
+        <tr><td>${etiPeriodoE(t, i)}</td>
+        <td>${tarFmt(antes.kwh[i] * antes.factor, 0)}</td><td>${tarFmt(despues.kwh[i] * despues.factor, 0)}</td>
+        <td>${tarFmt(antes.maxKw[i], 1)}</td><td>${tarFmt(despues.maxKw[i], 1)}</td></tr>`).join('')}
+      <tr><td><b>Total</b></td><td><b>${tarFmt(antes.totalImp * antes.factor, 0)}</b></td><td><b>${tarFmt(despues.totalImp * despues.factor, 0)}</b></td><td></td><td></td></tr>
+      <tr><td>Excedentes</td><td>${tarFmt(antes.totalExp * antes.factor, 0)}</td><td>${tarFmt(despues.totalExp * despues.factor, 0)}</td><td></td><td></td></tr>
+    </table></div>
+    <div class="calc-note" style="margin-top:8px">Potencias sugeridas sin batería: ${sugAntes.map((v, i) => etiPeriodoP(t, i).split(' ')[0] + ' ' + tarFmt(v, 1)).join(' · ')} kW · con batería: <b>${sugDespues.map((v, i) => etiPeriodoP(t, i).split(' ')[0] + ' ' + tarFmt(v, 1)).join(' · ')} kW</b>. Si reduces las potencias contratadas en el apartado 2, el ahorro de la comparativa lo reflejará.</div>`;
+}
+
+// ── Motor de costes y comisiones ──────────────────────────
+function tarLeerDatosEstudio(conBateria) {
+  const t = document.getElementById('est-tarifa').value;
+  const kwh = [], pot = [];
+  for (let i = 0; i < nPerE(t); i++) kwh.push(tarNum(document.getElementById('est-kwh-' + i)?.value));
+  for (let i = 0; i < nPerP(t); i++) pot.push(tarNum(document.getElementById('est-pot-' + i)?.value));
+  let excKwh = tarNum(document.getElementById('est-exc-total').value);
+  let datos = { tarifa: t, kwh, pot, excKwh };
+  if (conBateria && document.getElementById('est-bat-usar').checked && estudioSimAgregados) {
+    datos = { ...datos, kwh: estudioSimAgregados.kwh.slice(0, nPerE(t)).map(v => v || 0), excKwh: estudioSimAgregados.excKwh ?? excKwh };
+  }
+  return datos;
+}
+
+function tarCosteAnual(precios, datos, params) {
+  const energia = datos.kwh.reduce((s, v, i) => s + v * (precios.e[i] || 0), 0);
+  const potencia = datos.pot.reduce((s, v, i) => s + v * (precios.p[i] || 0), 0);
+  const compensacion = Math.min(energia, (datos.excKwh || 0) * (precios.exc || 0));
+  const baseIEE = Math.max(0, energia + potencia - compensacion);
+  const iee = baseIEE * (params.impuestoElectrico || 0) / 100;
+  const alquiler = (params.alquilerContadorMes || 0) * 12;
+  const base = baseIEE + iee + alquiler;
+  const iva = base * (params.ivaPct || 0) / 100;
+  return { energia, potencia, compensacion, iee, alquiler, iva, total: base + iva };
+}
+
+function tarPreciosActuales(t) {
+  const e = [], p = [];
+  for (let i = 0; i < nPerE(t); i++) e.push(tarNum(document.getElementById('est-actE-' + i)?.value));
+  const factorP = document.getElementById('est-actP-unidad').value === 'dia' ? 365 : 1;
+  for (let i = 0; i < nPerP(t); i++) p.push(tarNum(document.getElementById('est-actP-' + i)?.value) * factorP);
+  return { e, p, exc: tarNum(document.getElementById('est-act-exc').value) };
+}
+
+function tarComision(prod, datos, mE, mP) {
+  const c = prod.comision || {};
+  let fijo = tarNum(c.importeFijo);
+  let variable = 0;
+  if (c.tipo === 'margen') {
+    const totalKwh = tarSum(datos.kwh);
+    const totalKw = tarSum(datos.pot);
+    variable = (tarNum(c.pctMargenEnergia) / 100) * mE * totalKwh
+             + (tarNum(c.pctMargenPotencia) / 100) * mP * totalKw;
+  }
+  return { fijo, variable, total: fijo + variable };
+}
+
+function tarMargenesDe(com, prod) {
+  const key = com.id + '_' + prod.id;
+  const m = estudioMargenes[key];
+  return {
+    mE: m ? m.mE : tarNum(prod.margenEnergiaDef),
+    mP: m ? m.mP : tarNum(prod.margenPotenciaDef),
+  };
+}
+
+function tarCalcularComparativa(soloSiYaCalculada) {
+  const cont = document.getElementById('est-comp-result');
+  if (soloSiYaCalculada && !estudioResultados.length) return;
+  const t = document.getElementById('est-tarifa').value;
+  const params = tarParams();
+  const datosActual = tarLeerDatosEstudio(false);
+  const datosNuevo = tarLeerDatosEstudio(true);
+  if (tarSum(datosActual.kwh) <= 0) { cont.innerHTML = '<div class="calc-note">Introduce el consumo por periodo (apartado 2) para calcular.</div>'; return; }
+  const preciosAct = tarPreciosActuales(t);
+  const costeActual = tarCosteAnual(preciosAct, datosActual, params);
+  // Coste actual mostrado también en el apartado 4
+  const ra = document.getElementById('est-actual-result');
+  if (ra) ra.innerHTML = tarSum(preciosAct.e) > 0 ? `
+    <div class="calc-result" style="display:block">
+      <div class="calc-row"><span class="k">Coste anual actual (con impuestos)</span><span class="v"><b>${tarEur(costeActual.total)}</b> · ${tarEur(costeActual.total / 12)}/mes</span></div>
+    </div>` : '<div class="calc-note">Introduce los precios de la factura actual para comparar.</div>';
+
+  estudioResultados = [];
+  for (const com of tarComers()) {
+    if (com.activa === false) continue;
+    for (const prod of (com.productos || [])) {
+      if (prod.activa === false) continue;
+      if ((prod.tarifaAcceso || '') !== t) continue;
+      const { mE, mP } = tarMargenesDe(com, prod);
+      const precios = {
+        e: Array.from({ length: nPerE(t) }, (_, i) => tarNum((prod.energia || [])[i]) + mE),
+        p: Array.from({ length: nPerP(t) }, (_, i) => tarNum((prod.potencia || [])[i]) + mP),
+        exc: tarNum(prod.excedentes),
+      };
+      const coste = tarCosteAnual(precios, datosNuevo, params);
+      const ahorro = costeActual.total - coste.total;
+      const com$ = tarComision(prod, datosNuevo, mE, mP);
+      estudioResultados.push({
+        key: com.id + '_' + prod.id, comId: com.id, prodId: prod.id,
+        comercializadora: com.nombre, producto: prod.nombre, modalidad: prod.modalidad || 'fijo',
+        mE, mP, precios, coste, ahorro, comision: com$,
+      });
+    }
+  }
+  const orden = document.getElementById('est-comp-orden').value;
+  estudioResultados.sort((a, b) => {
+    if (orden === 'ahorro') return b.ahorro - a.ahorro;
+    if (orden === 'comision') return b.comision.total - a.comision.total;
+    // recomendado: primero los que ahorran, por comisión; los que no ahorran, al final
+    const aOk = a.ahorro > 0 ? 1 : 0, bOk = b.ahorro > 0 ? 1 : 0;
+    if (aOk !== bOk) return bOk - aOk;
+    return aOk ? (b.comision.total - a.comision.total) : (b.ahorro - a.ahorro);
+  });
+  tarRenderComparativa(costeActual);
+}
+
+function tarRenderComparativa(costeActual) {
+  const cont = document.getElementById('est-comp-result');
+  const t = document.getElementById('est-tarifa').value;
+  if (!estudioResultados.length) {
+    cont.innerHTML = `<div class="calc-note">No hay productos configurados para ${t}. Añádelos en «Comercializadoras y comisiones».</div>`;
+    return;
+  }
+  const usandoBat = document.getElementById('est-bat-usar').checked && estudioSimAgregados;
+  const filas = estudioResultados.map(r => {
+    const sel = estudioSeleccion === r.key;
+    const abierto = estudioDetalleAbierto === r.key;
+    let detalle = '';
+    if (abierto) {
+      const c = r.coste, k = r.comision;
+      detalle = `
+      <tr class="tar-detail"><td colspan="6">
+        <div class="form-row">
+          <div class="form-group"><label>Margen energía (€/kWh)</label><input type="number" step="any" id="det-mE" value="${r.mE}"></div>
+          <div class="form-group"><label>Margen potencia (€/kW·año)</label><input type="number" step="any" id="det-mP" value="${r.mP}"></div>
+          <div class="form-group" style="display:flex;align-items:flex-end;gap:8px">
+            <button class="btn-secondary" style="width:auto" onclick="tarAplicarMargen('${r.key}')">Recalcular</button>
+            <button class="btn-primary" style="width:auto" onclick="tarElegir('${r.key}')">✓ Elegir esta tarifa</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          Energía ${tarEur(c.energia)} · Potencia ${tarEur(c.potencia)} · Compensación −${tarEur(c.compensacion)} · IEE ${tarEur(c.iee)} · Alquiler ${tarEur(c.alquiler)} · IVA ${tarEur(c.iva)} → <b>Total ${tarEur(c.total)}</b><br>
+          Comisión: fija ${tarEur(k.fijo)} + variable ${tarEur(k.variable)} = <b>${tarEur(k.total)}</b>
+        </div>
+      </td></tr>`;
+    }
+    return `
+    <tr class="tar-row${sel ? ' tar-sel' : ''}" onclick="tarToggleDetalle('${r.key}')">
+      <td>${sel ? '✓ ' : ''}${escapeHtml(r.comercializadora)} · ${escapeHtml(r.producto)}</td>
+      <td>${escapeHtml(r.modalidad)}</td>
+      <td>${tarEur(r.coste.total)}</td>
+      <td class="${r.ahorro >= 0 ? 'tar-pos' : 'tar-neg'}">${tarEur(r.ahorro)}</td>
+      <td class="${r.ahorro >= 0 ? '' : ''}" style="color:var(--accent);font-weight:600">${tarEur(r.comision.total)}</td>
+      <td>${costeActual.total > 0 ? tarFmt(r.ahorro / costeActual.total * 100, 1) + ' %' : '—'}</td>
+    </tr>${detalle}`;
+  }).join('');
+  cont.innerHTML = `
+    ${usandoBat ? '<div class="calc-note" style="margin-bottom:8px">⚡ Comparativa calculada con los valores simulados de batería.</div>' : ''}
+    <div class="tar-grid"><table>
+      <tr><th>Comercializadora · Producto</th><th>Tipo</th><th>Coste/año</th><th>Ahorro cliente</th><th>Comisión</th><th>% ahorro</th></tr>
+      <tr><td><b>Tarifa actual${document.getElementById('est-com-actual').value ? ' · ' + escapeHtml(document.getElementById('est-com-actual').value) : ''}</b></td><td></td><td><b>${tarEur(costeActual.total)}</b></td><td>—</td><td>—</td><td>—</td></tr>
+      ${filas}
+    </table></div>
+    <div class="calc-note" style="margin-top:8px">Pulsa una fila para ajustar márgenes, ver el desglose y elegirla. La comisión nunca aparece en la propuesta del cliente.</div>`;
+}
+
+function tarToggleDetalle(key) {
+  estudioDetalleAbierto = estudioDetalleAbierto === key ? null : key;
+  tarCalcularComparativa(true);
+}
+function tarAplicarMargen(key) {
+  const r = estudioResultados.find(x => x.key === key);
+  if (!r) return;
+  const com = tarComers().find(c => c.id === r.comId);
+  const prod = (com?.productos || []).find(p => p.id === r.prodId);
+  let mE = tarNum(document.getElementById('det-mE')?.value);
+  let mP = tarNum(document.getElementById('det-mP')?.value);
+  if (prod) {
+    const maxE = tarNum(prod.margenEnergiaMax), maxP = tarNum(prod.margenPotenciaMax);
+    if (maxE > 0 && mE > maxE) { mE = maxE; showToast(`⚠ Margen energía limitado al máximo (${maxE})`, 'err'); }
+    if (maxP > 0 && mP > maxP) { mP = maxP; showToast(`⚠ Margen potencia limitado al máximo (${maxP})`, 'err'); }
+  }
+  estudioMargenes[key] = { mE, mP };
+  tarCalcularComparativa(true);
+}
+function tarElegir(key) {
+  estudioSeleccion = key;
+  estudioDetalleAbierto = null;
+  tarCalcularComparativa(true);
+  showToast('✓ Tarifa seleccionada para la propuesta', 'ok');
+}
+
+// ── Servicios añadidos en el estudio ──────────────────────
+function renderServiciosEstudio(seleccionados) {
+  const cont = document.getElementById('est-servicios');
+  if (!cont) return;
+  const servicios = tarServicios().filter(s => s.activa !== false);
+  if (!servicios.length) {
+    cont.innerHTML = '<div class="calc-note">No hay servicios configurados. Añádelos en «Comercializadoras y comisiones».</div>';
+    return;
+  }
+  const sel = new Set(seleccionados || []);
+  cont.innerHTML = servicios.map(s => `
+    <div class="form-group" style="margin-bottom:6px">
+      <label><input type="checkbox" class="est-serv" value="${s.id}" ${sel.has(s.id) ? 'checked' : ''}>
+        ${escapeHtml(s.nombre)} — ${tarEur(tarNum(s.precio))}${s.periodicidad === 'mes' ? '/mes' : s.periodicidad === 'ano' ? '/año' : ''}
+        ${s.descripcion ? `<span style="color:var(--text-muted);font-size:12px"> · ${escapeHtml(s.descripcion)}</span>` : ''}</label>
+    </div>`).join('');
+}
+function serviciosSeleccionados() {
+  return [...document.querySelectorAll('.est-serv:checked')].map(el => el.value).map(v => isNaN(+v) ? v : +v);
+}
+
+// ── Guardar / abrir / eliminar estudio ────────────────────
+function tarConstruirEstudio() {
+  const t = document.getElementById('est-tarifa').value;
+  const kwh = [], pot = [], actE = [], actP = [];
+  for (let i = 0; i < nPerE(t); i++) { kwh.push(tarNum(document.getElementById('est-kwh-' + i)?.value)); actE.push(tarNum(document.getElementById('est-actE-' + i)?.value)); }
+  for (let i = 0; i < nPerP(t); i++) { pot.push(tarNum(document.getElementById('est-pot-' + i)?.value)); actP.push(tarNum(document.getElementById('est-actP-' + i)?.value)); }
+  const selRes = estudioSeleccion ? estudioResultados.find(r => r.key === estudioSeleccion) : null;
+  const params = tarParams();
+  const costeActual = tarCosteAnual(tarPreciosActuales(t), tarLeerDatosEstudio(false), params);
+  return {
+    id: estudioEnEdicion || Date.now(),
+    tipo: 'estudio',
+    clienteId: parseInt(document.getElementById('est-cliente').value, 10) || null,
+    clienteNombre: document.getElementById('est-cliente-nombre').value.trim(),
+    cups: document.getElementById('est-cups').value.trim(),
+    tarifa: t,
+    comActual: document.getElementById('est-com-actual').value.trim(),
+    renovacion: document.getElementById('est-renovacion').value,
+    kwh, pot, excKwh: tarNum(document.getElementById('est-exc-total').value),
+    actE, actP,
+    actPUnidad: document.getElementById('est-actP-unidad').value,
+    actExc: tarNum(document.getElementById('est-act-exc').value),
+    bateria: {
+      tiene: document.getElementById('est-bat-tiene').value,
+      cap: tarNum(document.getElementById('est-bat-cap').value),
+      pot: tarNum(document.getElementById('est-bat-pot').value),
+      valle: document.getElementById('est-bat-valle').checked,
+      shaving: document.getElementById('est-bat-shaving').checked,
+      limite: tarNum(document.getElementById('est-bat-limite').value),
+      usar: document.getElementById('est-bat-usar').checked,
+      sim: estudioSimAgregados,
+    },
+    curvaInfo: estudioCurvaInfo,
+    margenes: estudioMargenes,
+    seleccion: estudioSeleccion,
+    servicios: serviciosSeleccionados(),
+    notas: document.getElementById('est-notas').value.trim(),
+    resumen: selRes ? {
+      comercializadora: selRes.comercializadora, producto: selRes.producto,
+      costeActual: costeActual.total, costeNuevo: selRes.coste.total,
+      ahorro: selRes.ahorro, comision: selRes.comision.total,
+    } : (estudioResultados.length ? {
+      comercializadora: estudioResultados[0].comercializadora, producto: estudioResultados[0].producto,
+      costeActual: costeActual.total, costeNuevo: estudioResultados[0].coste.total,
+      ahorro: estudioResultados[0].ahorro, comision: estudioResultados[0].comision.total,
+    } : undefined),
+    modificadoPor: currentUser?.nombre || 'Admin',
+    modificadoTs: Date.now(),
+  };
+}
+
+async function guardarEstudio() {
+  const nombre = document.getElementById('est-cliente-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Indica el nombre del cliente', 'err'); return; }
+  await estudiosLoad();
+  const est = tarConstruirEstudio();
+  const idx = estudios.findIndex(e => e.id === est.id);
+  if (idx >= 0) {
+    est.creadoPor = estudios[idx].creadoPor; est.creadoTs = estudios[idx].creadoTs;
+    estudios[idx] = est;
+  } else {
+    est.creadoPor = currentUser?.nombre || 'Admin'; est.creadoTs = Date.now();
+    estudios.unshift(est);
+  }
+  estudioEnEdicion = est.id;
+  document.getElementById('btn-est-eliminar').style.display = '';
+  document.getElementById('estudio-titulo').textContent = 'Estudio tarifario · ' + est.clienteNombre;
+  await estudiosSave();
+  showToast('✓ Estudio guardado', 'ok');
+}
+
+function abrirEstudio(id) {
+  const e = estudios.find(x => x.id === id);
+  if (!e) return;
+  estudioEnEdicion = id;
+  tarResetEstadoEstudio();
+  hideAllViews();
+  document.getElementById('view-tarifa-estudio').style.display = 'block';
+  document.getElementById('estudio-titulo').textContent = 'Estudio tarifario · ' + (e.clienteNombre || '');
+  document.getElementById('btn-est-eliminar').style.display = '';
+  rellenarSelectClientesEstudio();
+  document.getElementById('est-cliente').value = e.clienteId || '';
+  document.getElementById('est-cliente-nombre').value = e.clienteNombre || '';
+  document.getElementById('est-cups').value = e.cups || '';
+  document.getElementById('est-tarifa').value = e.tarifa || '2.0TD';
+  document.getElementById('est-com-actual').value = e.comActual || '';
+  document.getElementById('est-renovacion').value = e.renovacion || '';
+  document.getElementById('est-exc-total').value = e.excKwh || '';
+  document.getElementById('est-act-exc').value = e.actExc || '';
+  document.getElementById('est-actP-unidad').value = e.actPUnidad || 'ano';
+  document.getElementById('est-notas').value = e.notas || '';
+  const b = e.bateria || {};
+  document.getElementById('est-bat-tiene').value = b.tiene || 'no';
+  document.getElementById('est-bat-cap').value = b.cap || '';
+  document.getElementById('est-bat-pot').value = b.pot || '';
+  document.getElementById('est-bat-valle').checked = b.valle !== false;
+  document.getElementById('est-bat-shaving').checked = !!b.shaving;
+  document.getElementById('est-bat-limite').value = b.limite || '';
+  document.getElementById('est-bat-usar').checked = !!b.usar;
+  estudioSimAgregados = b.sim || null;
+  estudioCurvaInfo = e.curvaInfo || null;
+  estudioMargenes = e.margenes || {};
+  estudioSeleccion = e.seleccion || null;
+  tarRenderPeriodos();
+  const t = e.tarifa || '2.0TD';
+  for (let i = 0; i < nPerE(t); i++) {
+    const k = document.getElementById('est-kwh-' + i); if (k) k.value = (e.kwh || [])[i] ?? '';
+    const a = document.getElementById('est-actE-' + i); if (a) a.value = (e.actE || [])[i] ?? '';
+  }
+  for (let i = 0; i < nPerP(t); i++) {
+    const p = document.getElementById('est-pot-' + i); if (p) p.value = (e.pot || [])[i] ?? '';
+    const a = document.getElementById('est-actP-' + i); if (a) a.value = (e.actP || [])[i] ?? '';
+  }
+  renderServiciosEstudio(e.servicios || []);
+  if (estudioCurvaInfo) {
+    document.getElementById('est-curva-stats').innerHTML =
+      `<div class="calc-note">Curva original: ${escapeHtml(estudioCurvaInfo.desde || '')} → ${escapeHtml(estudioCurvaInfo.hasta || '')} (${estudioCurvaInfo.dias} días). La curva horaria no se guarda: vuelve a subir el CSV si quieres re-simular la batería.</div>`;
+  }
+  if (tarSum(e.kwh) > 0 && tarSum(e.actE) > 0) tarCalcularComparativa();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function eliminarEstudio() {
+  if (!estudioEnEdicion) return;
+  if (!confirm('¿Eliminar este estudio tarifario?')) return;
+  await estudiosLoad();
+  estudios = estudios.filter(e => e.id !== estudioEnEdicion);
+  await estudiosSave();
+  estudioEnEdicion = null;
+  showToast('✓ Eliminado', 'ok');
+  enterTarifas();
+}
+
+// ── Propuesta para el cliente (imprimible, sin comisiones) ─
+function generarPropuesta() {
+  if (!estudioResultados.length) { showToast('⚠ Calcula primero la comparativa', 'err'); return; }
+  const r = estudioSeleccion ? estudioResultados.find(x => x.key === estudioSeleccion) : estudioResultados[0];
+  if (!r) { showToast('⚠ Elige una tarifa en la comparativa', 'err'); return; }
+  const t = document.getElementById('est-tarifa').value;
+  const params = tarParams();
+  const costeActual = tarCosteAnual(tarPreciosActuales(t), tarLeerDatosEstudio(false), params);
+  const cliente = document.getElementById('est-cliente-nombre').value.trim() || '—';
+  const cups = document.getElementById('est-cups').value.trim();
+  const conBat = document.getElementById('est-bat-usar').checked && estudioSimAgregados;
+  const bTiene = document.getElementById('est-bat-tiene').value;
+  const servicios = tarServicios().filter(s => serviciosSeleccionados().includes(s.id));
+  const ahorro = costeActual.total - r.coste.total;
+  const pct = costeActual.total > 0 ? ahorro / costeActual.total * 100 : 0;
+  const maxBar = Math.max(costeActual.total, r.coste.total) || 1;
+  const fila = (k, a, b) => `<tr><td>${k}</td><td>${tarEur(a)}</td><td>${tarEur(b)}</td></tr>`;
+  document.getElementById('prop-doc').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <h1>EFIGALIA</h1>
+        <div class="prop-muted">Propuesta de optimización energética</div>
+      </div>
+      <div class="prop-muted" style="text-align:right">
+        ${new Date().toLocaleDateString('es-ES')}<br>info@efigalia.es
+      </div>
+    </div>
+    <h2>Datos del suministro</h2>
+    <div>Cliente: <b>${escapeHtml(cliente)}</b>${cups ? ` · CUPS: <span style="font-family:var(--mono);font-size:12px">${escapeHtml(cups)}</span>` : ''} · Tarifa de acceso: <b>${escapeHtml(t)}</b></div>
+    <div class="prop-muted" style="margin-top:4px">Estudio realizado sobre el consumo real del suministro${estudioCurvaInfo ? ` (curva horaria ${escapeHtml(estudioCurvaInfo.desde || '')} – ${escapeHtml(estudioCurvaInfo.hasta || '')})` : ''}.</div>
+    <h2>Comparativa anual</h2>
+    <table>
+      <tr><th>Concepto</th><th>Situación actual</th><th>Propuesta ${escapeHtml(r.comercializadora)}</th></tr>
+      ${fila('Término de energía', costeActual.energia, r.coste.energia)}
+      ${fila('Término de potencia', costeActual.potencia, r.coste.potencia)}
+      ${fila('Compensación de excedentes', -costeActual.compensacion, -r.coste.compensacion)}
+      ${fila('Impuesto eléctrico', costeActual.iee, r.coste.iee)}
+      ${fila('Alquiler de contador', costeActual.alquiler, r.coste.alquiler)}
+      ${fila('IVA', costeActual.iva, r.coste.iva)}
+      <tr><th>Total anual</th><th>${tarEur(costeActual.total)}</th><th>${tarEur(r.coste.total)}</th></tr>
+      <tr><td>Equivalente mensual</td><td>${tarEur(costeActual.total / 12)}</td><td>${tarEur(r.coste.total / 12)}</td></tr>
+    </table>
+    <div class="prop-barras">
+      <div class="prop-barra"><div class="barra" style="height:${Math.round(costeActual.total / maxBar * 100)}%;background:#9aa7b4"></div><div class="eti">Actual<br><b>${tarEur(costeActual.total)}</b></div></div>
+      <div class="prop-barra"><div class="barra" style="height:${Math.round(r.coste.total / maxBar * 100)}%;background:#1f8a5e"></div><div class="eti">Propuesta<br><b>${tarEur(r.coste.total)}</b></div></div>
+    </div>
+    <div class="prop-ahorro">Ahorro estimado: <b>${tarEur(ahorro)}/año</b> (${tarFmt(pct, 1)} %) · ${tarEur(ahorro / 12)}/mes</div>
+    ${conBat ? `<h2>Gestión inteligente de la batería</h2>
+    <div>La propuesta incluye la optimización de la batería${bTiene === 'oferta' ? ' ofertada' : ' existente'}: carga en horas valle y con excedentes solares, y descarga en las horas más caras${document.getElementById('est-bat-shaving').checked ? ', limitando además los picos de potencia (peak shaving)' : ''}. El ahorro indicado ya incorpora este modo de funcionamiento.</div>` : ''}
+    ${servicios.length ? `<h2>Servicios añadidos incluidos en la propuesta</h2>
+    <table><tr><th>Servicio</th><th>Precio</th></tr>
+    ${servicios.map(s => `<tr><td>${escapeHtml(s.nombre)}${s.descripcion ? `<br><span class="prop-muted">${escapeHtml(s.descripcion)}</span>` : ''}</td><td>${tarEur(tarNum(s.precio))}${s.periodicidad === 'mes' ? '/mes' : s.periodicidad === 'ano' ? '/año' : ''}</td></tr>`).join('')}
+    </table>` : ''}
+    <div class="prop-muted" style="margin-top:18px">Importes con impuestos incluidos. Estimación basada en los consumos reales del último periodo disponible y los precios vigentes; los importes finales dependerán del consumo real. Propuesta válida 15 días.</div>`;
+  hideAllViews();
+  document.getElementById('view-tarifa-propuesta').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function volverDePropuesta() {
+  hideAllViews();
+  document.getElementById('view-tarifa-estudio').style.display = 'block';
+}
+
+// ── ADMIN: comercializadoras, productos, servicios, params ─
+function enterAdminTarifas() {
+  if (!isAdmin()) { showToast('⚠ Solo admin', 'err'); return; }
+  hideAllViews();
+  document.getElementById('tab-bar-incidencias').style.display = 'none';
+  const ob = document.getElementById('tab-bar-obra'); if (ob) ob.style.display = 'none';
+  document.getElementById('view-admin-tarifas').style.display = 'block';
+  admComerEnEdicion = null; admProductoEnEdicion = undefined;
+  tarifasLoad().then(renderAdminTarifas);
+}
+
+function renderAdminTarifas() {
+  const cont = document.getElementById('adm-comer-list');
+  const comers = tarComers().sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+  cont.innerHTML = comers.length ? comers.map(c => `
+    <div class="admin-row">
+      <div class="nombre${c.activa === false ? ' inactivo' : ''}" style="min-width:0;overflow:hidden;text-overflow:ellipsis">
+        ${escapeHtml(c.nombre)} <span class="tar-chip">${(c.productos || []).length} producto(s)</span>
+      </div>
+      <div class="acciones">
+        <button class="toggle-btn ${c.activa === false ? 'off' : 'on'}" onclick="toggleComercializadora(${c.id})">${c.activa === false ? 'INACTIVA' : 'ACTIVA'}</button>
+        <button class="icon-btn" onclick="editarComercializadora(${c.id})" title="Editar">✎</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state" style="padding:24px">Sin comercializadoras. Añade la primera arriba.</div>';
+  renderComerEditor();
+  renderAdminServicios();
+  const p = tarParams();
+  document.getElementById('pt-iee').value = p.impuestoElectrico;
+  document.getElementById('pt-iva').value = p.ivaPct;
+  document.getElementById('pt-alquiler').value = p.alquilerContadorMes;
+}
+
+async function addComercializadora() {
+  const nombre = document.getElementById('adm-comer-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Indica el nombre', 'err'); return; }
+  await tarifasLoad();
+  tarifasData.push({ id: Date.now(), tipo: 'comercializadora', nombre, activa: true, productos: [] });
+  document.getElementById('adm-comer-nombre').value = '';
+  await tarifasSave();
+  renderAdminTarifas();
+  showToast('✓ Comercializadora añadida', 'ok');
+}
+async function toggleComercializadora(id) {
+  await tarifasLoad();
+  const c = tarComers().find(x => x.id === id);
+  if (!c) return;
+  c.activa = c.activa === false ? true : false;
+  await tarifasSave();
+  renderAdminTarifas();
+}
+function editarComercializadora(id) {
+  admComerEnEdicion = admComerEnEdicion === id ? null : id;
+  admProductoEnEdicion = undefined;
+  renderComerEditor();
+}
+
+function tarResumenComision(prod) {
+  const c = prod.comision || {};
+  if (c.tipo === 'margen') {
+    const partes = [];
+    if (tarNum(c.importeFijo)) partes.push(tarEur(tarNum(c.importeFijo)) + ' fijo');
+    if (tarNum(c.pctMargenEnergia)) partes.push(tarFmt(tarNum(c.pctMargenEnergia), 0) + '% margen E');
+    if (tarNum(c.pctMargenPotencia)) partes.push(tarFmt(tarNum(c.pctMargenPotencia), 0) + '% margen P');
+    return partes.join(' + ') || 'sin comisión';
+  }
+  return tarEur(tarNum(c.importeFijo)) + ' fija';
+}
+
+function renderComerEditor() {
+  const cont = document.getElementById('adm-comer-editor');
+  if (!cont) return;
+  const c = tarComers().find(x => x.id === admComerEnEdicion);
+  if (!c) { cont.style.display = 'none'; cont.innerHTML = ''; return; }
+  cont.style.display = 'block';
+  const productos = (c.productos || []).map(p => `
+    <div class="admin-row">
+      <div class="nombre${p.activa === false ? ' inactivo' : ''}" style="min-width:0;overflow:hidden;text-overflow:ellipsis">
+        ${escapeHtml(p.nombre)} <span class="tar-chip">${escapeHtml(p.tarifaAcceso || '')}</span><span class="tar-chip">${escapeHtml(p.modalidad || 'fijo')}</span><span class="tar-chip">${escapeHtml(tarResumenComision(p))}</span>
+      </div>
+      <div class="acciones">
+        <button class="icon-btn" onclick="editarProducto(${p.id})" title="Editar">✎</button>
+        <button class="icon-btn" onclick="eliminarProducto(${p.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>`).join('');
+  cont.innerHTML = `
+    <div class="calc-result" style="display:block">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="font-weight:600;font-size:16px">${escapeHtml(c.nombre)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" style="width:auto" onclick="nuevoProducto()">+ Producto</button>
+          <button class="btn-ghost" style="width:auto;color:var(--red);border-color:var(--red)" onclick="eliminarComercializadora(${c.id})">🗑 Eliminar</button>
+        </div>
+      </div>
+      <div class="admin-list">${productos || '<div class="empty-state" style="padding:16px">Sin productos. Añade el primero.</div>'}</div>
+      <div id="adm-producto-form"></div>
+    </div>`;
+  renderProductoForm();
+}
+
+async function eliminarComercializadora(id) {
+  if (!confirm('¿Eliminar esta comercializadora y todos sus productos?')) return;
+  await tarifasLoad();
+  tarifasData = tarifasData.filter(x => !(x.tipo === 'comercializadora' && x.id === id));
+  admComerEnEdicion = null;
+  await tarifasSave();
+  renderAdminTarifas();
+  showToast('✓ Eliminada', 'ok');
+}
+function nuevoProducto() { admProductoEnEdicion = null; renderComerEditor(); }
+function editarProducto(id) { admProductoEnEdicion = id; renderComerEditor(); }
+async function eliminarProducto(id) {
+  if (!confirm('¿Eliminar este producto?')) return;
+  await tarifasLoad();
+  const c = tarComers().find(x => x.id === admComerEnEdicion);
+  if (!c) return;
+  c.productos = (c.productos || []).filter(p => p.id !== id);
+  await tarifasSave();
+  renderComerEditor();
+}
+
+function apRenderPeriodos() {
+  const t = document.getElementById('ap-acceso')?.value || '2.0TD';
+  const gridE = document.getElementById('ap-e-grid'), gridP = document.getElementById('ap-p-grid');
+  if (!gridE || !gridP) return;
+  const prevE = [], prevP = [];
+  for (let i = 0; i < 6; i++) {
+    prevE[i] = document.getElementById('ap-e-' + i)?.value || '';
+    prevP[i] = document.getElementById('ap-p-' + i)?.value || '';
+  }
+  gridE.innerHTML = Array.from({ length: nPerE(t) }, (_, i) => `
+    <div class="form-group"><label>${etiPeriodoE(t, i)}</label><input type="number" step="any" min="0" id="ap-e-${i}" placeholder="€/kWh" value="${prevE[i]}"></div>`).join('');
+  gridP.innerHTML = Array.from({ length: nPerP(t) }, (_, i) => `
+    <div class="form-group"><label>${etiPeriodoP(t, i)}</label><input type="number" step="any" min="0" id="ap-p-${i}" placeholder="€/kW·año" value="${prevP[i]}"></div>`).join('');
+}
+
+function renderProductoForm() {
+  const cont = document.getElementById('adm-producto-form');
+  if (!cont) return;
+  if (admProductoEnEdicion === undefined) { cont.innerHTML = ''; return; }
+  const c = tarComers().find(x => x.id === admComerEnEdicion);
+  const p = admProductoEnEdicion === null ? null : (c?.productos || []).find(x => x.id === admProductoEnEdicion);
+  const com = p?.comision || {};
+  cont.innerHTML = `
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
+      <div style="font-weight:600;margin-bottom:8px">${p ? 'Editar producto' : 'Nuevo producto'}</div>
+      <div class="form-row">
+        <div class="form-group"><label>Nombre *</label><input type="text" id="ap-nombre" placeholder="Ej: Fijo 12 meses" value="${escapeHtml(p?.nombre || '')}"></div>
+        <div class="form-group"><label>Tarifa de acceso</label>
+          <select id="ap-acceso" onchange="apRenderPeriodos()">
+            <option value="2.0TD">2.0TD</option><option value="3.0TD">3.0TD</option><option value="6.1TD">6.1TD</option>
+          </select></div>
+        <div class="form-group"><label>Modalidad</label>
+          <select id="ap-modalidad"><option value="fijo">Precio fijo</option><option value="indexado">Indexado</option></select></div>
+      </div>
+      <div class="form-group"><label>Precio base energía (sin margen) — si es indexado, media estimada por periodo</label>
+        <div class="tar-periodos" id="ap-e-grid"></div></div>
+      <div class="form-group"><label>Precio base potencia (€/kW·año, sin margen)</label>
+        <div class="tar-periodos" id="ap-p-grid"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label>Compensación excedentes (€/kWh)</label><input type="number" step="any" min="0" id="ap-exc" value="${p?.excedentes ?? ''}"></div>
+        <div class="form-group"><label>Margen energía por defecto (€/kWh)</label><input type="number" step="any" min="0" id="ap-mE-def" value="${p?.margenEnergiaDef ?? ''}"></div>
+        <div class="form-group"><label>Margen energía máximo (€/kWh)</label><input type="number" step="any" min="0" id="ap-mE-max" value="${p?.margenEnergiaMax ?? ''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Margen potencia por defecto (€/kW·año)</label><input type="number" step="any" min="0" id="ap-mP-def" value="${p?.margenPotenciaDef ?? ''}"></div>
+        <div class="form-group"><label>Margen potencia máximo (€/kW·año)</label><input type="number" step="any" min="0" id="ap-mP-max" value="${p?.margenPotenciaMax ?? ''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Tipo de comisión</label>
+          <select id="ap-com-tipo"><option value="fija">Fija por contrato</option><option value="margen">Según margen aplicado</option></select></div>
+        <div class="form-group"><label>Importe fijo (€)</label><input type="number" step="any" min="0" id="ap-com-fijo" value="${com.importeFijo ?? ''}"></div>
+        <div class="form-group"><label>% del margen energía</label><input type="number" step="any" min="0" id="ap-com-pctE" value="${com.pctMargenEnergia ?? ''}"></div>
+        <div class="form-group"><label>% del margen potencia</label><input type="number" step="any" min="0" id="ap-com-pctP" value="${com.pctMargenPotencia ?? ''}"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="width:auto" onclick="guardarProducto()">💾 Guardar producto</button>
+        <button class="btn-secondary" style="width:auto" onclick="admProductoEnEdicion=undefined;renderComerEditor()">Cancelar</button>
+      </div>
+    </div>`;
+  document.getElementById('ap-acceso').value = p?.tarifaAcceso || '2.0TD';
+  document.getElementById('ap-modalidad').value = p?.modalidad || 'fijo';
+  document.getElementById('ap-com-tipo').value = com.tipo || 'fija';
+  apRenderPeriodos();
+  if (p) {
+    for (let i = 0; i < 6; i++) {
+      const e = document.getElementById('ap-e-' + i); if (e) e.value = (p.energia || [])[i] ?? '';
+      const q = document.getElementById('ap-p-' + i); if (q) q.value = (p.potencia || [])[i] ?? '';
+    }
+  }
+}
+
+async function guardarProducto() {
+  const nombre = document.getElementById('ap-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Indica el nombre del producto', 'err'); return; }
+  const t = document.getElementById('ap-acceso').value;
+  const energia = [], potencia = [];
+  for (let i = 0; i < nPerE(t); i++) energia.push(tarNum(document.getElementById('ap-e-' + i)?.value));
+  for (let i = 0; i < nPerP(t); i++) potencia.push(tarNum(document.getElementById('ap-p-' + i)?.value));
+  await tarifasLoad();
+  const c = tarComers().find(x => x.id === admComerEnEdicion);
+  if (!c) { showToast('⚠ Comercializadora no encontrada', 'err'); return; }
+  const datos = {
+    nombre, tarifaAcceso: t,
+    modalidad: document.getElementById('ap-modalidad').value,
+    energia, potencia,
+    excedentes: tarNum(document.getElementById('ap-exc').value),
+    margenEnergiaDef: tarNum(document.getElementById('ap-mE-def').value),
+    margenEnergiaMax: tarNum(document.getElementById('ap-mE-max').value),
+    margenPotenciaDef: tarNum(document.getElementById('ap-mP-def').value),
+    margenPotenciaMax: tarNum(document.getElementById('ap-mP-max').value),
+    comision: {
+      tipo: document.getElementById('ap-com-tipo').value,
+      importeFijo: tarNum(document.getElementById('ap-com-fijo').value),
+      pctMargenEnergia: tarNum(document.getElementById('ap-com-pctE').value),
+      pctMargenPotencia: tarNum(document.getElementById('ap-com-pctP').value),
+    },
+  };
+  c.productos = c.productos || [];
+  if (admProductoEnEdicion !== null && admProductoEnEdicion !== undefined) {
+    const p = c.productos.find(x => x.id === admProductoEnEdicion);
+    if (p) Object.assign(p, datos);
+  } else {
+    c.productos.push({ id: Date.now(), activa: true, ...datos });
+  }
+  admProductoEnEdicion = undefined;
+  await tarifasSave();
+  renderComerEditor();
+  showToast('✓ Producto guardado', 'ok');
+}
+
+// Servicios añadidos (admin)
+function renderAdminServicios() {
+  const cont = document.getElementById('adm-servicios');
+  if (!cont) return;
+  const s = admServicioEnEdicion !== null ? tarServicios().find(x => x.id === admServicioEnEdicion) : null;
+  const lista = tarServicios().map(x => `
+    <div class="admin-row">
+      <div class="nombre${x.activa === false ? ' inactivo' : ''}" style="min-width:0;overflow:hidden;text-overflow:ellipsis">
+        ${escapeHtml(x.nombre)} <span class="tar-chip">${tarEur(tarNum(x.precio))}${x.periodicidad === 'mes' ? '/mes' : x.periodicidad === 'ano' ? '/año' : ''}</span>
+      </div>
+      <div class="acciones">
+        <button class="toggle-btn ${x.activa === false ? 'off' : 'on'}" onclick="toggleServicio(${x.id})">${x.activa === false ? 'INACTIVO' : 'ACTIVO'}</button>
+        <button class="icon-btn" onclick="admServicioEnEdicion=${x.id};renderAdminServicios()" title="Editar">✎</button>
+        <button class="icon-btn" onclick="eliminarServicio(${x.id})" title="Eliminar">🗑</button>
+      </div>
+    </div>`).join('');
+  cont.innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Servicio</label><input type="text" id="as-nombre" placeholder="Ej: Mantenimiento anual FV" value="${escapeHtml(s?.nombre || '')}"></div>
+      <div class="form-group"><label>Precio (€)</label><input type="number" step="any" min="0" id="as-precio" value="${s?.precio ?? ''}"></div>
+      <div class="form-group"><label>Periodicidad</label>
+        <select id="as-period"><option value="unico">Pago único</option><option value="mes">Mensual</option><option value="ano">Anual</option></select></div>
+    </div>
+    <div class="form-group"><label>Descripción (aparece en la propuesta)</label><input type="text" id="as-desc" value="${escapeHtml(s?.descripcion || '')}"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-primary" style="width:auto" onclick="guardarServicio()">${s ? '💾 Actualizar servicio' : '+ Añadir servicio'}</button>
+      ${s ? '<button class="btn-secondary" style="width:auto" onclick="admServicioEnEdicion=null;renderAdminServicios()">Cancelar</button>' : ''}
+    </div>
+    <div class="admin-list">${lista || '<div class="empty-state" style="padding:16px">Sin servicios configurados.</div>'}</div>`;
+  if (s) document.getElementById('as-period').value = s.periodicidad || 'unico';
+}
+async function guardarServicio() {
+  const nombre = document.getElementById('as-nombre').value.trim();
+  if (!nombre) { showToast('⚠ Indica el nombre del servicio', 'err'); return; }
+  const datos = {
+    nombre,
+    precio: tarNum(document.getElementById('as-precio').value),
+    periodicidad: document.getElementById('as-period').value,
+    descripcion: document.getElementById('as-desc').value.trim(),
+  };
+  await tarifasLoad();
+  if (admServicioEnEdicion !== null) {
+    const s = tarServicios().find(x => x.id === admServicioEnEdicion);
+    if (s) Object.assign(s, datos);
+  } else {
+    tarifasData.push({ id: Date.now(), tipo: 'servicio', activa: true, ...datos });
+  }
+  admServicioEnEdicion = null;
+  await tarifasSave();
+  renderAdminServicios();
+  showToast('✓ Servicio guardado', 'ok');
+}
+async function toggleServicio(id) {
+  await tarifasLoad();
+  const s = tarServicios().find(x => x.id === id);
+  if (!s) return;
+  s.activa = s.activa === false ? true : false;
+  await tarifasSave();
+  renderAdminServicios();
+}
+async function eliminarServicio(id) {
+  if (!confirm('¿Eliminar este servicio?')) return;
+  await tarifasLoad();
+  tarifasData = tarifasData.filter(x => !(x.tipo === 'servicio' && x.id === id));
+  if (admServicioEnEdicion === id) admServicioEnEdicion = null;
+  await tarifasSave();
+  renderAdminServicios();
+}
+
+async function guardarParamsTarifas() {
+  await tarifasLoad();
+  const p = tarParams();
+  p.impuestoElectrico = tarNum(document.getElementById('pt-iee').value);
+  p.ivaPct = tarNum(document.getElementById('pt-iva').value);
+  p.alquilerContadorMes = tarNum(document.getElementById('pt-alquiler').value);
+  await tarifasSave();
+  showToast('✓ Parámetros guardados', 'ok');
 }
 
 // Limpiar cache local para evitar quota exceeded

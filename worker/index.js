@@ -484,9 +484,15 @@ export default {
     //   y así protegemos contra clientes desactualizados que pisarían trabajo de
     //   otros operarios (causa del incidente del 12 may).
     // - visitas y materiales: overwrite con If-Match (sí se borran intencionalmente).
+    // - tarifas: configuración de comercializadoras/comisiones. Solo admin escribe.
+    // - estudios: estudios tarifarios; overwrite con If-Match (se borran desde la UI).
     const MERGE_BY_ID = new Set(['partes', 'movimientos']);
-    for (const entity of ['movimientos', 'partes', 'visitas', 'materiales']) {
+    const ADMIN_WRITE = new Set(['tarifas']);
+    for (const entity of ['movimientos', 'partes', 'visitas', 'materiales', 'tarifas', 'estudios']) {
       if (path === '/' + entity) {
+        if (request.method === 'POST' && ADMIN_WRITE.has(entity) && !isAdminRole(auth.rol)) {
+          return json({ error: 'Solo admin' }, 403, cors);
+        }
         const KEY = 'kb/' + entity + '.json';
         if (request.method === 'GET') {
           const { text, etag } = await loadRaw(env, KEY);
